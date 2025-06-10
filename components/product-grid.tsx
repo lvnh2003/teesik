@@ -83,7 +83,7 @@ export default function ProductGrid() {
       {products.map((product) => (
         <div key={product.id} className="group">
           <Link href={`/products/${product.slug}`}>
-            <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-gray-100">
+            <div className="relative aspect-[3/4] mb-8 overflow-hidden bg-gray-100">
               {product.isNew && (
                 <Badge className="absolute top-4 left-4 z-10 bg-black text-white hover:bg-gray-800 text-xs tracking-wider">
                   {t("product.new")}

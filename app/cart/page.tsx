@@ -3,10 +3,11 @@
 import { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Minus, Plus, X, ArrowRight, ShoppingBag } from "lucide-react"
+import { Minus, Plus, X, ArrowRight, ShoppingBag, Route } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { useRouter } from "next/router"
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState([
@@ -207,13 +208,13 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <Button
-                size="lg"
-                className="w-full bg-black hover:bg-gray-800 text-white py-4 text-lg font-medium tracking-wider uppercase mb-4"
+              <Link
+                className="inline-flex items-center justify-center h-11 rounded-md bg-black px-6 text-lg font-medium text-white transition-colors hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 uppercase tracking-wider w-full mb-4"
+                href="/checkout"
               >
                 Checkout
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+              </Link>
 
               <div className="text-center text-sm text-gray-600">
                 <p>Secure checkout with SSL encryption</p>

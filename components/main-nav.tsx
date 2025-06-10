@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, X, Search, ShoppingBag, User } from "lucide-react"
+import { Menu, X, Search, ShoppingBag, User, ChevronDown } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -17,10 +17,21 @@ export default function MainNav() {
   const { t } = useLanguage()
 
   const mainNavItems = [
-    { label: t("nav.new"), href: "/collections/new-arrivals" },
-    { label: t("nav.bags"), href: "/products" },
+    { label: t("nav.new"), href: "/new" },
+    {
+      label: "PRODUCTS",
+      href: "/products",
+      hasDropdown: true,
+      dropdownItems: [
+        { label: "Túi Đeo Chéo", href: "/products?category=crossbody" },
+        { label: "Balo", href: "/products?category=backpacks" },
+        { label: "Túi Tote", href: "/products?category=tote-bags" },
+        { label: "Túi Clutch", href: "/products?category=clutches" },
+        { label: "Túi Đeo Vai", href: "/products?category=shoulder-bags" },
+        { label: "Túi Messenger", href: "/products?category=messenger" },
+      ],
+    },
     { label: t("nav.collections"), href: "/collections" },
-    { label: t("nav.dropshipping"), href: "/dropshipping" },
     { label: t("nav.about"), href: "/about" },
   ]
 
@@ -48,13 +59,27 @@ export default function MainNav() {
             <SheetContent side="left" className="w-[300px] sm:w-[350px] bg-white border-gray-200">
               <nav className="flex flex-col gap-8 mt-10">
                 {mainNavItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="text-xl font-bold tracking-wider text-black hover:text-gray-600 transition-colors uppercase"
-                  >
-                    {item.label}
-                  </Link>
+                  <div key={item.href}>
+                    <Link
+                      href={item.href}
+                      className="text-xl font-bold tracking-wider text-black hover:text-gray-600 transition-colors uppercase"
+                    >
+                      {item.label}
+                    </Link>
+                    {item.hasDropdown && item.dropdownItems && (
+                      <div className="ml-4 mt-4 space-y-3">
+                        {item.dropdownItems.map((dropdownItem) => (
+                          <Link
+                            key={dropdownItem.href}
+                            href={dropdownItem.href}
+                            className="block text-sm text-gray-600 hover:text-black transition-colors"
+                          >
+                            {dropdownItem.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </nav>
             </SheetContent>
@@ -68,14 +93,40 @@ export default function MainNav() {
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center space-x-12">
             {mainNavItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-sm font-bold tracking-wider text-black hover:text-gray-600 transition-colors uppercase relative group"
-              >
-                {item.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-black group-hover:w-full transition-all duration-300"></span>
-              </Link>
+              <div key={item.href} className="relative group">
+                {item.hasDropdown ? (
+                  <div className="relative">
+                    <Link
+                      href={item.href}
+                      className="flex items-center text-sm font-bold tracking-wider text-black hover:text-gray-600 transition-colors uppercase relative group"
+                    >
+                      {item.label}
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-black group-hover:w-full transition-all duration-300"></span>
+                    </Link>
+                    {/* Hover Dropdown */}
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                      {item.dropdownItems?.map((dropdownItem) => (
+                        <Link
+                          key={dropdownItem.href}
+                          href={dropdownItem.href}
+                          className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors border-b border-gray-100 last:border-b-0"
+                        >
+                          {dropdownItem.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className="text-sm font-bold tracking-wider text-black hover:text-gray-600 transition-colors uppercase relative group"
+                  >
+                    {item.label}
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-black group-hover:w-full transition-all duration-300"></span>
+                  </Link>
+                )}
+              </div>
             ))}
           </nav>
 
