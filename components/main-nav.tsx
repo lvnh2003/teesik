@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
 import LanguageSwitcher from "@/components/language-switcher"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function MainNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchValue, setSearchValue] = useState("")
   const { t } = useLanguage()
+  const { user, isLoggedIn, logout } = useAuth()
 
   const mainNavItems = [
     { label: t("nav.new"), href: "/new" },
@@ -161,12 +163,46 @@ export default function MainNav() {
                 <span className="sr-only">Search</span>
               </Button>
             )}
-            <Link href="/account">
-              <Button variant="ghost" size="icon" className="text-black hover:bg-gray-100">
-                <User className="h-5 w-5" />
-                <span className="sr-only">Account</span>
-              </Button>
-            </Link>
+            {isLoggedIn && user ? (
+              <div className="relative group">
+                <Button variant="ghost" size="icon" className="text-black hover:bg-gray-100">
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">Account</span>
+                </Button>
+
+                {/* User Dropdown */}
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                  <div className="p-4 border-b border-gray-200">
+                    <p className="font-medium text-sm">
+                      {user.first_name} {user.last_name}
+                    </p>
+                    <p className="text-xs text-gray-600">{user.email}</p>
+                  </div>
+                  <Link href="/dashboard" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                    Dashboard
+                  </Link>
+                  <Link href="/orders" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                    Đơn hàng
+                  </Link>
+                  <Link href="/profile" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                    Thông tin cá nhân
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-200"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link href="/account">
+                <Button variant="ghost" size="icon" className="text-black hover:bg-gray-100">
+                  <User className="h-5 w-5" />
+                  <span className="sr-only">Account</span>
+                </Button>
+              </Link>
+            )}
             <Link href="/cart">
               <Button variant="ghost" size="icon" className="relative text-black hover:bg-gray-100">
                 <ShoppingBag className="h-5 w-5" />

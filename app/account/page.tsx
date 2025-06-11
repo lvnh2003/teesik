@@ -1,40 +1,90 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react"
+import React, { useState } from "react"
+import { Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function AccountPage() {
+  const { login, register, isLoading, isLoggedIn, user } = useAuth()
+  const router = useRouter()
+
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
   })
+
   const [registerData, setRegisterData] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
+    password_confirmation: "",
   })
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  // Redirect if already logged in
+  React.useEffect(() => {
+    if (isLoggedIn && user) {
+      router.push("/dashboard")
+    }
+  }, [isLoggedIn, user, router])
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Login data:", loginData)
-    // Handle login logic here
+    setError("")
+    setSuccess("")
+
+    try {
+      await login(loginData.email, loginData.password)
+      setSuccess("Đăng nhập thành công!")
+      setTimeout(() => {
+        router.push("/")
+      }, 1500)
+    } catch (error: any) {
+      setError(error.message || "Đăng nhập thất bại")
+    }
   }
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Register data:", registerData)
-    // Handle register logic here
+    setError("")
+    setSuccess("")
+
+    if (registerData.password !== registerData.password_confirmation) {
+      setError("Mật khẩu xác nhận không khớp")
+      return
+    }
+
+    try {
+      await register(registerData)
+      setSuccess("Đăng ký thành công!")
+      setTimeout(() => {
+        router.push("/")
+      }, 1500)
+    } catch (error: any) {
+      setError(error.message || "Đăng ký thất bại")
+    }
+  }
+
+  if (isLoggedIn && user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Chào mừng, {user.first_name}!</h1>
+          <p className="text-gray-600">Đang chuyển hướng...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -50,6 +100,21 @@ export default function AccountPage() {
 
       <div className="container px-4 mx-auto py-16">
         <div className="max-w-md mx-auto">
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+              <span className="text-red-700">{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+              <span className="text-green-700">{success}</span>
+            </div>
+          )}
+
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-8">
               <TabsTrigger value="login" className="text-sm font-medium tracking-wider uppercase">
@@ -78,6 +143,7 @@ export default function AccountPage() {
                         onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                         className="pl-12 h-12 border-2 border-gray-200 focus:border-black"
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -93,11 +159,13 @@ export default function AccountPage() {
                         onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                         className="pl-12 pr-12 h-12 border-2 border-gray-200 focus:border-black"
                         required
+                        disabled={isLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black"
+                        disabled={isLoading}
                       >
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
@@ -106,7 +174,7 @@ export default function AccountPage() {
 
                   <div className="flex items-center justify-between">
                     <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" />
+                      <input type="checkbox" className="mr-2" disabled={isLoading} />
                       <span className="text-sm text-gray-600">Ghi nhớ đăng nhập</span>
                     </label>
                     <a href="#" className="text-sm text-black hover:text-gray-600 font-medium">
@@ -117,17 +185,11 @@ export default function AccountPage() {
                   <Button
                     type="submit"
                     className="w-full bg-black hover:bg-gray-800 text-white h-12 text-lg font-medium tracking-wider uppercase"
+                    disabled={isLoading}
                   >
-                    Đăng Nhập
+                    {isLoading ? "Đang đăng nhập..." : "Đăng Nhập"}
                   </Button>
                 </form>
-
-                <div className="mt-8 text-center">
-                  <p className="text-gray-600">
-                    Chưa có tài khoản?{" "}
-                    <button className="text-black font-medium hover:text-gray-600">Đăng ký ngay</button>
-                  </p>
-                </div>
               </div>
             </TabsContent>
 
@@ -136,32 +198,20 @@ export default function AccountPage() {
               <div className="bg-white p-8 shadow-lg">
                 <h2 className="text-2xl font-black tracking-tighter mb-6 text-black uppercase text-center">Đăng Ký</h2>
                 <form onSubmit={handleRegisterSubmit} className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium tracking-wider uppercase mb-2">Họ</label>
+                  <div>
+                      <label className="block text-sm font-medium tracking-wider uppercase mb-2">Họ và tên</label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                         <Input
                           type="text"
-                          placeholder="Nguyễn"
-                          value={registerData.firstName}
-                          onChange={(e) => setRegisterData({ ...registerData, firstName: e.target.value })}
+                          placeholder="Nguyen Van A"
+                          value={registerData.name}
+                          onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
                           className="pl-12 h-12 border-2 border-gray-200 focus:border-black"
                           required
+                          disabled={isLoading}
                         />
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium tracking-wider uppercase mb-2">Tên</label>
-                      <Input
-                        type="text"
-                        placeholder="Văn A"
-                        value={registerData.lastName}
-                        onChange={(e) => setRegisterData({ ...registerData, lastName: e.target.value })}
-                        className="h-12 border-2 border-gray-200 focus:border-black"
-                        required
-                      />
-                    </div>
                   </div>
 
                   <div>
@@ -175,6 +225,7 @@ export default function AccountPage() {
                         onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                         className="pl-12 h-12 border-2 border-gray-200 focus:border-black"
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -189,7 +240,7 @@ export default function AccountPage() {
                         value={registerData.phone}
                         onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
                         className="pl-12 h-12 border-2 border-gray-200 focus:border-black"
-                        required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -205,11 +256,13 @@ export default function AccountPage() {
                         onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
                         className="pl-12 pr-12 h-12 border-2 border-gray-200 focus:border-black"
                         required
+                        disabled={isLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black"
+                        disabled={isLoading}
                       >
                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
@@ -223,15 +276,17 @@ export default function AccountPage() {
                       <Input
                         type={showConfirmPassword ? "text" : "password"}
                         placeholder="••••••••"
-                        value={registerData.confirmPassword}
-                        onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                        value={registerData.password_confirmation}
+                        onChange={(e) => setRegisterData({ ...registerData, password_confirmation: e.target.value })}
                         className="pl-12 pr-12 h-12 border-2 border-gray-200 focus:border-black"
                         required
+                        disabled={isLoading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-black"
+                        disabled={isLoading}
                       >
                         {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
@@ -239,7 +294,7 @@ export default function AccountPage() {
                   </div>
 
                   <div className="flex items-start">
-                    <input type="checkbox" className="mr-3 mt-1" required />
+                    <input type="checkbox" className="mr-3 mt-1" required disabled={isLoading} />
                     <span className="text-sm text-gray-600">
                       Tôi đồng ý với{" "}
                       <a href="#" className="text-black font-medium hover:text-gray-600">
@@ -255,17 +310,11 @@ export default function AccountPage() {
                   <Button
                     type="submit"
                     className="w-full bg-black hover:bg-gray-800 text-white h-12 text-lg font-medium tracking-wider uppercase"
+                    disabled={isLoading}
                   >
-                    Đăng Ký
+                    {isLoading ? "Đang đăng ký..." : "Đăng Ký"}
                   </Button>
                 </form>
-
-                <div className="mt-8 text-center">
-                  <p className="text-gray-600">
-                    Đã có tài khoản?{" "}
-                    <button className="text-black font-medium hover:text-gray-600">Đăng nhập ngay</button>
-                  </p>
-                </div>
               </div>
             </TabsContent>
           </Tabs>

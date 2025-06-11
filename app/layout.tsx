@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/contexts/language-context"
 import MainNav from "@/components/main-nav"
 import Footer from "@/components/footer"
 import { inter } from "@/lib/fonts"
+import { AuthProvider } from "@/contexts/auth-context"
 // // Định nghĩa font Inter
 // const inter = Inter({
 //   subsets: ["latin"],
@@ -22,7 +23,6 @@ const playfair = Playfair_Display({
 export const metadata = {
   title: "TEESIK - Túi xách thời trang cao cấp & Dropshipping",
   description: "Cung cấp túi xách thời trang cao cấp và giải pháp dropshipping toàn cầu",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -33,11 +33,13 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${playfair.variable}`}>
       <body suppressHydrationWarning>
-        <LanguageProvider>
-          <MainNav />
-          <main>{children}</main>
-          <Footer />
-        </LanguageProvider>
+        <AuthProvider>
+          <LanguageProvider>
+            <MainNav />
+            <main>{children}</main>
+            <Footer />
+          </LanguageProvider>
+        </AuthProvider>
       </body>
     </html>
   )
