@@ -80,7 +80,7 @@ export default function AccountPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Chào mừng, {user.first_name}!</h1>
+          <h1 className="text-2xl font-bold mb-2">Chào mừng, {user.name}!</h1>
           <p className="text-gray-600">Đang chuyển hướng...</p>
         </div>
       </div>

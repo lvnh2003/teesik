@@ -1,11 +1,11 @@
 // Authentication utilities and API calls
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
-
+import { getCookie, setCookie, deleteCookie } from "cookies-next"
 export interface User {
   id: number
   email: string
-  first_name: string
-  last_name: string
+  name: string
+  role: string
   phone?: string
   email_verified_at?: string
   created_at: string
@@ -109,22 +109,16 @@ export async function getCurrentUser(): Promise<{ success: boolean; data: { user
 
 // Token management
 export function setAuthToken(token: string): void {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("auth_token", token)
-  }
+  setCookie("auth_token", token, { maxAge: 60 * 60 * 24, path: "/" }) // 1 day
 }
 
 export function getAuthToken(): string | null {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token")
-  }
-  return null
+  const token = getCookie("auth_token")
+  return typeof token === "string" ? token : null
 }
 
 export function removeAuthToken(): void {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("auth_token")
-  }
+  deleteCookie("auth_token", { path: "/" })
 }
 
 export function isAuthenticated(): boolean {

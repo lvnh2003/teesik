@@ -57,7 +57,7 @@ export default function DashboardPage() {
                   <User className="h-5 w-5 text-gray-400 mr-3" />
                   <div>
                     <p className="font-medium">
-                      {user.first_name} {user.last_name}
+                      {user.name}
                     </p>
                     <p className="text-sm text-gray-600">Họ và tên</p>
                   </div>
