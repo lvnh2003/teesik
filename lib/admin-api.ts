@@ -48,20 +48,32 @@ export interface Product {
   original_price?: number
   category_id: number
   category?: Category
-  images: ProductImage[]
+  images: ProductImage[] 
   is_new?: boolean
   is_featured?: boolean
   stock_quantity: number
   sku: string
   created_at: string
   updated_at: string
+  variants?: ProductVariant[]
+}
+
+export interface ProductVariant {
+  id?: number
+  sku: string
+  price: number
+  original_price?: number
+  stock_quantity: number
+  attributes: Record<string, string>
+  images?: (File | ProductImage)[] // Có thể là ảnh đã upload (ProductImage) hoặc mới (File)
 }
 
 export interface ProductImage {
   id: number
   product_id: number
-  url: string
-  is_primary: boolean
+  image_path: string
+  alt_text: string
+  product_variant_id: number
 }
 
 export interface Category {
@@ -81,6 +93,14 @@ export interface ProductFormData {
   stock_quantity: number
   sku: string
   images?: File[]
+  variants?: {
+    sku: string
+    price: number
+    original_price?: number
+    stock_quantity: number
+    attributes: Record<string, string>
+    images: File[]
+  }[]
 }
 
 // User Types
