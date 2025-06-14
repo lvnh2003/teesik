@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useAdminAuth } from "@/lib/admin-auth"
-import { getProducts, deleteProduct, type Product } from "@/lib/admin-api"
+import { getProducts, deleteProduct, duplicateProduct, getProductById, type Product } from "@/lib/admin-api"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -30,6 +30,9 @@ import {
   Tag,
   Copy,
   MoreHorizontal,
+  Loader2,
+  CopyIcon,
+  Star,
 } from "lucide-react"
 import Image from "next/image"
 import {
@@ -42,9 +45,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { ProductPreviewModal } from "@/components/product-preview-modal"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function ProductsPage() {
   const { checkAuth } = useAdminAuth()
+  const { toast } = useToast()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
@@ -55,6 +61,12 @@ export default function ProductsPage() {
   const [productToDelete, setProductToDelete] = useState<number | null>(null)
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
+
+  // Trạng thái cho modal xem trước sản phẩm
+  const [previewModalOpen, setPreviewModalOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [loadingProductId, setLoadingProductId] = useState<number | null>(null)
+  const [duplicatingProductId, setDuplicatingProductId] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -90,8 +102,17 @@ export default function ProductsPage() {
       try {
         await deleteProduct(productToDelete)
         setProducts(products.filter((product) => product.id !== productToDelete))
+        toast({
+          title: "Xóa thành công",
+          description: "Sản phẩm đã được xóa khỏi hệ thống",
+        })
       } catch (err: any) {
         setError(err.message || "Failed to delete product")
+        toast({
+          title: "Lỗi",
+          description: err.message || "Không thể xóa sản phẩm",
+          variant: "destructive",
+        })
       } finally {
         setDeleteDialogOpen(false)
         setProductToDelete(null)
@@ -105,6 +126,50 @@ export default function ProductsPage() {
     } else {
       setSortField(field)
       setSortDirection("asc")
+    }
+  }
+
+  // Xử lý xem trước sản phẩm
+  const handlePreviewProduct = async (productId: number) => {
+    setLoadingProductId(productId)
+    try {
+      const response = await getProductById(productId)
+      if (response.success && response.data) {
+        setSelectedProduct(response.data)
+        setPreviewModalOpen(true)
+      }
+    } catch (err: any) {
+      toast({
+        title: "Lỗi",
+        description: err.message || "Không thể tải thông tin sản phẩm",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingProductId(null)
+    }
+  }
+
+  // Xử lý nhân bản sản phẩm
+  const handleDuplicateProduct = async (productId: number) => {
+    setDuplicatingProductId(productId)
+    try {
+      const response = await duplicateProduct(productId)
+      if (response.success && response.data) {
+        // Thêm sản phẩm mới vào danh sách
+        setProducts([response.data, ...products])
+        toast({
+          title: "Nhân bản thành công",
+          description: "Sản phẩm đã được nhân bản thành công",
+        })
+      }
+    } catch (err: any) {
+      toast({
+        title: "Lỗi",
+        description: err.message || "Không thể nhân bản sản phẩm",
+        variant: "destructive",
+      })
+    } finally {
+      setDuplicatingProductId(null)
     }
   }
 
@@ -268,7 +333,7 @@ export default function ProductsPage() {
                         <Image
                           src={
                             product.images && product.images.length > 0
-                              ? "http://localhost:8000/storage/" +  product.images[0].image_path
+                              ? `http://localhost:8000/storage/${product.images[0].image_path}`
                               : "/placeholder.svg?height=64&width=64"
                           }
                           alt={product.name}
@@ -303,6 +368,10 @@ export default function ProductsPage() {
                                   className="h-6 w-6 opacity-0 group-hover:opacity-100"
                                   onClick={() => {
                                     navigator.clipboard.writeText(product.sku || "")
+                                    toast({
+                                      title: "Đã sao chép",
+                                      description: "Mã SKU đã được sao chép vào clipboard",
+                                    })
                                   }}
                                 >
                                   <Copy className="h-3 w-3" />
@@ -402,8 +471,18 @@ export default function ProductsPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-8 w-8">
-                                <Eye className="h-4 w-4" />
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handlePreviewProduct(product.id)}
+                                disabled={loadingProductId === product.id}
+                              >
+                                {loadingProductId === product.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -435,13 +514,32 @@ export default function ProductsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
-                            <DropdownMenuItem>Nhân bản</DropdownMenuItem>
-                            <DropdownMenuItem>Thêm vào nổi bật</DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDuplicateProduct(product.id)}
+                              disabled={duplicatingProductId === product.id}
+                            >
+                              {duplicatingProductId === product.id ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Đang nhân bản...
+                                </>
+                              ) : (
+                                <>
+                                  <CopyIcon className="h-4 w-4 mr-2" />
+                                  Nhân bản
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Star className="h-4 w-4 mr-2" />
+                              {product.is_featured ? "Bỏ nổi bật" : "Thêm vào nổi bật"}
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
                               onClick={() => handleDeleteClick(product.id)}
                             >
+                              <AlertCircle className="h-4 w-4 mr-2" />
                               Xóa sản phẩm
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -529,6 +627,13 @@ export default function ProductsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Product Preview Modal */}
+      <ProductPreviewModal
+        product={selectedProduct}
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+      />
     </div>
   )
 }

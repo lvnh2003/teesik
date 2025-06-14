@@ -55,7 +55,7 @@ export interface Product {
   sku: string
   created_at: string
   updated_at: string
-  variants?: ProductVariant[]
+  variants?: ProductVariant[] 
 }
 
 export interface ProductVariant {
@@ -65,7 +65,7 @@ export interface ProductVariant {
   original_price?: number
   stock_quantity: number
   attributes: Record<string, string>
-  images?: (File | ProductImage)[] // Có thể là ảnh đã upload (ProductImage) hoặc mới (File)
+  images?: (File | ProductImage)[] 
 }
 
 export interface ProductImage {
@@ -167,50 +167,6 @@ export async function createProduct(productData: ProductFormData): Promise<{ dat
   return apiRequest<{ data: Product }>("/admin/products", "POST", productData)
 }
 
-export async function updateProduct(id: number, productData: Partial<ProductFormData>): Promise<{ data: Product }> {
-  // Handle file uploads with FormData
-  if (productData.images && productData.images.length > 0) {
-    const formData = new FormData()
-
-    // Append all non-file fields
-    Object.keys(productData).forEach((key) => {
-      if (key !== "images") {
-        formData.append(key, String(productData[key as keyof ProductFormData]))
-      }
-    })
-
-    // Append images
-    productData.images.forEach((image, index) => {
-      formData.append(`images[${index}]`, image)
-    })
-
-    // Add _method field for Laravel to recognize as PUT
-    formData.append("_method", "PUT")
-
-    // Custom fetch for FormData
-    const token = getAuthToken()
-    if (!token) throw new Error("Authentication required")
-
-    const response = await fetch(`${API_BASE_URL}/admin/products/${id}`, {
-      method: "POST", // Actually sends as POST but Laravel will treat as PUT
-      headers: {
-        Accept: "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    })
-
-    const responseData = await response.json()
-    if (!response.ok) {
-      throw new Error(responseData.message || `API request failed with status ${response.status}`)
-    }
-
-    return responseData
-  }
-
-  // Regular JSON request if no images
-  return apiRequest<{ data: Product }>(`/admin/products/${id}`, "PUT", productData)
-}
 
 export async function deleteProduct(id: number): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>(`/admin/products/${id}`, "DELETE")
@@ -253,4 +209,44 @@ export interface DashboardStats {
 
 export async function getDashboardStats(): Promise<{ data: DashboardStats }> {
   return apiRequest<{ data: DashboardStats }>("/admin/dashboard")
+}
+
+export async function getProductById(productId: number) {
+  const token = getAuthToken()
+  if (!token) throw new Error("Authentication required")
+
+  const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.message || "Failed to get product")
+  }
+
+  return await response.json()
+}
+
+export async function updateProduct(productId: number, formData: FormData) {
+  const token = getAuthToken()
+  if (!token) throw new Error("Authentication required")
+
+  const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
+    method: "POST", // Laravel sử dụng POST với _method=PUT
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.message || "Failed to update product")
+  }
+
+  return await response.json()
 }

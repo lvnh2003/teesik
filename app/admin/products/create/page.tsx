@@ -261,8 +261,6 @@ export default function CreateProductPage() {
       formDataToSend.append('category_id', formData.category_id)
       formDataToSend.append('is_new', formData.is_new.toString())
       formDataToSend.append('is_featured', formData.is_featured.toString())
-      formDataToSend.append('price', formData.price)
-      formDataToSend.append('stock_quantity', formData.stock_quantity)
       formDataToSend.append('sku', formData.sku)
 
       // General images
@@ -408,50 +406,6 @@ export default function CreateProductPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div>
-              <Label htmlFor="price" className="text-base">
-                Giá bán *
-              </Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-                className="mt-2"
-                placeholder="VD: 100000"
-              />
-            </div>
-            <div>
-              <Label htmlFor="original_price" className="text-base">
-                Giá gốc
-              </Label>
-              <Input
-                id="original_price"
-                name="original_price"
-                type="number"
-                value={formData.original_price}
-                onChange={handleInputChange}
-                className="mt-2"
-                placeholder="VD: 150000"
-              />
-            </div>
-            <div>
-              <Label htmlFor="stock_quantity" className="text-base">
-                Tồn kho *
-              </Label>
-              <Input
-                id="stock_quantity"
-                name="stock_quantity"
-                type="number"
-                value={formData.stock_quantity}
-                onChange={handleInputChange}
-                required
-                className="mt-2"
-                placeholder="VD: 100"
-              />
-            </div>
             <div>
               <Label htmlFor="sku" className="text-base">
                 Mã SKU *

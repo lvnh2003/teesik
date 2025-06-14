@@ -158,24 +158,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main content */}
       <div className={`flex-1 flex flex-col lg:ml-64 transition-all duration-300 ease-in-out`}>
-        {/* Top navbar */}
-        <header className="bg-white shadow-sm h-16 flex items-center px-6">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden text-gray-600 hover:text-gray-900 mr-4"
-            aria-label="Open sidebar"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="flex-1"></div>
-          <div className="flex items-center">
-            <span className="text-sm font-medium mr-4">Admin</span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Đăng xuất
-            </Button>
-          </div>
-        </header>
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
