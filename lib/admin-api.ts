@@ -48,24 +48,28 @@ export interface Product {
   original_price?: number
   category_id: number
   category?: Category
-  images: ProductImage[] 
+  images?: ProductImage[] 
   is_new?: boolean
   is_featured?: boolean
-  stock_quantity: number
-  sku: string
-  created_at: string
-  updated_at: string
-  variants?: ProductVariant[] 
+  stock_quantity?: number
+  created_at?: string
+  updated_at?: string
+  variants?: ProductVariant[]
+  [key: string]: any
 }
 
 export interface ProductVariant {
-  id?: number
+  id: number
   sku: string
   price: number
   original_price?: number
   stock_quantity: number
   attributes: Record<string, string>
   images?: (File | ProductImage)[] 
+  image: File | null
+  imagePreviewUrl: string
+  product_id: number
+  isDelete: boolean
 }
 
 export interface ProductImage {

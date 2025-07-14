@@ -5,7 +5,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useAdminAuth } from "@/lib/admin-auth"
-import { getProductById, updateProduct, getCategories, type Category, type ProductImage } from "@/lib/admin-api"
+import { getProductById, updateProduct, getCategories, type Category, type ProductImage, Product, ProductVariant } from "@/lib/admin-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -31,19 +31,8 @@ export default function EditProductPage() {
   const [error, setError] = useState("")
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedImages, setSelectedImages] = useState<File[]>([])
-  const [imagesToDelete, setImagesToDelete] = useState<number[]>([])
 
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: "",
-    original_price: "",
-    category_id: "",
-    is_new: false,
-    is_featured: false,
-    stock_quantity: "0",
-    sku: "",
-  })
+  const [formData, setFormData] = useState<Product>()
 
   // Custom attribute management
   const [attributes, setAttributes] = useState<{ id: string; name: string; values: string[] }[]>([])
@@ -51,23 +40,7 @@ export default function EditProductPage() {
   const [newAttributeValues, setNewAttributeValues] = useState<Record<string, string>>({})
 
   // Variants management
-  const [variants, setVariants] = useState<
-    {
-      id: string | number
-      product_id: number
-      sku: string
-      price: string
-      original_price: string
-      stock_quantity: string
-      is_active: number
-      attributes: Record<string, string>
-      created_at: string
-      updated_at: string
-      images: ProductImage[]
-      image: File | null
-      imagePreviewUrl: string
-    }[]
-  >([])
+  const [variants, setVariants] = useState<ProductVariant[]>([])
 
   useEffect(() => {
     const init = async () => {
@@ -84,21 +57,17 @@ export default function EditProductPage() {
 
           // Cập nhật form data
           setFormData({
+            id: product.id,
             name: product.name || "",
             description: product.description || "",
             price: product.price?.toString() || "",
             original_price: product.original_price?.toString() || "",
             category_id: product.category_id?.toString() || "",
-            is_new: product.is_new || false,
-            is_featured: product.is_featured || false,
-            stock_quantity: "0", // Sử dụng từ variants
-            sku: "", // Sử dụng từ variants
+            is_new: product.is_new ?? false,
+            is_featured: product.is_featured ?? false,
+            stock_quantity: product.stock_quantity ?? 0
           })
 
-          // // Cập nhật hình ảnh hiện có
-          // if (product.images && product.images.length > 0) {
-          //   setExistingImages(product.images)
-          // }
 
           // Cập nhật variants nếu có
           if (product.variants && product.variants.length > 0) {
@@ -185,6 +154,7 @@ export default function EditProductPage() {
                   images: variant.images || [],
                   image: null,
                   imagePreviewUrl: variantImagePath,
+                  isDelete: false, 
                 }
               },
             )
@@ -204,15 +174,24 @@ export default function EditProductPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => {
+      if (!prev) return prev
+      return { ...prev, [name]: value }
+    })
   }
 
   const handleCheckboxChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }))
+    setFormData((prev) => {
+      if (!prev) return prev
+      return { ...prev, [name]: checked }
+    })
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => {
+      if (!prev) return prev
+      return { ...prev, [name]: value }
+    })
   }
 
   const handleVariantImageChange = (e: React.ChangeEvent<HTMLInputElement>, variantId: number | string) => {
@@ -299,7 +278,7 @@ export default function EditProductPage() {
   }
 
   // Remove attribute value
-  const removeAttributeValue = (attributeId: string, valueToRemove: string) => {
+  const removeAttributeValue = (attributeId: string, valueToRemove: string): void => {
     setAttributes((prev) =>
       prev.map((attr) =>
         attr.id === attributeId ? { ...attr, values: attr.values.filter((v) => v !== valueToRemove) } : attr,
@@ -308,7 +287,7 @@ export default function EditProductPage() {
   }
 
   // Generate all possible variants from attributes
-  const generateVariants = () => {
+  const generateVariants = (): void => {
     const activeAttributes = attributes.filter((attr) => attr.values.length > 0)
     if (activeAttributes.length === 0) {
       setError("Vui lòng thêm ít nhất một phân loại và giá trị")
@@ -348,12 +327,12 @@ export default function EditProductPage() {
       }
 
       return {
-        id: Number,
+        id: `new-${Date.now()}-${Math.random()}`,
         product_id: Number.parseInt(productId),
         attributes: combo,
         sku: "",
-        price: formData.price,
-        original_price: formData.original_price,
+        price: formData?.price ?? "",
+        original_price: formData?.original_price ?? "",
         stock_quantity: "0",
         is_active: 1,
         created_at: new Date().toISOString(),
@@ -361,6 +340,7 @@ export default function EditProductPage() {
         images: [],
         image: null,
         imagePreviewUrl: "",
+        isDelete: false, 
       }
     })
 
@@ -368,19 +348,19 @@ export default function EditProductPage() {
     setVariants(newVariants as typeof variants)
     setError("")
   }
-  const updateVariant = (variantId: number | string, field: string, value: string) => {
+  const updateVariant = (variantId: number, field: string, value: string) => {
     setVariants((prev) => prev.map((variant) => (variant.id === variantId ? { ...variant, [field]: value } : variant)))
   }
 
   // Remove variant
-  const removeVariant = (variantId: number | string) => {
+  const removeVariant = (variantId: number | string): void => {
     // Clean up image preview URL
     const variant = variants.find((v) => v.id === variantId)
     if (variant && variant.imagePreviewUrl) {
       URL.revokeObjectURL(variant.imagePreviewUrl)
     }
 
-    setVariants((prev) => prev.filter((variant) => variant.id !== variantId))
+    setVariants((prev) => prev.map((variant) => variant.id === variantId ? { ...variant, isDelete: true } : variant))
   }
 
   // Calculate total number of variants
@@ -410,17 +390,13 @@ export default function EditProductPage() {
 
       formDataToSend.append("_method", "PUT")
       // Basic product info
-      formDataToSend.append("name", formData.name)
-      formDataToSend.append("description", formData.description)
-      formDataToSend.append("category_id", formData.category_id)
-      formDataToSend.append("is_new", formData.is_new ? "1" : "0")
-      formDataToSend.append("is_featured", formData.is_featured ? "1" : "0")
-      formDataToSend.append("sku", formData.sku)
-
-      // New images
-      selectedImages.forEach((image, index) => {
-        formDataToSend.append(`images[${index}]`, image)
-      })
+      if (formData) {
+        formDataToSend.append("name", formData.name ?? "")
+        formDataToSend.append("description", formData.description ?? "")
+        formDataToSend.append("category_id", String(formData.category_id ?? ""))
+        formDataToSend.append("is_new", formData.is_new ? "1" : "0")
+        formDataToSend.append("is_featured", formData.is_featured ? "1" : "0")
+      }
 
       if (variants.length > 0) {
         // Product with variants
@@ -431,9 +407,10 @@ export default function EditProductPage() {
           }
 
           formDataToSend.append(`variants[${index}][sku]`, variant.sku)
-          formDataToSend.append(`variants[${index}][price]`, variant.price)
-          formDataToSend.append(`variants[${index}][original_price]`, variant.original_price || "")
-          formDataToSend.append(`variants[${index}][stock_quantity]`, variant.stock_quantity)
+          formDataToSend.append(`variants[${index}][price]`, String(variant.price))
+          formDataToSend.append(`variants[${index}][original_price]`,  String(variant.original_price) || "")
+          formDataToSend.append(`variants[${index}][stock_quantity]`,  String(variant.stock_quantity))
+          formDataToSend.append(`variants[${index}][isDelete]`,  String(variant.isDelete))
 
           // Convert attributes object to array format
           Object.entries(variant.attributes).forEach(([key, value]) => {
@@ -547,7 +524,7 @@ export default function EditProductPage() {
               <Input
                 id="name"
                 name="name"
-                value={formData.name}
+                value={formData?.name ?? ""}
                 onChange={handleInputChange}
                 required
                 className="mt-2"
@@ -560,7 +537,7 @@ export default function EditProductPage() {
                 Danh mục *
               </Label>
               <Select
-                value={formData.category_id}
+                value={formData?.category_id?.toString() ?? ""}
                 onValueChange={(value) => handleSelectChange("category_id", value)}
                 required
               >
@@ -585,7 +562,7 @@ export default function EditProductPage() {
             <Textarea
               id="description"
               name="description"
-              value={formData.description}
+              value={formData?.description ?? ""}
               onChange={handleInputChange}
               required
               className="mt-2 min-h-[150px]"
@@ -602,7 +579,7 @@ export default function EditProductPage() {
                 id="price"
                 name="price"
                 type="number"
-                value={formData.price}
+                value={formData?.price ?? ""}
                 onChange={handleInputChange}
                 required
                 className="mt-2"
@@ -618,7 +595,7 @@ export default function EditProductPage() {
                 id="original_price"
                 name="original_price"
                 type="number"
-                value={formData.original_price}
+                value={formData?.original_price ?? ""}
                 onChange={handleInputChange}
                 className="mt-2"
                 placeholder="VD: 150000"
@@ -630,7 +607,7 @@ export default function EditProductPage() {
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="is_new"
-                checked={formData.is_new}
+                checked={formData?.is_new ?? false}
                 onCheckedChange={(checked) => handleCheckboxChange("is_new", checked as boolean)}
               />
               <Label htmlFor="is_new" className="font-medium">
@@ -641,7 +618,7 @@ export default function EditProductPage() {
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="is_featured"
-                checked={formData.is_featured}
+                checked={formData?.is_featured ?? false}
                 onCheckedChange={(checked) => handleCheckboxChange("is_featured", checked as boolean)}
               />
               <Label htmlFor="is_featured" className="font-medium">
@@ -772,7 +749,7 @@ export default function EditProductPage() {
       </Card>
 
       {/* Variants Management */}
-      {variants.length > 0 && (
+      {variants.filter(v => v.isDelete !== true).length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Quản lý biến thể sản phẩm</CardTitle>
@@ -793,7 +770,7 @@ export default function EditProductPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {variants.map((variant) => (
+                  {variants.filter(v => v.isDelete !== true).map((variant) => (
                     <tr key={variant.id} className="hover:bg-muted/30">
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">

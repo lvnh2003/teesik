@@ -405,23 +405,6 @@ export default function CreateProductPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div>
-              <Label htmlFor="sku" className="text-base">
-                Mã SKU *
-              </Label>
-              <Input
-                id="sku"
-                name="sku"
-                value={formData.sku}
-                onChange={handleInputChange}
-                required={variants.length === 0}
-                className="mt-2"
-                placeholder="VD: SP001"
-              />
-            </div>
-          </div>
-
           <div className="flex gap-6 pt-2">
             <div className="flex items-center space-x-2">
               <Checkbox
