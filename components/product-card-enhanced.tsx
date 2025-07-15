@@ -7,19 +7,10 @@ import { Button } from "@/components/ui/button"
 import { ShoppingBag, Heart, Eye } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { useState } from "react"
+import { Product } from "@/type/product"
 
 interface ProductCardProps {
-  product: {
-    id: number
-    name: string
-    price: number
-    originalPrice?: number
-    image: string
-    category: string
-    isNew?: boolean
-    slug: string
-    hoverImage?: string
-  }
+  product: Product
   effectActive?: boolean
   variant?: "default" | "enhanced"
 }
@@ -112,7 +103,9 @@ export default function ProductCardEnhanced({ product, effectActive = true, vari
 
       {/* Product Info */}
       <div className="space-y-2">
-        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">{product.category}</p>
+        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+          {product?.category?.name ?? ""}
+        </p>
         <h3 className="text-lg font-bold tracking-tight uppercase group-hover:text-gray-600 transition-colors">
           {product.name}
         </h3>

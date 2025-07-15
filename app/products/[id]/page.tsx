@@ -12,19 +12,21 @@ import ProductSlider from "@/components/product-slider"
 import { getImageUrl, getProduct } from "@/lib/admin-api"
 import type { Product, ProductImage, ProductVariant } from "@/type/product"
 import Loading from "@/app/loading"
-
-export default function ProductPage({ params }: { params: { id: number } }) {
+import { useParams } from "next/navigation";
+export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({})
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]) 
+  const params = useParams();
+  const id = params.id as string
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data: productData } = await getProduct(params?.id)
+        const { data: productData } = await getProduct(Number(id))
         console.log("Product data received:", productData)
         setProduct(productData)
 
@@ -517,7 +519,7 @@ export default function ProductPage({ params }: { params: { id: number } }) {
       {/* Related Products */}
       <div className="mt-16">
         <h2 className="text-2xl font-bold mb-8">Sản phẩm liên quan</h2>
-        <ProductSlider />
+        <ProductSlider category_id={product.category_id}/>
       </div>
     </div>
   )

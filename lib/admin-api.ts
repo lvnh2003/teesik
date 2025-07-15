@@ -51,25 +51,6 @@ export async function getProduct(id: number): Promise<{ data: Product }> {
   return apiRequest<{ data: Product }>(`/admin/products/${id}`)
 }
 
-export async function getProductById(productId: number) {
-  const token = getAuthToken()
-  if (!token) throw new Error("Authentication required")
-
-  const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json()
-    throw new Error(errorData.message || "Failed to get product")
-  }
-
-  return await response.json()
-}
-
 export async function createProduct(productData: ProductFormData): Promise<{ data: Product }> {
   // Handle file uploads with FormData
   if (productData.images && productData.images.length > 0) {

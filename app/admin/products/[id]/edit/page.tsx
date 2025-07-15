@@ -5,7 +5,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useAdminAuth } from "@/lib/admin-auth"
-import { getProductById, updateProduct, getCategories, type Category, type ProductImage, Product, ProductVariant } from "@/lib/admin-api"
+import { getProduct, updateProduct, getCategories, getImageUrl } from "@/lib/admin-api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
+import { Category, Product, ProductVariant } from "@/type/product"
 
 export default function EditProductPage() {
   const { checkAuth } = useAdminAuth()
@@ -51,7 +52,7 @@ export default function EditProductPage() {
         setCategories(categoriesResponse.data)
 
         // Tải thông tin sản phẩm
-        const productResponse = await getProductById(Number(productId))
+        const productResponse = await getProduct(Number(productId))
         if (productResponse.data) {
           const product = productResponse.data
 
@@ -60,12 +61,10 @@ export default function EditProductPage() {
             id: product.id,
             name: product.name || "",
             description: product.description || "",
-            price: product.price?.toString() || "",
-            original_price: product.original_price?.toString() || "",
-            category_id: product.category_id?.toString() || "",
+            price: product.price || 0,
+            category_id: product.category_id || 0,
             is_new: product.is_new ?? false,
             is_featured: product.is_featured ?? false,
-            stock_quantity: product.stock_quantity ?? 0
           })
 
 
@@ -74,8 +73,8 @@ export default function EditProductPage() {
             // Tạo danh sách thuộc tính từ variants
             const attributeMap = new Map<string, Set<string>>()
 
-            product.variants.forEach((variant: { attributes: string[] }) => {
-              if (variant.attributes && variant.attributes.length > 0) {
+            product.variants.forEach((variant: ProductVariant) => {
+              if (Array.isArray(variant.attributes)) {
                 variant.attributes.forEach((attrStr: string) => {
                   try {
                     const attr = JSON.parse(attrStr)
@@ -103,22 +102,10 @@ export default function EditProductPage() {
 
             // Chuyển đổi variants
             const formattedVariants = product.variants.map(
-              (variant: {
-                attributes: string[]
-                images: string | any[]
-                id: any
-                product_id: any
-                sku: any
-                price: { toString: () => any }
-                original_price: { toString: () => any }
-                stock_quantity: { toString: () => any }
-                is_active: any
-                created_at: any
-                updated_at: any
-              }) => {
+              (variant: ProductVariant) => {
                 // Tạo object attributes từ mảng
                 const variantAttributes: Record<string, string> = {}
-                if (variant.attributes && variant.attributes.length > 0) {
+                if (Array.isArray(variant.attributes) && variant.attributes.length > 0) {
                   variant.attributes.forEach((attrStr: string) => {
                     try {
                       const attr = JSON.parse(attrStr)
@@ -136,7 +123,7 @@ export default function EditProductPage() {
                 let variantImageId = undefined
 
                 if (variant.images && variant.images.length > 0) {
-                  variantImagePath = `http://localhost:8000/storage/${variant.images[0].image_path}`
+                  variantImagePath = getImageUrl(`${variant.images[0].image_path}`)
                   variantImageId = variant.images[0].id
                 }
 
@@ -145,12 +132,9 @@ export default function EditProductPage() {
                   product_id: variant.product_id,
                   attributes: variantAttributes,
                   sku: variant.sku || "",
-                  price: variant.price?.toString() || "",
-                  original_price: variant.original_price?.toString() || "",
-                  stock_quantity: variant.stock_quantity?.toString() || "0",
-                  is_active: variant.is_active,
-                  created_at: variant.created_at,
-                  updated_at: variant.updated_at,
+                  price: variant.price || 0,
+                  original_price: variant.original_price || 0,
+                  stock_quantity: variant.stock_quantity || 0,
                   images: variant.images || [],
                   image: null,
                   imagePreviewUrl: variantImagePath,
@@ -158,6 +142,8 @@ export default function EditProductPage() {
                 }
               },
             )
+
+            
 
             setVariants(formattedVariants)
           }
@@ -568,39 +554,6 @@ export default function EditProductPage() {
               className="mt-2 min-h-[150px]"
               placeholder="Mô tả chi tiết về sản phẩm"
             />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="price" className="text-base font-medium">
-                Giá bán *
-              </Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                value={formData?.price ?? ""}
-                onChange={handleInputChange}
-                required
-                className="mt-2"
-                placeholder="VD: 100000"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="original_price" className="text-base font-medium">
-                Giá gốc
-              </Label>
-              <Input
-                id="original_price"
-                name="original_price"
-                type="number"
-                value={formData?.original_price ?? ""}
-                onChange={handleInputChange}
-                className="mt-2"
-                placeholder="VD: 150000"
-              />
-            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-6">
