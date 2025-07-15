@@ -1,40 +1,34 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Calendar, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import ProductGridEnhanced from "@/components/product-grid-enhanced"
+import { getImageUrl, getProducts } from "@/lib/admin-api"
+import { Product } from "@/type/product"
+import Loading from "../loading"
 
 export default function NewPage() {
-  const newArrivals = [
-    {
-      id: 1,
-      name: "SEOUL MINI BAG",
-      price: 790000,
-      image: "/images/clutch-bag-1.jpg",
-      category: "MINI BAGS",
-      releaseDate: "2024-01-15",
-      isHot: true,
-    },
-    {
-      id: 2,
-      name: "STOCKHOLM TOTE",
-      price: 1590000,
-      image: "/images/tote-bag-1.jpg",
-      category: "TOTE BAGS",
-      releaseDate: "2024-01-10",
-      isHot: false,
-    },
-    {
-      id: 3,
-      name: "COPENHAGEN CROSSBODY",
-      price: 990000,
-      image: "/images/crossbody-bag-1.jpg",
-      category: "CROSSBODY",
-      releaseDate: "2024-01-08",
-      isHot: true,
-    },
-  ]
+  const [newArrivals, setNewArrivals] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchNewProducts = async () => {
+      try {
+        const { data } = await getProducts()
+        setNewArrivals(data)
+      } catch (error) {
+        console.error("Error fetching new products:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchNewProducts()
+  }, [])
 
   // Format price in VND
   const formatPrice = (price: number) => {
@@ -44,7 +38,7 @@ export default function NewPage() {
       minimumFractionDigits: 0,
     }).format(price)
   }
-
+  
   // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("vi-VN", {
@@ -77,40 +71,71 @@ export default function NewPage() {
             <p className="text-lg text-gray-600">Just dropped - our newest designs</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
-            {newArrivals.map((item) => (
-              <div key={item.id} className="group">
-                <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-gray-100">
-                  {item.isHot && (
-                    <Badge className="absolute top-4 left-4 z-10 bg-red-500 text-white hover:bg-red-600 text-xs tracking-wider">
-                      HOT
-                    </Badge>
-                  )}
-                  <Badge className="absolute top-4 right-4 z-10 bg-black text-white hover:bg-gray-800 text-xs tracking-wider">
-                    NEW
-                  </Badge>
-                  <Image
-                    src={item.image || "/placeholder.svg"}
-                    alt={item.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <Calendar className="h-3 w-3" />
-                    <span>{formatDate(item.releaseDate)}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">{item.category}</p>
-                  <h3 className="text-lg font-bold tracking-tight uppercase group-hover:text-gray-600 transition-colors">
-                    {item.name}
-                  </h3>
-                  <div className="text-lg font-bold text-black">{formatPrice(item.price)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          {loading ? (
+            <Loading />
+          ) : (
+            <div className="grid md:grid-cols-3 gap-8 mb-16">
+              {newArrivals.map((product) => {
+                if(product.is_new === true){
+                  const mainImage = product.images?.[0]
+                  const imageUrl = mainImage ? getImageUrl(mainImage.image_path) : "/placeholder.svg"
+  
+                  return (
+                    <Link key={product.id} href={`/products/${product.id}`} className="group">
+                      <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-gray-100">
+                        {product.is_featured && (
+                          <Badge className="absolute top-4 left-4 z-10 bg-red-500 text-white hover:bg-red-600 text-xs tracking-wider">
+                            HOT
+                          </Badge>
+                        )}
+                        {product.is_new && (
+                          <Badge className="absolute top-4 right-4 z-10 bg-black text-white hover:bg-gray-800 text-xs tracking-wider">
+                            NEW
+                          </Badge>
+                        )}
+                        <Image
+                          src={imageUrl || "/placeholder.svg"}
+                          alt={product.name}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Calendar className="h-3 w-3" />
+                          <span>{product?.created_at ? formatDate(product.created_at) : ""}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+                          {product.category?.name || "UNCATEGORIZED"}
+                        </p>
+                        <h3 className="text-lg font-bold tracking-tight uppercase group-hover:text-gray-600 transition-colors">
+                          {product.name}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg font-bold text-black">
+                            {product.formatted_price || formatPrice(product.price)}
+                          </span>
+                          {product.original_price && product.original_price > product.price && (
+                            <span className="text-sm text-gray-500 line-through">
+                              {formatPrice(product.original_price)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                }
+                
+              })}
+            </div>
+          )}
+
+          {newArrivals.length === 0 && !loading && (
+            <div className="text-center py-16">
+              <p className="text-gray-500 text-lg">Chưa có sản phẩm mới nào</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -124,7 +149,7 @@ export default function NewPage() {
             <p className="text-lg text-gray-600">Complete collection of our latest designs</p>
           </div>
 
-          <ProductGridEnhanced />
+          <ProductGridEnhanced products={newArrivals} />
 
           <div className="text-center mt-16">
             <Link href="/products">

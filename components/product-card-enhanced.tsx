@@ -41,7 +41,7 @@ export default function ProductCardEnhanced({ product, effectActive = true, vari
 
   return (
     <div className="group">
-      <Link href={`/products/${product.slug}`}>
+      <Link href={`/products/${product.id}`}>
         <div
           className="relative aspect-[3/4] mb-6 overflow-hidden bg-gray-100 product-hover-effect"
           onMouseEnter={() => setIsHovered(true)}

@@ -1,46 +1,8 @@
 // Authentication utilities and API calls
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+import { User } from "@/type"
+import { AuthResponse, LoginRequest, RegisterRequest } from "@/type/auth"
 import { getCookie, setCookie, deleteCookie } from "cookies-next"
-export interface User {
-  id: number
-  email: string
-  name: string
-  role: string
-  phone?: string
-  email_verified_at?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface LoginRequest {
-  email: string
-  password: string
-}
-
-export interface RegisterRequest {
-  name: string
-  email: string
-  phone?: string
-  password: string
-  password_confirmation: string
-}
-
-export interface AuthResponse {
-  success: boolean
-  data: {
-    user: User
-    token: string
-    token_type: string
-    expires_in: number
-  }
-  message: string
-}
-
-export interface ApiError {
-  success: false
-  message: string
-  errors?: Record<string, string[]>
-}
 
 // Login API call
 export async function login(credentials: LoginRequest): Promise<AuthResponse> {
