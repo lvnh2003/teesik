@@ -4,30 +4,28 @@ import { Heart, ShoppingCart } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Product } from "@/type/product"
+import { getImageUrl } from "@/lib/admin-api"
 
 interface ProductCardProps {
-  product: {
-    id: number
-    name: string
-    price: number
-    originalPrice?: number
-    image: string
-    category: string
-    isNew?: boolean
-    discount?: number
-  }
+  product: Product
+  isSmall?: boolean
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, isSmall = true }: ProductCardProps) {
   return (
-    <div className="group relative bg-white rounded-lg shadow-sm overflow-hidden transition-all hover:shadow-md">
+    <div className={`group relative bg-white rounded-lg shadow-sm overflow-hidden transition-all hover:shadow-md ${isSmall == false ? 'w-[200px]':'' }`}>
       {product.isNew && <Badge className="absolute top-2 left-2 z-10 bg-blue-600">Mới</Badge>}
       {product.discount && product.discount > 0 && (
         <Badge className="absolute top-2 right-2 z-10 bg-red-500">-{product.discount}%</Badge>
       )}
       <div className="relative aspect-square overflow-hidden">
         <Image
-          src={product.image || "/placeholder.svg"}
+          src={
+            product.main_image
+              ? getImageUrl(`${product.main_image.image_path}`)
+              : "/placeholder.svg"
+          }
           alt={product.name}
           fill
           className="object-cover transition-transform group-hover:scale-105"
@@ -37,7 +35,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="flex gap-2">
             <Button size="sm" className="flex-1 bg-white text-gray-900 hover:bg-gray-100">
               <ShoppingCart className="h-4 w-4 mr-2" />
-              Thêm vào giỏ
+              { isSmall ? (
+                "Thêm vào giỏ"
+              ): null}
             </Button>
             <Button size="sm" variant="outline" className="bg-transparent border-white text-white hover:bg-white/20">
               <Heart className="h-4 w-4" />
@@ -47,13 +47,13 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </div>
       <div className="p-4">
-        <div className="text-sm text-gray-500 mb-1">{product.category}</div>
+        <div className="text-sm text-gray-500 mb-1">{product.category?.name}</div>
         <Link href={`/products/${product.id}`} className="block">
           <h3 className="font-medium text-lg mb-2 hover:text-blue-600 transition-colors">{product.name}</h3>
         </Link>
         <div className="flex items-center">
-          <span className="font-bold text-lg">${product.price}</span>
-          {product.originalPrice && <span className="text-gray-400 line-through ml-2">${product.originalPrice}</span>}
+          <span className="font-bold text-lg">{product.price}₫</span>
+          {product.originalPrice && <span className="text-gray-400 line-through ml-2">đ{product.originalPrice}</span>}
         </div>
       </div>
     </div>

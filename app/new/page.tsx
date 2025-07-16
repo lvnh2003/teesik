@@ -6,10 +6,10 @@ import Image from "next/image"
 import { ArrowRight, Calendar, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import ProductGridEnhanced from "@/components/product-grid-enhanced"
 import { getImageUrl, getProducts } from "@/lib/admin-api"
 import { Product } from "@/type/product"
 import Loading from "../loading"
+import ProductGrid from "@/components/product-grid"
 
 export default function NewPage() {
   const [newArrivals, setNewArrivals] = useState<Product[]>([])
@@ -77,7 +77,7 @@ export default function NewPage() {
             <div className="grid md:grid-cols-3 gap-8 mb-16">
               {newArrivals.map((product) => {
                 if(product.is_new === true){
-                  const mainImage = product.images?.[0]
+                  const mainImage = product?.main_image
                   const imageUrl = mainImage ? getImageUrl(mainImage.image_path) : "/placeholder.svg"
   
                   return (
@@ -149,7 +149,7 @@ export default function NewPage() {
             <p className="text-lg text-gray-600">Complete collection of our latest designs</p>
           </div>
 
-          <ProductGridEnhanced products={newArrivals} />
+          <ProductGrid products={newArrivals} />
 
           <div className="text-center mt-16">
             <Link href="/products">

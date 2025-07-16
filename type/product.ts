@@ -3,8 +3,6 @@ export interface Product {
     id: number
     name: string
     description: string
-    price: number
-    category_id: number
     category?: Category
     images?: ProductImage[] 
     is_new?: boolean
@@ -12,6 +10,7 @@ export interface Product {
     created_at?: string
     updated_at?: string
     variants?: ProductVariant[]
+    main_image?: ProductImage
     [key: string]: any
   }
   

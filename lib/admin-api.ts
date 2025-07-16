@@ -118,12 +118,6 @@ export async function deleteProduct(id: number): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>(`/admin/products/${id}`, "DELETE")
 }
 
-// ==================== Category API Functions ====================
-
-export async function getCategories(): Promise<{ data: Category[] }> {
-  return apiRequest<{ data: Category[] }>("/admin/categories")
-}
-
 // ==================== User API Functions ====================
 
 export async function getUsers(page = 1, limit = 10): Promise<{ data: User[]; meta: any }> {
@@ -163,4 +157,23 @@ export function getImageUrl(imagePath: string): string {
   // Otherwise, construct the full storage URL
   const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000"
   return `${baseUrl}/storage/${imagePath}`
+}
+// ==================== Category API Functions ====================
+
+export async function getCategories(): Promise<{ data: Category[] }> {
+  return apiRequest<{ data: Category[] }>("/admin/categories")
+}
+// New: Create Category
+export async function createCategory(
+  name: string,
+): Promise<{ data: Category }> {
+  return apiRequest<{ data: Category }>("/admin/categories", "POST", { name })
+}
+export async function updateCategory(id: number, categoryData: Partial<Category>): Promise<{ data : Category }> {
+  return apiRequest<{data: Category }>(`/admin/categories/${id}`, "PUT", categoryData)
+}
+
+// New: Delete Category
+export async function deleteCategory(id: number): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>(`/admin/categories/${id}`, "DELETE")
 }

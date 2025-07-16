@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
-import ProductCardEnhanced from "./product-card-enhanced"
 import { Product } from "@/type/product"
 import { getProducts } from "@/lib/admin-api"
+import ProductCard from "@/components/product-card"
 
 interface ProductSliderProps {
   products?: Product[]
@@ -83,7 +83,7 @@ export default function ProductSlider({ products: initialProducts, category_id}:
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {products.map((product) => (
-          <ProductCardEnhanced key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} isSmall={false} />
         ))}
       </div>
 
