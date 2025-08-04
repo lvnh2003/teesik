@@ -25,7 +25,7 @@ export default function ProductSlider({ products: initialProducts, category_id}:
       const fetchProducts = async () => {
         setLoading(true)
         try {
-          const { data } = await getProducts()
+          const { data } = await getProducts({category_id : category_id})
           setProducts(data)
         } catch (error) {
           console.error("Error fetching products for slider:", error)

@@ -18,7 +18,7 @@ export default function NewPage() {
   useEffect(() => {
     const fetchNewProducts = async () => {
       try {
-        const { data } = await getProducts()
+        const { data } = await getProducts({status:'new'})
         setNewArrivals(data)
       } catch (error) {
         console.error("Error fetching new products:", error)
@@ -54,7 +54,7 @@ export default function NewPage() {
       <section className="py-20 md:py-32 border-b border-gray-200">
         <div className="container px-4 mx-auto text-center">
           <Badge className="mb-6 bg-black text-white hover:bg-gray-800 text-xs tracking-wider">NEW ARRIVALS</Badge>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-black uppercase">What's New</h1>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-black uppercase">Whatưs New</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Discover our latest collection of premium handbags, fresh from our design studio
           </p>
@@ -76,7 +76,6 @@ export default function NewPage() {
           ) : (
             <div className="grid md:grid-cols-3 gap-8 mb-16">
               {newArrivals.map((product) => {
-                if(product.is_new === true){
                   const mainImage = product?.main_image
                   const imageUrl = mainImage ? getImageUrl(mainImage.image_path) : "/placeholder.svg"
   
@@ -125,7 +124,6 @@ export default function NewPage() {
                       </div>
                     </Link>
                   )
-                }
                 
               })}
             </div>

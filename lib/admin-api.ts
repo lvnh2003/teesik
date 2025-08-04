@@ -9,7 +9,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/a
 async function apiRequest<T>(
   endpoint: string,
   method = "GET",
-  data?: any,
+  data?: unknown,
   customHeaders: Record<string, string> = {},
 ): Promise<T> {
   const token = getAuthToken()
@@ -42,11 +42,31 @@ async function apiRequest<T>(
 }
 
 // ==================== Product API Functions ====================
+type ProductQueryParams = {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  category_id?: number | string;
+  status?: 'new' | 'featured' | 'active' | 'inactive' | 'out_of_stock' | 'low_stock';
+  sort_field?: 'name' | 'created_at' | 'updated_at';
+  sort_direction?: 'asc' | 'desc';
+};
+export async function getProducts(params: ProductQueryParams = {}): Promise<{
+  data: Product[];
+}> {
+  const query = new URLSearchParams();
 
-export async function getProducts(page = 1, limit = 10): Promise<{ data: Product[]; meta: any }> {
-  return apiRequest<{ data: Product[]; meta: any }>(`/admin/products?page=${page}&limit=${limit}`)
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, value.toString());
+    }
+  });
+
+  const queryString = query.toString();
+  const url = `/admin/products${queryString ? `?${queryString}` : ''}`;
+
+  return apiRequest<{ data: Product[] }>(url);
 }
-
 export async function getProduct(id: number): Promise<{ data: Product }> {
   return apiRequest<{ data: Product }>(`/admin/products/${id}`)
 }
@@ -120,8 +140,8 @@ export async function deleteProduct(id: number): Promise<{ success: boolean }> {
 
 // ==================== User API Functions ====================
 
-export async function getUsers(page = 1, limit = 10): Promise<{ data: User[]; meta: any }> {
-  return apiRequest<{ data: User[]; meta: any }>(`/admin/users?page=${page}&limit=${limit}`)
+export async function getUsers(page = 1, limit = 10): Promise<{ data: User[]}> {
+  return apiRequest<{ data: User[] }>(`/admin/users?page=${page}&limit=${limit}`)
 }
 
 export async function getUser(id: number): Promise<{ data: User }> {
@@ -150,12 +170,12 @@ export function getImageUrl(imagePath: string): string {
 
   // If it starts with /storage, it's already formatted
   if (imagePath.startsWith("/storage")) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000"
+    const baseUrl = API_BASE_URL.replace("/api", "") || "http://localhost:8000"
     return `${baseUrl}${imagePath}`
   }
 
   // Otherwise, construct the full storage URL
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:8000"
+  const baseUrl = API_BASE_URL.replace("/api", "") || "http://localhost:8000"
   return `${baseUrl}/storage/${imagePath}`
 }
 // ==================== Category API Functions ====================

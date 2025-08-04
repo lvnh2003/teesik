@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Menu, X, Search, ShoppingBag, User, ChevronDown } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
@@ -11,27 +11,38 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Input } from "@/components/ui/input"
 import LanguageSwitcher from "@/components/language-switcher"
 import { useAuth } from "@/contexts/auth-context"
+import { Category } from "@/type/product"
+import { getCategories } from "@/lib/admin-api"
 
 export default function MainNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchValue, setSearchValue] = useState("")
   const { t } = useLanguage()
   const { user, isLoggedIn, logout } = useAuth()
+  const [categories, setCategories] = useState<Category[]>([])
 
+  useEffect(() => {
+    const fetchData = async (): Promise<void> => {
+      try {
+        const response = await getCategories();
+        if (response.data) {
+          setCategories(response.data);
+        }
+      } catch (error) {
+        console.log(error);
+        
+      }
+    }
+    fetchData()
+  },[])
+  
   const mainNavItems = [
     { label: t("nav.new"), href: "/new" },
     {
       label: "PRODUCTS",
       href: "/products",
       hasDropdown: true,
-      dropdownItems: [
-        { label: "Túi Đeo Chéo", href: "/products?category=crossbody" },
-        { label: "Balo", href: "/products?category=backpacks" },
-        { label: "Túi Tote", href: "/products?category=tote-bags" },
-        { label: "Túi Clutch", href: "/products?category=clutches" },
-        { label: "Túi Đeo Vai", href: "/products?category=shoulder-bags" },
-        { label: "Túi Messenger", href: "/products?category=messenger" },
-      ],
+      dropdownItems: categories
     },
     { label: t("nav.collections"), href: "/collections" },
     { label: t("nav.about"), href: "/about" },
@@ -70,13 +81,13 @@ export default function MainNav() {
                     </Link>
                     {item.hasDropdown && item.dropdownItems && (
                       <div className="ml-4 mt-4 space-y-3">
-                        {item.dropdownItems.map((dropdownItem) => (
+                        {item.dropdownItems.map((dropdownItem: Category) => (
                           <Link
-                            key={dropdownItem.href}
-                            href={dropdownItem.href}
+                            key={`/products?category=${dropdownItem.id}`}
+                            href={`/products?category=${dropdownItem.slug}`}
                             className="block text-sm text-gray-600 hover:text-black transition-colors"
                           >
-                            {dropdownItem.label}
+                            {dropdownItem.name}
                           </Link>
                         ))}
                       </div>
@@ -108,13 +119,13 @@ export default function MainNav() {
                     </Link>
                     {/* Hover Dropdown */}
                     <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                      {item.dropdownItems?.map((dropdownItem) => (
+                      {item.dropdownItems?.map((dropdownItem : Category) => (
                         <Link
-                          key={dropdownItem.href}
-                          href={dropdownItem.href}
+                          key={`/products?category=${dropdownItem.id}`}
+                          href={`/products?category=${dropdownItem.slug}`}
                           className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors border-b border-gray-100 last:border-b-0"
                         >
-                          {dropdownItem.label}
+                          {dropdownItem.name}
                         </Link>
                       ))}
                     </div>

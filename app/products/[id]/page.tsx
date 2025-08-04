@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import ProductSlider from "@/components/product-slider"
 import { getImageUrl, getProduct } from "@/lib/admin-api"
 import type { Product, ProductImage, ProductVariant } from "@/type/product"
-import Loading from "@/app/loading"
+import Loading from "@/app/(site)/loading"
 import { useParams } from "next/navigation";
 export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)

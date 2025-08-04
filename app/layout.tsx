@@ -1,17 +1,13 @@
+"use client"
 import type React from "react"
-import { Inter, Playfair_Display } from "next/font/google"
+import { Playfair_Display } from "next/font/google"
 import "@/app/globals.css"
 import { LanguageProvider } from "@/contexts/language-context"
 import MainNav from "@/components/main-nav"
 import Footer from "@/components/footer"
 import { inter } from "@/lib/fonts"
 import { AuthProvider } from "@/contexts/auth-context"
-// // Định nghĩa font Inter
-// const inter = Inter({
-//   subsets: ["latin"],
-//   display: "swap",
-//   variable: "--font-inter",
-// })
+import { usePathname } from "next/navigation"
 
 // Định nghĩa font Playfair Display
 const playfair = Playfair_Display({
@@ -20,24 +16,22 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 })
 
-export const metadata = {
-  title: "TEESIK - Túi xách thời trang cao cấp & Dropshipping",
-  description: "Cung cấp túi xách thời trang cao cấp và giải pháp dropshipping toàn cầu",
-}
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const pathname = usePathname()
+
+  const isAdminRoute = pathname?.startsWith("/admin")
   return (
     <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${playfair.variable}`}>
       <body suppressHydrationWarning>
         <AuthProvider>
           <LanguageProvider>
-            <MainNav />
+          {!isAdminRoute && <MainNav />}
             <main>{children}</main>
-            <Footer />
+            {!isAdminRoute && <Footer />}
           </LanguageProvider>
         </AuthProvider>
       </body>
