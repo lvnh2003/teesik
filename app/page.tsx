@@ -13,10 +13,31 @@ import NewsletterSection from "@/components/newsletter-section"
 import AnnouncementBar from "@/components/announcement-bar"
 import HeroSection from "@/components/hero-section"
 import BrandStats from "@/components/brand-stats"
+import { useEffect, useState } from "react"
+import { getProducts } from "@/lib/admin-api"
+import Loading from "./loading"
+import { Product } from "@/type/product"
 
 export default function Home() {
   const { t } = useLanguage()
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await getProducts(1, 6) // Get first 6 products for homepage
+        setProducts(response.data)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+        // Fallback to empty array if API fails
+        setProducts([])
+      } finally {
+        setLoading(false)
+      }
+    }
 
+    fetchProducts()
+  }, [])
   return (
     <div className="flex flex-col min-h-screen bg-white">
       {/* Announcement Bar */}
@@ -38,8 +59,13 @@ export default function Home() {
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">{t("common.discoverNewest")}</p>
           </div>
-
-          <ProductGrid />
+          {loading ? (
+            <Loading/>
+          ):
+          (
+            <ProductGrid products={products}/>
+          )}
+          
 
           <div className="text-center mt-16">
             <Link href="/products">

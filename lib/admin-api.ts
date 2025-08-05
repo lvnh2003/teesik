@@ -1,5 +1,7 @@
 // API utilities for admin operations
+import { Category, Product, ProductFormData } from "@/type/product"
 import { getAuthToken } from "./auth"
+import { DashboardStats, User } from "@/type"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -7,7 +9,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/a
 async function apiRequest<T>(
   endpoint: string,
   method = "GET",
-  data?: any,
+  data?: unknown,
   customHeaders: Record<string, string> = {},
 ): Promise<T> {
   const token = getAuthToken()
@@ -39,92 +41,32 @@ async function apiRequest<T>(
   return responseData
 }
 
-// Product Types
-export interface Product {
-  id: number
-  name: string
-  description: string
-  price: number
-  original_price?: number
-  category_id: number
-  category?: Category
-  images?: ProductImage[] 
-  is_new?: boolean
-  is_featured?: boolean
-  stock_quantity?: number
-  created_at?: string
-  updated_at?: string
-  variants?: ProductVariant[]
-  [key: string]: any
-}
+// ==================== Product API Functions ====================
+type ProductQueryParams = {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  category_id?: number | string;
+  status?: 'new' | 'featured' | 'active' | 'inactive' | 'out_of_stock' | 'low_stock';
+  sort_field?: 'name' | 'created_at' | 'updated_at';
+  sort_direction?: 'asc' | 'desc';
+};
+export async function getProducts(params: ProductQueryParams = {}): Promise<{
+  data: Product[];
+}> {
+  const query = new URLSearchParams();
 
-export interface ProductVariant {
-  id: number
-  sku: string
-  price: number
-  original_price?: number
-  stock_quantity: number
-  attributes: Record<string, string>
-  images?: (File | ProductImage)[] 
-  image: File | null
-  imagePreviewUrl: string
-  product_id: number
-  isDelete: boolean
-}
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query.append(key, value.toString());
+    }
+  });
 
-export interface ProductImage {
-  id: number
-  product_id: number
-  image_path: string
-  alt_text: string
-  product_variant_id: number
-}
+  const queryString = query.toString();
+  const url = `/admin/products${queryString ? `?${queryString}` : ''}`;
 
-export interface Category {
-  id: number
-  name: string
-  slug: string
+  return apiRequest<{ data: Product[] }>(url);
 }
-
-export interface ProductFormData {
-  name: string
-  description: string
-  price: number
-  original_price?: number
-  category_id: number
-  is_new?: boolean
-  is_featured?: boolean
-  stock_quantity: number
-  sku: string
-  images?: File[]
-  variants?: {
-    sku: string
-    price: number
-    original_price?: number
-    stock_quantity: number
-    attributes: Record<string, string>
-    images: File[]
-  }[]
-}
-
-// User Types
-export interface AdminUser {
-  id: number
-  first_name: string
-  last_name: string
-  email: string
-  phone?: string
-  role: string
-  email_verified_at?: string
-  created_at: string
-  updated_at: string
-}
-
-// Product API Functions
-export async function getProducts(page = 1, limit = 10): Promise<{ data: Product[]; meta: any }> {
-  return apiRequest<{ data: Product[]; meta: any }>(`/admin/products?page=${page}&limit=${limit}`)
-}
-
 export async function getProduct(id: number): Promise<{ data: Product }> {
   return apiRequest<{ data: Product }>(`/admin/products/${id}`)
 }
@@ -171,69 +113,6 @@ export async function createProduct(productData: ProductFormData): Promise<{ dat
   return apiRequest<{ data: Product }>("/admin/products", "POST", productData)
 }
 
-
-export async function deleteProduct(id: number): Promise<{ success: boolean }> {
-  return apiRequest<{ success: boolean }>(`/admin/products/${id}`, "DELETE")
-}
-
-// Category API Functions
-export async function getCategories(): Promise<{ data: Category[] }> {
-  return apiRequest<{ data: Category[] }>("/admin/categories")
-}
-
-// User API Functions
-export async function getUsers(page = 1, limit = 10): Promise<{ data: AdminUser[]; meta: any }> {
-  return apiRequest<{ data: AdminUser[]; meta: any }>(`/admin/users?page=${page}&limit=${limit}`)
-}
-
-export async function getUser(id: number): Promise<{ data: AdminUser }> {
-  return apiRequest<{ data: AdminUser }>(`/admin/users/${id}`)
-}
-
-export async function updateUser(id: number, userData: Partial<AdminUser>): Promise<{ data: AdminUser }> {
-  return apiRequest<{ data: AdminUser }>(`/admin/users/${id}`, "PUT", userData)
-}
-
-export async function deleteUser(id: number): Promise<{ success: boolean }> {
-  return apiRequest<{ success: boolean }>(`/admin/users/${id}`, "DELETE")
-}
-
-// Dashboard Stats
-export interface DashboardStats {
-  total_products: number
-  total_users: number
-  total_orders: number
-  recent_orders: any[]
-  revenue: {
-    daily: number
-    weekly: number
-    monthly: number
-  }
-}
-
-export async function getDashboardStats(): Promise<{ data: DashboardStats }> {
-  return apiRequest<{ data: DashboardStats }>("/admin/dashboard")
-}
-
-export async function getProductById(productId: number) {
-  const token = getAuthToken()
-  if (!token) throw new Error("Authentication required")
-
-  const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
-  if (!response.ok) {
-    const errorData = await response.json()
-    throw new Error(errorData.message || "Failed to get product")
-  }
-
-  return await response.json()
-}
-
 export async function updateProduct(productId: number, formData: FormData) {
   const token = getAuthToken()
   if (!token) throw new Error("Authentication required")
@@ -253,4 +132,68 @@ export async function updateProduct(productId: number, formData: FormData) {
   }
 
   return await response.json()
+}
+
+export async function deleteProduct(id: number): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>(`/admin/products/${id}`, "DELETE")
+}
+
+// ==================== User API Functions ====================
+
+export async function getUsers(page = 1, limit = 10): Promise<{ data: User[]}> {
+  return apiRequest<{ data: User[] }>(`/admin/users?page=${page}&limit=${limit}`)
+}
+
+export async function getUser(id: number): Promise<{ data: User }> {
+  return apiRequest<{ data: User }>(`/admin/users/${id}`)
+}
+
+export async function updateUser(id: number, userData: Partial<User>): Promise<{ data: User }> {
+  return apiRequest<{ data: User }>(`/admin/users/${id}`, "PUT", userData)
+}
+
+export async function deleteUser(id: number): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>(`/admin/users/${id}`, "DELETE")
+}
+
+// ==================== Dashboard Stats API Functions ====================
+
+export async function getDashboardStats(): Promise<{ data: DashboardStats }> {
+  return apiRequest<{ data: DashboardStats }>("/admin/dashboard")
+}
+
+export function getImageUrl(imagePath: string): string {
+  if (!imagePath) return "/placeholder.svg?height=400&width=400"
+
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith("http")) return imagePath
+
+  // If it starts with /storage, it's already formatted
+  if (imagePath.startsWith("/storage")) {
+    const baseUrl = API_BASE_URL.replace("/api", "") || "http://localhost:8000"
+    return `${baseUrl}${imagePath}`
+  }
+
+  // Otherwise, construct the full storage URL
+  const baseUrl = API_BASE_URL.replace("/api", "") || "http://localhost:8000"
+  return `${baseUrl}/storage/${imagePath}`
+}
+// ==================== Category API Functions ====================
+
+export async function getCategories(): Promise<{ data: Category[] }> {
+  return apiRequest<{ data: Category[] }>("/admin/categories")
+}
+// New: Create Category
+export async function createCategory(
+  name: string,
+): Promise<{ data: Category }> {
+  return apiRequest<{ data: Category }>("/admin/categories", "POST", { name })
+}
+export async function updateCategory(id: number, categoryData: Partial<Category>): Promise<{ data : Category }> {
+  return apiRequest<{data: Category }>(`/admin/categories/${id}`, "PUT", categoryData)
+}
+
+// New: Delete Category
+export async function deleteCategory(id: number): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>(`/admin/categories/${id}`, "DELETE")
 }

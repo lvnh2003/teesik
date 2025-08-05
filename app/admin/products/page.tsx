@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useAdminAuth } from "@/lib/admin-auth"
-import { getProducts, deleteProduct, duplicateProduct, getProductById, type Product } from "@/lib/admin-api"
+import { getProducts, deleteProduct, getProduct } from "@/lib/admin-api"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -47,6 +47,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import { ProductPreviewModal } from "@/components/product-preview-modal"
 import { useToast } from "@/components/ui/use-toast"
+import { Product } from "@/type/product"
 
 export default function ProductsPage() {
   const { checkAuth } = useAdminAuth()
@@ -133,8 +134,8 @@ export default function ProductsPage() {
   const handlePreviewProduct = async (productId: number) => {
     setLoadingProductId(productId)
     try {
-      const response = await getProductById(productId)
-      if (response.success && response.data) {
+      const response = await getProduct(productId)
+      if (response.data) {
         setSelectedProduct(response.data)
         setPreviewModalOpen(true)
       }
@@ -150,28 +151,28 @@ export default function ProductsPage() {
   }
 
   // Xử lý nhân bản sản phẩm
-  const handleDuplicateProduct = async (productId: number) => {
-    setDuplicatingProductId(productId)
-    try {
-      const response = await duplicateProduct(productId)
-      if (response.success && response.data) {
-        // Thêm sản phẩm mới vào danh sách
-        setProducts([response.data, ...products])
-        toast({
-          title: "Nhân bản thành công",
-          description: "Sản phẩm đã được nhân bản thành công",
-        })
-      }
-    } catch (err: any) {
-      toast({
-        title: "Lỗi",
-        description: err.message || "Không thể nhân bản sản phẩm",
-        variant: "destructive",
-      })
-    } finally {
-      setDuplicatingProductId(null)
-    }
-  }
+  // const handleDuplicateProduct = async (productId: number) => {
+  //   setDuplicatingProductId(productId)
+  //   try {
+  //     const response = await duplicateProduct(productId)
+  //     if (response.success && response.data) {
+  //       // Thêm sản phẩm mới vào danh sách
+  //       setProducts([response.data, ...products])
+  //       toast({
+  //         title: "Nhân bản thành công",
+  //         description: "Sản phẩm đã được nhân bản thành công",
+  //       })
+  //     }
+  //   } catch (err: any) {
+  //     toast({
+  //       title: "Lỗi",
+  //       description: err.message || "Không thể nhân bản sản phẩm",
+  //       variant: "destructive",
+  //     })
+  //   } finally {
+  //     setDuplicatingProductId(null)
+  //   }
+  // }
 
   const sortedProducts = [...products].sort((a, b) => {
     if (!sortField) return 0
@@ -515,7 +516,7 @@ export default function ProductsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
                             <DropdownMenuItem
-                              onClick={() => handleDuplicateProduct(product.id)}
+                              // onClick={() => handleDuplicateProduct(product.id)}
                               disabled={duplicatingProductId === product.id}
                             >
                               {duplicatingProductId === product.id ? (
