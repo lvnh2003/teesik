@@ -50,7 +50,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((currentItems) => {
       // Check if item with same product and variant already exists
       const existingItemIndex = currentItems.findIndex(
-        (item) => item.productId === newItem.productId && item.variant?.id === newItem.variant?.id,
+        (item) => item.productId === newItem.productId && 
+                  JSON.stringify(item.variant?.attributes) === JSON.stringify(newItem.variant?.attributes)
       )
 
       if (existingItemIndex > -1) {
@@ -83,7 +84,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([])
   }
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
+  // Count unique product types (not total quantity)
+  const totalItems = items.length
   const totalPrice = items.reduce(
     (sum, item) => sum + (item.variant?.price ? item.variant.price * item.quantity : 0),
     0

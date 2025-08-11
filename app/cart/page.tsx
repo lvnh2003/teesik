@@ -127,7 +127,7 @@ export default function CartPage() {
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-black uppercase">Giỏ hàng của bạn</h1>
           <p className="text-xl text-gray-600">Kiểm tra sản phẩm và tiến hành thanh toán</p>
           <p className="text-sm text-gray-500 mt-2">
-            {totalItems} {totalItems === 1 ? "sản phẩm" : "sản phẩm"} trong giỏ hàng
+            {totalItems} {totalItems === 1 ? "loại sản phẩm" : "loại sản phẩm"} trong giỏ hàng
           </p>
         </div>
       </section>
@@ -237,7 +237,7 @@ export default function CartPage() {
 
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between">
-                  <span>Tạm tính ({totalItems} sản phẩm)</span>
+                  <span>Tạm tính ({totalItems} loại sản phẩm)</span>
                   <span className="font-medium">{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
