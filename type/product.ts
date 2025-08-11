@@ -11,7 +11,6 @@ export interface Product {
     updated_at?: string
     variants?: ProductVariant[]
     main_image?: ProductImage
-    [key: string]: any
   }
   
   export interface ProductVariant {

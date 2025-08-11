@@ -8,6 +8,7 @@ import Footer from "@/components/footer"
 import { inter } from "@/lib/fonts"
 import { AuthProvider } from "@/contexts/auth-context"
 import { usePathname } from "next/navigation"
+import { CartProvider } from "@/contexts/cart-context"
 
 // Định nghĩa font Playfair Display
 const playfair = Playfair_Display({
@@ -27,13 +28,15 @@ export default function RootLayout({
   return (
     <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${playfair.variable}`}>
       <body suppressHydrationWarning>
+      <LanguageProvider>
         <AuthProvider>
-          <LanguageProvider>
-          {!isAdminRoute && <MainNav />}
-            <main>{children}</main>
+          <CartProvider>
+            {!isAdminRoute && <MainNav />}
+              <main>{children}</main>
             {!isAdminRoute && <Footer />}
-          </LanguageProvider>
+          </CartProvider>
         </AuthProvider>
+      </LanguageProvider>
       </body>
     </html>
   )

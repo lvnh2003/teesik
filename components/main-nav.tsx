@@ -13,6 +13,7 @@ import LanguageSwitcher from "@/components/language-switcher"
 import { useAuth } from "@/contexts/auth-context"
 import { Category } from "@/type/product"
 import { getCategories } from "@/lib/admin-api"
+import { useCart } from "@/contexts/cart-context"
 
 export default function MainNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -20,7 +21,7 @@ export default function MainNav() {
   const { t } = useLanguage()
   const { user, isLoggedIn, logout } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
-
+  const { totalItems } = useCart()
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
       try {
@@ -217,9 +218,11 @@ export default function MainNav() {
             <Link href="/cart">
               <Button variant="ghost" size="icon" className="relative text-black hover:bg-gray-100">
                 <ShoppingBag className="h-5 w-5" />
+                {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  3
+                    {totalItems > 99 ? "99+" : totalItems}
                 </span>
+                )}
                 <span className="sr-only">Cart</span>
               </Button>
             </Link>

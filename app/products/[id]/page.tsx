@@ -11,8 +11,10 @@ import { Badge } from "@/components/ui/badge"
 import ProductSlider from "@/components/product-slider"
 import { getImageUrl, getProduct } from "@/lib/admin-api"
 import type { Product, ProductImage, ProductVariant } from "@/type/product"
-import Loading from "@/app/(site)/loading"
+import Loading from "@/app/loading"
 import { useParams } from "next/navigation";
+import { CartItem } from "@/type/cart"
+import { useCart } from "@/contexts/cart-context"
 export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
@@ -20,7 +22,8 @@ export default function ProductPage() {
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({})
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]) 
+  const { addToCart } = useCart()
+  
   const params = useParams();
   const id = params.id as string
   useEffect(() => {
@@ -50,7 +53,8 @@ export default function ProductPage() {
 
     fetchProduct()
   }, [])
-
+  console.log("products",product);
+  
   // Reset image index when variant changes
   useEffect(() => {
     setSelectedImageIndex(0)
@@ -59,7 +63,7 @@ export default function ProductPage() {
     try {
       const parsed = JSON.parse(raw);
       return parsed?.value || raw;
-    } catch (e) {
+    } catch {
       // Trường hợp không phải JSON hợp lệ → trả nguyên
       return raw;
     }
@@ -135,7 +139,6 @@ export default function ProductPage() {
       (img, index, self) => img && img.image_path && index === self.findIndex((i) => i.image_path === img.image_path),
     )
 
-    console.log("Display images:", uniqueImages)
     return uniqueImages
   }
 
@@ -149,8 +152,17 @@ export default function ProductPage() {
     (acc, variant) => {
       if (variant.attributes) {
         Object.entries(variant.attributes).forEach(([key, value]) => {
-          if (!acc[key]) acc[key] = new Set()
-          acc[key].add(value)
+          // Parse the JSON to get the actual attribute name
+          try {
+            const parsed = JSON.parse(value)
+            const attributeName = parsed.name || key
+            if (!acc[attributeName]) acc[attributeName] = new Set()
+            acc[attributeName].add(value)
+          } catch {
+            // If not JSON, use the key as attribute name
+            if (!acc[key]) acc[key] = new Set()
+            acc[key].add(value)
+          }
         })
       }
       return acc
@@ -158,9 +170,28 @@ export default function ProductPage() {
     {} as { [key: string]: Set<string> },
   )
 
+  // Create a mapping from attribute names to their keys for variant lookup
+  const attributeKeyMapping = (product.variants || []).reduce(
+    (acc, variant) => {
+      if (variant.attributes) {
+        Object.entries(variant.attributes).forEach(([key, value]) => {
+          try {
+            const parsed = JSON.parse(value)
+            const attributeName = parsed.name || key
+            acc[attributeName] = key
+          } catch {
+            acc[key] = key
+          }
+        })
+      }
+      return acc
+    },
+    {} as { [key: string]: string },
+  )
+
   // Handle attribute selection
   const handleAttributeChange = (attributeName: string, value: string) => {
-    const newAttributes = { ...selectedAttributes, [attributeName]: value }
+    const newAttributes = { ...selectedAttributes, [attributeKeyMapping[attributeName]]: value }
     setSelectedAttributes(newAttributes)
 
     // Find matching variant
@@ -177,7 +208,7 @@ export default function ProductPage() {
 
   // Check if variant is available (has stock)
   const isVariantAvailable = (attributeName: string, value: string) => {
-    const testAttributes = { ...selectedAttributes, [attributeName]: value }
+    const testAttributes = { ...selectedAttributes, [attributeKeyMapping[attributeName]]: value }
     const matchingVariant = product.variants?.find((variant) => {
       if (!variant.attributes) return false
       return Object.entries(testAttributes).every(([key, val]) => variant.attributes[key] === val)
@@ -185,13 +216,34 @@ export default function ProductPage() {
     return matchingVariant && matchingVariant.stock_quantity > 0
   }
 
-  const currentPrice = selectedVariant?.price || product.price
-  const currentOriginalPrice = selectedVariant?.original_price || product.original_price
-  const currentStock = selectedVariant?.stock_quantity || product.stock_quantity || 0
+  const currentPrice = selectedVariant?.price || 0
+  const currentOriginalPrice = selectedVariant?.original_price || 0
+  const currentStock = selectedVariant?.stock_quantity || 0
   const discountPercentage =
     currentOriginalPrice && currentOriginalPrice > currentPrice
       ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100)
       : null
+
+  const handleAddToCart = async () => {
+
+    try {
+
+      const cartItem : CartItem = {
+        id: Date.now() + Math.random(),
+        productId: product.id,
+        userId: 1,
+        quantity: quantity,
+        variant: selectedVariant || undefined,
+      }
+
+      addToCart(cartItem)
+
+      // Small delay for UX feedback
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    } catch (error) {
+      console.error("Error adding to cart:", error)
+    }
+  }
 
   return (
     <div className="container px-4 mx-auto py-8 md:py-12">
@@ -283,7 +335,7 @@ export default function ProductPage() {
               <h3 className="font-semibold mb-3 text-lg capitalize">{attributeName}</h3>
               <div className="flex gap-2 flex-wrap">
                 {Array.from(values).map((value) => {
-                  const isSelected = selectedAttributes[attributeName] === value
+                  const isSelected = selectedAttributes[attributeKeyMapping[attributeName]] === value
                   const isAvailable = isVariantAvailable(attributeName, value)
 
                   return (
@@ -340,6 +392,7 @@ export default function ProductPage() {
               size="lg"
               className="bg-black hover:bg-neutral-800 text-white flex-1 h-14 text-lg font-semibold"
               disabled={currentStock === 0}
+              onClick={handleAddToCart}
             >
               <ShoppingBag className="mr-2 h-5 w-5" />
               {currentStock > 0 ? "THÊM VÀO GIỎ" : "HẾT HÀNG"}
@@ -389,7 +442,7 @@ export default function ProductPage() {
           {/* Product Meta */}
           <div className="space-y-2 text-sm text-gray-600">
             <p>
-              <span className="font-medium">SKU:</span> {selectedVariant?.sku || product.sku || "N/A"}
+              <span className="font-medium">SKU:</span> {selectedVariant?.sku || "N/A"}
             </p>
             <p>
               <span className="font-medium">Danh mục:</span> {product.category?.name || "Chưa phân loại"}
@@ -519,7 +572,7 @@ export default function ProductPage() {
       {/* Related Products */}
       <div className="mt-16">
         <h2 className="text-2xl font-bold mb-8">Sản phẩm liên quan</h2>
-        <ProductSlider category_id={product.category_id}/>
+        <ProductSlider category_id={product.category?.id || 0}/>
       </div>
     </div>
   )

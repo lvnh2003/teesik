@@ -2,44 +2,12 @@
 import { Category, Product, ProductFormData } from "@/type/product"
 import { getAuthToken } from "./auth"
 import { DashboardStats, User } from "@/type"
+import { apiRequest, apiRequestAdmin } from "./api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
 // Generic API request function with authentication
-async function apiRequest<T>(
-  endpoint: string,
-  method = "GET",
-  data?: unknown,
-  customHeaders: Record<string, string> = {},
-): Promise<T> {
-  const token = getAuthToken()
 
-  if (!token) {
-    throw new Error("Authentication required")
-  }
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    Authorization: `Bearer ${token}`,
-    ...customHeaders,
-  }
-
-  const config: RequestInit = {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-  }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
-  const responseData = await response.json()
-
-  if (!response.ok) {
-    throw new Error(responseData.message || `API request failed with status ${response.status}`)
-  }
-
-  return responseData
-}
 
 // ==================== Product API Functions ====================
 type ProductQueryParams = {
@@ -110,7 +78,7 @@ export async function createProduct(productData: ProductFormData): Promise<{ dat
   }
 
   // Regular JSON request if no images
-  return apiRequest<{ data: Product }>("/admin/products", "POST", productData)
+  return apiRequestAdmin<{ data: Product }>("/admin/products", "POST", productData)
 }
 
 export async function updateProduct(productId: number, formData: FormData) {
@@ -135,31 +103,31 @@ export async function updateProduct(productId: number, formData: FormData) {
 }
 
 export async function deleteProduct(id: number): Promise<{ success: boolean }> {
-  return apiRequest<{ success: boolean }>(`/admin/products/${id}`, "DELETE")
+  return apiRequestAdmin<{ success: boolean }>(`/admin/products/${id}`, "DELETE")
 }
 
 // ==================== User API Functions ====================
 
 export async function getUsers(page = 1, limit = 10): Promise<{ data: User[]}> {
-  return apiRequest<{ data: User[] }>(`/admin/users?page=${page}&limit=${limit}`)
+  return apiRequestAdmin<{ data: User[] }>(`/admin/users?page=${page}&limit=${limit}`)
 }
 
 export async function getUser(id: number): Promise<{ data: User }> {
-  return apiRequest<{ data: User }>(`/admin/users/${id}`)
+  return apiRequestAdmin<{ data: User }>(`/admin/users/${id}`)
 }
 
 export async function updateUser(id: number, userData: Partial<User>): Promise<{ data: User }> {
-  return apiRequest<{ data: User }>(`/admin/users/${id}`, "PUT", userData)
+  return apiRequestAdmin<{ data: User }>(`/admin/users/${id}`, "PUT", userData)
 }
 
 export async function deleteUser(id: number): Promise<{ success: boolean }> {
-  return apiRequest<{ success: boolean }>(`/admin/users/${id}`, "DELETE")
+  return apiRequestAdmin<{ success: boolean }>(`/admin/users/${id}`, "DELETE")
 }
 
 // ==================== Dashboard Stats API Functions ====================
 
 export async function getDashboardStats(): Promise<{ data: DashboardStats }> {
-  return apiRequest<{ data: DashboardStats }>("/admin/dashboard")
+  return apiRequestAdmin<{ data: DashboardStats }>("/admin/dashboard")
 }
 
 export function getImageUrl(imagePath: string): string {
@@ -190,10 +158,10 @@ export async function createCategory(
   return apiRequest<{ data: Category }>("/admin/categories", "POST", { name })
 }
 export async function updateCategory(id: number, categoryData: Partial<Category>): Promise<{ data : Category }> {
-  return apiRequest<{data: Category }>(`/admin/categories/${id}`, "PUT", categoryData)
+  return apiRequestAdmin<{data: Category }>(`/admin/categories/${id}`, "PUT", categoryData)
 }
 
 // New: Delete Category
 export async function deleteCategory(id: number): Promise<{ success: boolean }> {
-  return apiRequest<{ success: boolean }>(`/admin/categories/${id}`, "DELETE")
+  return apiRequestAdmin<{ success: boolean }>(`/admin/categories/${id}`, "DELETE")
 }
