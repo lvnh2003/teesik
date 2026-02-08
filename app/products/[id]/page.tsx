@@ -6,28 +6,33 @@ import Link from "next/link"
 import { ChevronRight, Minus, Plus, Heart, Share2, ShoppingBag, Truck, RotateCcw, Shield, Check } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import ProductSlider from "@/components/product-slider"
 import { getImageUrl, getProduct } from "@/lib/admin-api"
 import type { Product, ProductImage, ProductVariant } from "@/type/product"
-import Loading from "@/app/(site)/loading"
+import Loading from "@/app/loading"
 import { useParams } from "next/navigation";
+import { motion } from "framer-motion"
+import { useLanguage } from "@/contexts/language-context"
+
 export default function ProductPage() {
+  const { t } = useLanguage()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({})
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]) 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const params = useParams();
   const id = params.id as string
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const { data: productData } = await getProduct(Number(id))
-        console.log("Product data received:", productData)
         setProduct(productData)
 
         // Set default variant and attributes
@@ -49,7 +54,7 @@ export default function ProductPage() {
     }
 
     fetchProduct()
-  }, [])
+  }, [id])
 
   // Reset image index when variant changes
   useEffect(() => {
@@ -67,16 +72,16 @@ export default function ProductPage() {
 
   if (loading) {
     return (
-      <Loading/>
+      <Loading />
     )
   }
 
   if (!product) {
     return (
-      <div className="container px-4 mx-auto py-8 md:py-12 text-center">
-        <h1 className="text-2xl font-bold mb-4">Không tìm thấy sản phẩm</h1>
+      <div className="container px-4 mx-auto py-32 text-center min-h-screen flex flex-col items-center justify-center">
+        <h1 className="text-4xl font-black mb-6 uppercase tracking-tighter">{t("product.notFound")}</h1>
         <Link href="/products">
-          <Button>Quay lại danh sách sản phẩm</Button>
+          <Button className="rounded-none bg-black text-white px-8 py-6 text-lg uppercase font-bold tracking-widest">{t("product.returnToCollection")}</Button>
         </Link>
       </div>
     )
@@ -135,14 +140,13 @@ export default function ProductPage() {
       (img, index, self) => img && img.image_path && index === self.findIndex((i) => i.image_path === img.image_path),
     )
 
-    console.log("Display images:", uniqueImages)
     return uniqueImages
   }
 
   const displayImages = getDisplayImages()
-  const currentImage = displayImages[selectedImageIndex]?.image_path
-    ? getImageUrl(displayImages[selectedImageIndex].image_path)
-    : "/placeholder.svg?height=600&width=600"
+  const displayImagePaths = displayImages.length > 0
+    ? displayImages.map(img => getImageUrl(img.image_path))
+    : ["/placeholder.svg?height=1000&width=800"]
 
   // Get unique attributes from all variants
   const attributeOptions = (product.variants || []).reduce(
@@ -188,338 +192,187 @@ export default function ProductPage() {
   const currentPrice = selectedVariant?.price || product.price
   const currentOriginalPrice = selectedVariant?.original_price || product.original_price
   const currentStock = selectedVariant?.stock_quantity || product.stock_quantity || 0
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const discountPercentage =
     currentOriginalPrice && currentOriginalPrice > currentPrice
       ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100)
       : null
 
   return (
-    <div className="container px-4 mx-auto py-8 md:py-12">
-      {/* Breadcrumbs */}
-      <nav className="flex items-center text-sm mb-8">
-        <Link href="/" className="text-gray-500 hover:text-black">
-          Trang chủ
-        </Link>
-        <ChevronRight className="h-4 w-4 mx-2 text-gray-400" />
-        <Link href="/products" className="text-gray-500 hover:text-black">
-          Sản phẩm
-        </Link>
-        <ChevronRight className="h-4 w-4 mx-2 text-gray-400" />
-        <span className="font-medium">{product.name}</span>
-      </nav>
+    <div className="bg-white min-h-screen pb-20">
+      <div className="container px-4 md:px-8 mx-auto pt-32">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center text-xs uppercase tracking-widest mb-12 text-gray-500">
+          <Link href="/" className="hover:text-black transition-colors">{t("nav.home")}</Link>
+          <ChevronRight className="h-3 w-3 mx-2" />
+          <Link href="/products" className="hover:text-black transition-colors">{t("products.title")}</Link>
+          <ChevronRight className="h-3 w-3 mx-2" />
+          <span className="text-black font-bold truncate max-w-[200px]">{product.name}</span>
+        </nav>
 
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-        {/* Product Images */}
-        <div className="space-y-4">
-          <div className="relative aspect-square bg-neutral-100 rounded-lg overflow-hidden">
-            <Image
-              src={currentImage || "/placeholder.svg"}
-              alt={displayImages[selectedImageIndex]?.alt_text || product.name}
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute top-4 left-4 flex gap-2">
-              {product.is_new && <Badge className="bg-black text-white hover:bg-black">NEW</Badge>}
-              {discountPercentage && (
-                <Badge className="bg-red-500 text-white hover:bg-red-500">-{discountPercentage}%</Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Image Thumbnails */}
-          {displayImages.length > 1 && (
-            <div className="grid grid-cols-4 gap-4">
-              {displayImages.map((image, index) => (
-                <div
-                  key={`${image.id}-${index}`}
-                  className={`relative aspect-square bg-neutral-100 cursor-pointer border-2 rounded-lg overflow-hidden transition-all ${
-                    selectedImageIndex === index ? "border-black" : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onClick={() => setSelectedImageIndex(index)}
-                >
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
+          {/* Product Images - Sticky Grid */}
+          <div className="lg:col-span-7">
+            <div className="grid gap-4">
+              {displayImagePaths.map((src, index) => (
+                <div key={index} className="relative aspect-[3/4] bg-[#F0F0F0] overflow-hidden w-full">
                   <Image
-                    src={getImageUrl(image.image_path) || "/placeholder.svg"}
-                    alt={image.alt_text || product.name}
+                    src={src}
+                    alt={`${product.name} - View ${index + 1}`}
                     fill
                     className="object-cover"
+                    priority={index === 0}
                   />
                 </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Product Info */}
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">{product.name}</h1>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl font-bold text-black">{formatPrice(currentPrice)}</span>
-              {currentOriginalPrice && currentOriginalPrice > currentPrice && (
-                <span className="text-xl text-gray-500 line-through">{formatPrice(currentOriginalPrice)}</span>
-              )}
-            </div>
-
-            {/* Stock Status */}
-            <div className="flex items-center gap-2 mb-4">
-              {currentStock > 0 ? (
-                <>
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-600 font-medium">Còn hàng ({currentStock} sản phẩm)</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <span className="text-red-600 font-medium">Hết hàng</span>
-                </>
-              )}
-            </div>
           </div>
 
-          {/* Attributes Selection */}
-          {Object.entries(attributeOptions).map(([attributeName, values]) => (
-            <div key={attributeName}>
-              <h3 className="font-semibold mb-3 text-lg capitalize">{attributeName}</h3>
-              <div className="flex gap-2 flex-wrap">
-                {Array.from(values).map((value) => {
-                  const isSelected = selectedAttributes[attributeName] === value
-                  const isAvailable = isVariantAvailable(attributeName, value)
-
-                  return (
-                    <button
-                      key={value}
-                      onClick={() => handleAttributeChange(attributeName, value)}
-                      disabled={!isAvailable}
-                      className={`relative border-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                        isSelected
-                          ? "border-black bg-black text-white"
-                          : isAvailable
-                            ? "border-gray-300 hover:border-gray-400 bg-white"
-                            : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                      }`}
-                    >
-                      {formatAttributeValue(value)}
-                      {isSelected && (
-                        <Check className="absolute -top-1 -right-1 h-4 w-4 bg-black text-white rounded-full p-0.5" />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-
-          {/* Quantity */}
-          <div>
-            <h3 className="font-semibold mb-3 text-lg">Số lượng</h3>
-            <div className="flex items-center border-2 border-gray-300 rounded-lg w-fit">
-              <button
-                className="px-4 py-3 hover:bg-gray-100 transition-colors"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                disabled={quantity <= 1}
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <span className="px-6 py-3 border-l border-r border-gray-300 font-medium min-w-[60px] text-center">
-                {quantity}
-              </span>
-              <button
-                className="px-4 py-3 hover:bg-gray-100 transition-colors"
-                onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
-                disabled={quantity >= currentStock}
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button
-              size="lg"
-              className="bg-black hover:bg-neutral-800 text-white flex-1 h-14 text-lg font-semibold"
-              disabled={currentStock === 0}
-            >
-              <ShoppingBag className="mr-2 h-5 w-5" />
-              {currentStock > 0 ? "THÊM VÀO GIỎ" : "HẾT HÀNG"}
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-2 border-black hover:bg-black hover:text-white bg-transparent h-14"
-            >
-              <Heart className="mr-2 h-5 w-5" />
-              YÊU THÍCH
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-2 border-black hover:bg-black hover:text-white bg-transparent h-14 px-4"
-            >
-              <Share2 className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {/* Product Features */}
-          <div className="border-t border-b border-gray-200 py-6 space-y-4">
-            <div className="flex items-start gap-3">
-              <Truck className="h-5 w-5 mt-0.5 flex-shrink-0 text-green-600" />
+          {/* Product Info - Sticky */}
+          <div className="lg:col-span-5 relative">
+            <div className="sticky top-32 space-y-8">
               <div>
-                <h4 className="font-semibold">Miễn phí vận chuyển</h4>
-                <p className="text-gray-600 text-sm">Cho đơn hàng trên 1.000.000đ</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <RotateCcw className="h-5 w-5 mt-0.5 flex-shrink-0 text-blue-600" />
-              <div>
-                <h4 className="font-semibold">Đổi trả miễn phí</h4>
-                <p className="text-gray-600 text-sm">Trong vòng 30 ngày</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 mt-0.5 flex-shrink-0 text-purple-600" />
-              <div>
-                <h4 className="font-semibold">Bảo hành 1 năm</h4>
-                <p className="text-gray-600 text-sm">Cho các lỗi từ nhà sản xuất</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Product Meta */}
-          <div className="space-y-2 text-sm text-gray-600">
-            <p>
-              <span className="font-medium">SKU:</span> {selectedVariant?.sku || product.sku || "N/A"}
-            </p>
-            <p>
-              <span className="font-medium">Danh mục:</span> {product.category?.name || "Chưa phân loại"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Product Details Tabs */}
-      <div className="mt-16">
-        <Tabs defaultValue="description" className="w-full">
-          <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0">
-            <TabsTrigger
-              value="description"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-3 font-semibold"
-            >
-              Mô tả sản phẩm
-            </TabsTrigger>
-            <TabsTrigger
-              value="variants"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-3 font-semibold"
-            >
-              Tất cả biến thể
-            </TabsTrigger>
-            <TabsTrigger
-              value="shipping"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-black data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 py-3 font-semibold"
-            >
-              Vận chuyển & Đổi trả
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="description" className="pt-8">
-            <div className="prose max-w-none">
-              <div className="text-gray-700 leading-relaxed whitespace-pre-line">{product.description}</div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="variants" className="pt-8">
-            <div className="grid gap-4 md:grid-cols-2">
-              {product.variants?.map((variant) => (
-                <div
-                  key={variant.id}
-                  className={`border-2 rounded-lg p-6 transition-all ${
-                    selectedVariant?.id === variant.id
-                      ? "border-black bg-gray-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h4 className="font-semibold text-lg">SKU: {variant.sku}</h4>
-                      {variant.attributes && (
-                        <div className="flex gap-2 mt-2 flex-wrap">
-                          {Object.entries(variant.attributes).map(([key, value]) => (
-                            <Badge key={key} variant="secondary" className="text-xs">
-                              {key}: {formatAttributeValue(value)}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xl font-bold">{formatPrice(variant.price)}</div>
-                      {variant.original_price && variant.original_price > variant.price && (
-                        <div className="text-sm text-gray-500 line-through">{formatPrice(variant.original_price)}</div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      {variant.stock_quantity > 0 ? (
-                        <>
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-green-600 font-medium">Còn {variant.stock_quantity} sản phẩm</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <span className="text-red-600 font-medium">Hết hàng</span>
-                        </>
-                      )}
-                    </div>
-
-                    {selectedVariant?.id === variant.id && <Badge className="bg-black text-white">Đang chọn</Badge>}
-                  </div>
+                <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9] mb-4">
+                  {product.name}
+                </h1>
+                <div className="flex items-baseline gap-4 mb-2">
+                  <span className="text-2xl font-medium font-mono tracking-tighter">
+                    {formatPrice(currentPrice)}
+                  </span>
+                  {currentOriginalPrice && currentOriginalPrice > currentPrice && (
+                    <span className="text-lg text-gray-400 line-through font-mono">
+                      {formatPrice(currentOriginalPrice)}
+                    </span>
+                  )}
                 </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="shipping" className="pt-8">
-            <div className="space-y-6 text-gray-700">
-              <div>
-                <h3 className="font-semibold text-xl text-black mb-4">Chính sách vận chuyển</h3>
-                <p className="mb-4">
-                  Chúng tôi cung cấp dịch vụ vận chuyển toàn quốc và quốc tế. Đơn hàng sẽ được xử lý trong vòng 1-2 ngày
-                  làm việc.
-                </p>
-                <ul className="list-disc pl-6 space-y-2">
-                  <li>Miễn phí vận chuyển cho đơn hàng trên 1.000.000đ</li>
-                  <li>Phí vận chuyển nội thành: 30.000đ</li>
-                  <li>Phí vận chuyển các tỉnh: 40.000đ - 60.000đ</li>
-                  <li>Vận chuyển quốc tế: Tùy thuộc vào quốc gia đích</li>
-                </ul>
+                {currentStock <= 0 && (
+                  <Badge className="bg-red-500 text-white rounded-none uppercase tracking-widest px-2 py-1 text-[10px]">
+                    {t("product.outOfStock")}
+                  </Badge>
+                )}
+                {currentStock > 0 && currentStock < 10 && (
+                  <div className="text-orange-500 text-xs font-bold uppercase tracking-widest mt-2 flex items-center">
+                    {t("product.onlyLeft").replace("{count}", currentStock.toString())}
+                  </div>
+                )}
               </div>
 
-              <div>
-                <h3 className="font-semibold text-xl text-black mb-4">Chính sách đổi trả</h3>
-                <p className="mb-4">
-                  Chúng tôi chấp nhận đổi trả sản phẩm trong vòng 30 ngày kể từ ngày mua hàng, với điều kiện sản phẩm
-                  còn nguyên vẹn, chưa qua sử dụng và còn đầy đủ tem mác, nhãn hiệu và hộp đựng.
-                </p>
-                <ul className="list-disc pl-6 space-y-2">
-                  <li>Sản phẩm phải còn nguyên vẹn, chưa qua sử dụng</li>
-                  <li>Còn đầy đủ tem mác, nhãn hiệu và hộp đựng</li>
-                  <li>Có hóa đơn mua hàng hoặc biên lai thanh toán</li>
-                  <li>Phí vận chuyển đổi trả do khách hàng chi trả</li>
-                </ul>
+              <div className="h-px bg-gray-200 w-full" />
+
+              <div className="space-y-6">
+                {/* Attributes Selection */}
+                {Object.entries(attributeOptions).map(([attributeName, values]) => (
+                  <div key={attributeName}>
+                    <h3 className="font-bold text-xs uppercase tracking-widest mb-3">{attributeName}</h3>
+                    <div className="flex gap-3 flex-wrap">
+                      {Array.from(values).map((value) => {
+                        const isSelected = selectedAttributes[attributeName] === value
+                        const isAvailable = isVariantAvailable(attributeName, value)
+
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => handleAttributeChange(attributeName, value)}
+                            disabled={!isAvailable}
+                            className={`
+                                    min-w-[3rem] px-4 py-3 text-xs font-bold tracking-wider uppercase border border-black transition-all
+                                    ${isSelected ? "bg-black text-white" : "bg-transparent text-black hover:bg-black hover:text-white"}
+                                    ${!isAvailable ? "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-black border-gray-300" : ""}
+                                `}
+                          >
+                            {formatAttributeValue(value)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Quantity */}
+                {currentStock > 0 && (
+                  <div>
+                    <h3 className="font-bold text-xs uppercase tracking-widest mb-3">{t("product.quantity")}</h3>
+                    <div className="flex items-center border border-black w-fit">
+                      <button
+                        className="px-4 py-3 hover:bg-black hover:text-white transition-colors"
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        disabled={quantity <= 1}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="px-6 py-3 font-mono font-bold text-sm min-w-[3rem] text-center border-l border-r border-black">
+                        {quantity}
+                      </span>
+                      <button
+                        className="px-4 py-3 hover:bg-black hover:text-white transition-colors"
+                        onClick={() => setQuantity(Math.min(currentStock, quantity + 1))}
+                        disabled={quantity >= currentStock}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button
+                  size="lg"
+                  className="flex-1 rounded-none bg-black hover:bg-gray-800 text-white h-16 text-sm font-bold tracking-widest uppercase"
+                  disabled={currentStock === 0}
+                >
+                  <ShoppingBag className="mr-3 h-4 w-4" />
+                  {currentStock > 0 ? t("product.addToCollection") : t("product.soldOut")}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-16 rounded-none border-black hover:bg-black hover:text-white h-16 bg-transparent"
+                  onClick={() => {
+                    // Wishlist logic
+                  }}
+                >
+                  <Heart className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="pt-8">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="description" className="border-t border-black/10">
+                    <AccordionTrigger className="text-sm font-bold uppercase tracking-widest hover:no-underline py-6">
+                      {t("product.description")}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-600 leading-relaxed pb-6 text-sm md:text-base">
+                      <div className="whitespace-pre-line">{product.description}</div>
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="shipping" className="border-t border-black/10 border-b">
+                    <AccordionTrigger className="text-sm font-bold uppercase tracking-widest hover:no-underline py-6">
+                      {t("product.shippingAndReturns")}
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-600 leading-relaxed pb-6 text-sm">
+                      <ul className="list-disc pl-5 space-y-2">
+                        <li>{t("product.shippingPolicy")}</li>
+                        <li>{t("product.internationalShipping")}</li>
+                        <li>{t("product.returnPolicy")}</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+          </div>
+        </div>
 
-      {/* Related Products */}
-      <div className="mt-16">
-        <h2 className="text-2xl font-bold mb-8">Sản phẩm liên quan</h2>
-        <ProductSlider category_id={product.category_id}/>
+        <div className="mt-40 border-t border-black/10 pt-20">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">{t("product.youMayAlsoLike")}</h2>
+            <Link href="/products" className="hidden md:inline-flex items-center border-b border-black pb-1 text-xs font-bold uppercase tracking-widest hover:opacity-50 transition-opacity">
+              {t("product.viewAll")} <ChevronRight className="ml-1 h-3 w-3" />
+            </Link>
+          </div>
+          <ProductSlider category_id={product.category_id} />
+        </div>
       </div>
     </div>
   )

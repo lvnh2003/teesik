@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowRight, CheckCircle } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
+import { motion } from "framer-motion"
 
 export default function NewsletterSection() {
   const { t } = useLanguage()
@@ -29,7 +30,12 @@ export default function NewsletterSection() {
   if (isSuccess) {
     return (
       <section className="py-20 md:py-32 bg-gray-50">
-        <div className="container px-4 mx-auto text-center">
+        <motion.div
+          className="container px-4 mx-auto text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <div className="max-w-2xl mx-auto">
             <CheckCircle className="h-16 w-16 text-black mx-auto mb-8" />
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-6 text-black uppercase">
@@ -37,7 +43,7 @@ export default function NewsletterSection() {
             </h2>
             <p className="text-xl text-gray-600">{t("newsletter.success")}</p>
           </div>
-        </div>
+        </motion.div>
       </section>
     )
   }
@@ -45,7 +51,13 @@ export default function NewsletterSection() {
   return (
     <section className="py-20 md:py-32 bg-gray-50">
       <div className="container px-4 mx-auto text-center">
-        <div className="max-w-2xl mx-auto">
+        <motion.div
+          className="max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
           <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 text-black uppercase">
             {t("newsletter.title")}
           </h2>
@@ -70,7 +82,7 @@ export default function NewsletterSection() {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </form>
-        </div>
+        </motion.div>
       </div>
     </section>
   )

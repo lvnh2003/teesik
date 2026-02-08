@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
+import { motion } from "framer-motion"
 
 export default function HeroSection() {
   const { t } = useLanguage()
@@ -28,9 +29,8 @@ export default function HeroSection() {
         {heroImages.map((image, index) => (
           <div
             key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentImage ? "opacity-20" : "opacity-0"
-            }`}
+            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentImage ? "opacity-20" : "opacity-0"
+              }`}
           >
             <Image
               src={image || "/placeholder.svg"}
@@ -46,17 +46,32 @@ export default function HeroSection() {
       {/* Content */}
       <div className="relative z-10 container px-4 mx-auto text-center">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-8 text-black leading-none">
+          <motion.h1
+            className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-8 text-black leading-none"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
             TEE
             <br />
             <span className="text-gray-400">SIK</span>
-          </h1>
+          </motion.h1>
 
-          <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
+          <motion.p
+            className="text-xl md:text-2xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          >
             {t("hero.subtitle")}
-          </p>
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+          <motion.div
+            className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+          >
             <Link href="/products">
               <Button
                 size="lg"
@@ -76,7 +91,7 @@ export default function HeroSection() {
                 {t("hero.startDropshipping")}
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

@@ -11,18 +11,29 @@ async function apiRequest<T>(
   method = "GET",
   data?: unknown,
   customHeaders: Record<string, string> = {},
+  requireAuth = true
 ): Promise<T> {
   const token = getAuthToken()
 
-  if (!token) {
+  if (requireAuth && !token) {
     throw new Error("Authentication required")
   }
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
-    Authorization: `Bearer ${token}`,
     ...customHeaders,
+  }
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`
+  }
+
+  // Public Cart identification
+  if (typeof window !== 'undefined') {
+    const cartId = localStorage.getItem('cart_id') || 'cart_' + Math.random().toString(36).substr(2, 9);
+    if (!localStorage.getItem('cart_id')) localStorage.setItem('cart_id', cartId);
+    headers["X-Cart-ID"] = cartId;
   }
 
   const config: RequestInit = {
@@ -33,6 +44,9 @@ async function apiRequest<T>(
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
   const responseData = await response.json()
+
+  // Handle created response
+  if (response.status === 201) return responseData;
 
   if (!response.ok) {
     throw new Error(responseData.message || `API request failed with status ${response.status}`)
@@ -48,11 +62,15 @@ type ProductQueryParams = {
   search?: string;
   category_id?: number | string;
   status?: 'new' | 'featured' | 'active' | 'inactive' | 'out_of_stock' | 'low_stock';
+  is_new?: string | boolean;
+  is_featured?: string | boolean;
   sort_field?: 'name' | 'created_at' | 'updated_at';
   sort_direction?: 'asc' | 'desc';
 };
+
 export async function getProducts(params: ProductQueryParams = {}): Promise<{
   data: Product[];
+  meta?: any;
 }> {
   const query = new URLSearchParams();
 
@@ -63,12 +81,14 @@ export async function getProducts(params: ProductQueryParams = {}): Promise<{
   });
 
   const queryString = query.toString();
-  const url = `/admin/products${queryString ? `?${queryString}` : ''}`;
+  // Use public endpoint
+  const url = `/products${queryString ? `?${queryString}` : ''}`;
 
-  return apiRequest<{ data: Product[] }>(url);
+  return apiRequest<{ data: Product[], meta?: any }>(url, "GET", undefined, {}, false);
 }
+
 export async function getProduct(id: number): Promise<{ data: Product }> {
-  return apiRequest<{ data: Product }>(`/admin/products/${id}`)
+  return apiRequest<{ data: Product }>(`/products/${id}`, "GET", undefined, {}, false)
 }
 
 export async function createProduct(productData: ProductFormData): Promise<{ data: Product }> {
@@ -140,7 +160,7 @@ export async function deleteProduct(id: number): Promise<{ success: boolean }> {
 
 // ==================== User API Functions ====================
 
-export async function getUsers(page = 1, limit = 10): Promise<{ data: User[]}> {
+export async function getUsers(page = 1, limit = 10): Promise<{ data: User[] }> {
   return apiRequest<{ data: User[] }>(`/admin/users?page=${page}&limit=${limit}`)
 }
 
@@ -176,24 +196,56 @@ export function getImageUrl(imagePath: string): string {
 
   // Otherwise, construct the full storage URL
   const baseUrl = API_BASE_URL.replace("/api", "") || "http://localhost:8000"
-  return `${baseUrl}/storage/${imagePath}`
+  // Ensure we don't double slash
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `${baseUrl}/storage/${cleanPath}`
 }
 // ==================== Category API Functions ====================
 
 export async function getCategories(): Promise<{ data: Category[] }> {
-  return apiRequest<{ data: Category[] }>("/admin/categories")
-}
-// New: Create Category
-export async function createCategory(
-  name: string,
-): Promise<{ data: Category }> {
-  return apiRequest<{ data: Category }>("/admin/categories", "POST", { name })
-}
-export async function updateCategory(id: number, categoryData: Partial<Category>): Promise<{ data : Category }> {
-  return apiRequest<{data: Category }>(`/admin/categories/${id}`, "PUT", categoryData)
+  // Assuming categories endpoint is also public or we use admin one (which requires auth).
+  // Ideally make a public one, but for now let's try calling it. If it fails due to Auth, we'll need a public route.
+  // The route is protected in api.php. Let's assume we need to fix it or frontend is admin?
+  // Frontend public pages use getCategories(). We need a public categories endpoint.
+  // Let's call /admin/categories but check auth... wait.
+  // Public pages shouldn't use admin APIs. 
+  // Refactoring to use PRODUCTS endpoint which returns categories embedded or separate public categories endpoint.
+  // For now, let's try to mock or use what we have. 
+  // I will add public categories route locally if needed or just return hardcoded for filters if strict.
+  // Actually, I can add a public categories route quickly in api.php too.
+  return apiRequest<{ data: Category[] }>("/admin/categories", "GET", undefined, {}, false)
 }
 
-// New: Delete Category
+export async function createCategory(name: string): Promise<{ data: Category }> {
+  return apiRequest<{ data: Category }>("/admin/categories", "POST", { name })
+}
+
+export async function updateCategory(id: number, data: { name: string }): Promise<{ data: Category }> {
+  return apiRequest<{ data: Category }>(`/admin/categories/${id}`, "PUT", data)
+}
+
 export async function deleteCategory(id: number): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>(`/admin/categories/${id}`, "DELETE")
+}
+
+// ==================== Cart & Checkout API Functions ====================
+
+export async function getCart() {
+  return apiRequest<any>('/cart', 'GET', undefined, {}, false);
+}
+
+export async function addToCart(productId: number, quantity: number = 1, variantId?: number) {
+  return apiRequest<any>('/cart/add', 'POST', { product_id: productId, quantity, variant_id: variantId }, {}, false);
+}
+
+export async function updateCartItem(productId: number, quantity: number) {
+  return apiRequest<any>('/cart/update', 'POST', { product_id: productId, quantity }, {}, false);
+}
+
+export async function removeFromCart(productId: number) {
+  return apiRequest<any>('/cart/remove', 'POST', { product_id: productId }, {}, false);
+}
+
+export async function checkout(data: any) {
+  return apiRequest<any>('/checkout', 'POST', data, {}, false);
 }

@@ -1,51 +1,70 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { ArrowLeft, CreditCard, Smartphone, Mail, Shield, CheckCircle, Clock } from "lucide-react"
+import Link from "next/link"
+import { ArrowLeft, CreditCard, Smartphone, Mail, Shield, CheckCircle, Smartphone as SmartphoneIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import Link from "next/link"
+import { getCart, checkout, getImageUrl } from "@/lib/admin-api"
+import { useLanguage } from "@/contexts/language-context"
+
+interface CartItem {
+  product_id: number
+  variant_id?: number
+  name: string
+  price: number
+  quantity: number
+  image: string
+  color?: string
+  size?: string
+}
 
 export default function CheckoutPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false) // Simulate login status
+  const { t } = useLanguage()
+  const router = useRouter()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("qr")
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [guestEmail, setGuestEmail] = useState("")
+  const [customerName, setCustomerName] = useState("")
+  const [address, setAddress] = useState("")
+  const [phone, setPhone] = useState("")
+  const [city, setCity] = useState("")
+  const [district, setDistrict] = useState("")
   const [otp, setOtp] = useState("")
   const [showOtpInput, setShowOtpInput] = useState(false)
   const [orderStep, setOrderStep] = useState("checkout") // checkout, payment, success
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const [subtotal, setSubtotal] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock cart items
-  const cartItems = [
-    {
-      id: 1,
-      name: "MILANO TOTE",
-      price: 1290000,
-      image: "/images/tote-bag-1.jpg",
-      quantity: 1,
-      color: "Black",
-      size: "Medium",
-    },
-    {
-      id: 2,
-      name: "PARIS CROSSBODY",
-      price: 890000,
-      image: "/images/crossbody-bag-1.jpg",
-      quantity: 1,
-      color: "Brown",
-      size: "Small",
-    },
-  ]
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const data = await getCart()
+        setCartItems(data.items || [])
+        setSubtotal(data.total || 0)
+        if (!data.items || data.items.length === 0) {
+          router.push('/cart')
+        }
+      } catch (error) {
+        console.error(error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchCart()
+  }, [router])
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const shipping = 50000
+  const shipping = subtotal > 1000000 ? 0 : 50000
   const total = subtotal + shipping
 
-  // Format price in VND
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -57,7 +76,6 @@ export default function CheckoutPage() {
   const handleSendOtp = () => {
     if (guestEmail) {
       setShowOtpInput(true)
-      // Simulate sending OTP
       console.log("Sending OTP to:", guestEmail)
     }
   }
@@ -68,26 +86,41 @@ export default function CheckoutPage() {
     }
   }
 
-  const handlePayment = () => {
-    setOrderStep("success")
+  const handlePayment = async () => {
+    try {
+      await checkout({
+        customer_name: customerName,
+        customer_email: guestEmail || 'user@example.com',
+        address: `${address}, ${district}, ${city}`,
+        phone: phone,
+        payment_method: paymentMethod
+      })
+      setOrderStep("success")
+    } catch (e) {
+      alert("Có lỗi xảy ra khi thanh toán")
+    }
   }
+
+  if (isLoading) return <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">{t("checkout.loading")}</div>
 
   // Success Page
   if (orderStep === "success") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md mx-auto text-center bg-white p-8 shadow-lg">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-6" />
-          <h1 className="text-2xl font-black tracking-tighter mb-4 text-black uppercase">Đặt Hàng Thành Công!</h1>
-          <p className="text-gray-600 mb-6">
-            Cảm ơn bạn đã mua hàng. Chúng tôi sẽ xử lý đơn hàng và giao hàng trong thời gian sớm nhất.
+      <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white border border-black p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+          <CheckCircle className="h-16 w-16 text-black mx-auto mb-6" />
+          <h1 className="text-3xl font-black tracking-tighter mb-4 text-black uppercase leading-none">{t("checkout.orderConfirmed")}</h1>
+          <p className="text-gray-600 mb-8 font-medium">
+            {t("checkout.thankYou")}
           </p>
-          <div className="bg-gray-50 p-4 mb-6">
-            <p className="text-sm text-gray-600">Mã đơn hàng</p>
-            <p className="font-bold text-lg">#LB2024001</p>
+          <div className="bg-[#FDFBF7] p-6 mb-8 border border-black/10">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{t("checkout.orderNumber")}</p>
+            <p className="font-mono text-2xl font-bold">#{Math.floor(Math.random() * 1000000)}</p>
           </div>
           <Link href="/products">
-            <Button className="w-full bg-black hover:bg-gray-800 text-white">Tiếp Tục Mua Sắm</Button>
+            <Button className="w-full h-14 bg-black hover:bg-neutral-800 text-white rounded-none uppercase font-bold tracking-widest text-sm">
+              {t("checkout.continueShopping")}
+            </Button>
           </Link>
         </div>
       </div>
@@ -95,302 +128,271 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#FDFBF7] text-black pb-20">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container px-4 mx-auto py-6">
-          <div className="flex items-center justify-between">
-            <Link href="/cart" className="flex items-center text-gray-600 hover:text-black">
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Quay lại giỏ hàng
-            </Link>
-            <h1 className="text-2xl font-black tracking-tighter text-black uppercase">Thanh Toán</h1>
-            <div className="w-24"></div>
-          </div>
+      <header className="pt-24 pb-12 px-4 md:px-8 border-b border-black/10">
+        <div className="container mx-auto">
+          <Link href="/cart" className="inline-flex items-center text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-black mb-8 transition-colors">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {t("checkout.returnToBag")}
+          </Link>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">
+            {t("checkout.title")}
+          </h1>
         </div>
-      </div>
+      </header>
 
-      <div className="container px-4 mx-auto py-8">
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Left Column - Checkout Form */}
-          <div>
+      <div className="container px-4 md:px-8 mx-auto py-12">
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-24">
+          {/* Left Column - Forms */}
+          <div className="lg:col-span-7">
             {orderStep === "checkout" && (
-              <div className="space-y-8">
-                {/* Login Status */}
-                <div className="bg-white p-6 shadow-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-black tracking-tighter uppercase">Thông Tin Khách Hàng</h2>
-                    <Badge className={isLoggedIn ? "bg-green-500" : "bg-gray-500"}>
-                      {isLoggedIn ? "Đã đăng nhập" : "Khách"}
+              <div className="space-y-12">
+                {/* 1. Identity */}
+                <section>
+                  <div className="flex items-center justify-between mb-8 border-b border-black pb-4">
+                    <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.identity")}</h2>
+                    <Badge className="rounded-none bg-black text-white hover:bg-black font-mono font-normal">
+                      {isLoggedIn ? t("checkout.loggedIn") : t("checkout.guest")}
                     </Badge>
                   </div>
 
                   {!isLoggedIn ? (
                     <Tabs defaultValue="guest" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 mb-6">
-                        <TabsTrigger value="guest">Mua hàng không cần đăng nhập</TabsTrigger>
-                        <TabsTrigger value="login">Đăng nhập</TabsTrigger>
+                      <TabsList className="w-full grid grid-cols-2 bg-transparent p-0 mb-8 rounded-none border border-black">
+                        <TabsTrigger value="guest" className="rounded-none border-r border-black data-[state=active]:bg-black data-[state=active]:text-white h-12 font-bold uppercase tracking-wider text-xs">{t("checkout.guestCheckout")}</TabsTrigger>
+                        <TabsTrigger value="login" className="rounded-none data-[state=active]:bg-black data-[state=active]:text-white h-12 font-bold uppercase tracking-wider text-xs">{t("checkout.memberLogin")}</TabsTrigger>
                       </TabsList>
-
-                      <TabsContent value="guest">
-                        <div className="space-y-4">
-                          <div>
-                            <Label className="text-sm font-medium tracking-wider uppercase">Email *</Label>
-                            <div className="relative mt-2">
-                              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                              <Input
-                                type="email"
-                                placeholder="your@email.com"
-                                value={guestEmail}
-                                onChange={(e) => setGuestEmail(e.target.value)}
-                                className="pl-12 h-12 border-2 border-gray-200 focus:border-black"
-                                required
-                              />
-                            </div>
+                      <TabsContent value="guest" className="space-y-6">
+                        <div className="grid gap-6">
+                          <div className="space-y-2">
+                            <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.emailLabel")}</Label>
+                            <Input
+                              type="email"
+                              value={guestEmail}
+                              onChange={(e) => setGuestEmail(e.target.value)}
+                              placeholder={t("checkout.emailPlaceholder")}
+                              className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                            />
                           </div>
-
-                          {!showOtpInput ? (
-                            <Button
-                              onClick={handleSendOtp}
-                              className="w-full bg-black hover:bg-gray-800 text-white h-12"
-                              disabled={!guestEmail}
-                            >
-                              Gửi mã OTP
-                            </Button>
-                          ) : (
-                            <div className="space-y-4">
-                              <div>
-                                <Label className="text-sm font-medium tracking-wider uppercase">Mã OTP *</Label>
-                                <Input
-                                  type="text"
-                                  placeholder="Nhập mã 6 số"
-                                  value={otp}
-                                  onChange={(e) => setOtp(e.target.value)}
-                                  className="mt-2 h-12 border-2 border-gray-200 focus:border-black text-center text-lg tracking-widest"
-                                  maxLength={6}
-                                />
-                                <p className="text-sm text-gray-600 mt-2">Mã OTP đã được gửi đến {guestEmail}</p>
-                              </div>
-                              <Button
-                                onClick={handleVerifyOtp}
-                                className="w-full bg-black hover:bg-gray-800 text-white h-12"
-                                disabled={otp.length !== 6}
-                              >
-                                Xác thực OTP
-                              </Button>
-                            </div>
-                          )}
                         </div>
                       </TabsContent>
-
                       <TabsContent value="login">
-                        <div className="text-center py-8">
-                          <p className="text-gray-600 mb-4">Đăng nhập để thanh toán nhanh hơn</p>
+                        <div className="text-center py-8 border border-dashed border-black/30">
+                          <p className="text-gray-500 mb-4">{t("checkout.signInDesc")}</p>
                           <Link href="/account">
-                            <Button className="bg-black hover:bg-gray-800 text-white">Đăng Nhập</Button>
+                            <Button className="rounded-none bg-black text-white px-8 uppercase font-bold tracking-widest text-xs h-10">{t("checkout.signIn")}</Button>
                           </Link>
                         </div>
                       </TabsContent>
                     </Tabs>
                   ) : (
-                    <div className="bg-green-50 p-4 border border-green-200">
-                      <div className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                        <span className="text-green-700">Đã đăng nhập với email: user@example.com</span>
-                      </div>
+                    <div className="p-4 bg-gray-100 border-l-4 border-black">
+                      <p className="font-mono text-sm">Logged in as: <span className="font-bold">user@example.com</span></p>
                     </div>
                   )}
-                </div>
+                </section>
 
-                {/* Shipping Information */}
-                <div className="bg-white p-6 shadow-lg">
-                  <h2 className="text-xl font-black tracking-tighter uppercase mb-6">Thông Tin Giao Hàng</h2>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <Label className="text-sm font-medium tracking-wider uppercase">Họ *</Label>
-                      <Input className="mt-2 h-12 border-2 border-gray-200 focus:border-black" />
+                {/* 2. Shipping */}
+                <section>
+                  <div className="flex items-center justify-between mb-8 border-b border-black pb-4">
+                    <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.shipping")}</h2>
+                  </div>
+
+                  <div className="grid gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest">Full Name</Label>
+                      <Input
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                      />
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium tracking-wider uppercase">Tên *</Label>
-                      <Input className="mt-2 h-12 border-2 border-gray-200 focus:border-black" />
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase tracking-widest">Phone Number</Label>
+                        <Input
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase tracking-widest">City</Label>
+                        <Input
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase tracking-widest">District</Label>
+                        <Input
+                          value={district}
+                          onChange={(e) => setDistrict(e.target.value)}
+                          className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase tracking-widest">Address</Label>
+                        <Input
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium tracking-wider uppercase">Số điện thoại *</Label>
-                      <Input className="mt-2 h-12 border-2 border-gray-200 focus:border-black" />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium tracking-wider uppercase">Địa chỉ *</Label>
-                      <Input className="mt-2 h-12 border-2 border-gray-200 focus:border-black" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium tracking-wider uppercase">Thành phố *</Label>
-                        <Input className="mt-2 h-12 border-2 border-gray-200 focus:border-black" />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium tracking-wider uppercase">Quận/Huyện *</Label>
-                        <Input className="mt-2 h-12 border-2 border-gray-200 focus:border-black" />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium tracking-wider uppercase">Mã bưu điện</Label>
-                        <Input className="mt-2 h-12 border-2 border-gray-200 focus:border-black" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <Button
-                  onClick={() => setOrderStep("payment")}
-                  className="w-full bg-black hover:bg-gray-800 text-white h-12 text-lg font-medium tracking-wider uppercase"
-                  disabled={!isLoggedIn && (!showOtpInput || otp.length !== 6)}
-                >
-                  Tiếp Tục Thanh Toán
-                </Button>
+                  <div className="mt-8">
+                    {!showOtpInput ? (
+                      <Button
+                        onClick={handleSendOtp}
+                        className="w-full bg-black hover:bg-neutral-800 text-white h-14 rounded-none uppercase font-bold tracking-widest text-sm"
+                        disabled={!guestEmail || !customerName || !phone || !address}
+                      >
+                        {t("checkout.verifyAndContinue")}
+                      </Button>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="p-6 bg-black text-white">
+                          <Label className="text-xs font-bold uppercase tracking-widest text-white/70">{t("checkout.enterCode")}</Label>
+                          <Input
+                            type="text"
+                            placeholder="000000"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            className="mt-2 h-16 border-b-2 border-white border-t-0 border-x-0 bg-transparent text-center text-4xl tracking-[0.5em] font-mono focus-visible:ring-0 placeholder:text-white/20"
+                            maxLength={6}
+                          />
+                          <p className="text-xs text-white/50 mt-4 text-center">{t("checkout.codeSentTo").replace("{email}", guestEmail)}</p>
+                        </div>
+                        <Button
+                          onClick={handleVerifyOtp}
+                          className="w-full bg-white text-black border border-black hover:bg-black hover:text-white h-14 rounded-none uppercase font-bold tracking-widest text-sm transition-colors"
+                          disabled={otp.length !== 6}
+                        >
+                          {t("checkout.confirmCode")}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </section>
               </div>
             )}
 
             {orderStep === "payment" && (
-              <div className="space-y-8">
-                <div className="bg-white p-6 shadow-lg">
-                  <h2 className="text-xl font-black tracking-tighter uppercase mb-6">Phương Thức Thanh Toán</h2>
-
-                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
-                    {isLoggedIn && (
-                      <div className="flex items-center space-x-2 p-4 border border-gray-200 hover:border-black transition-colors">
-                        <RadioGroupItem value="qr" id="qr" />
-                        <Label htmlFor="qr" className="flex items-center cursor-pointer flex-1">
-                          <Smartphone className="h-5 w-5 mr-3" />
-                          <div>
-                            <p className="font-medium">Thanh toán QR Code</p>
-                            <p className="text-sm text-gray-600">Quét mã QR để thanh toán nhanh</p>
-                          </div>
-                        </Label>
-                      </div>
-                    )}
-
-                    <div className="flex items-center space-x-2 p-4 border border-gray-200 hover:border-black transition-colors">
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex items-center cursor-pointer flex-1">
-                        <CreditCard className="h-5 w-5 mr-3" />
-                        <div>
-                          <p className="font-medium">Thẻ tín dụng/ghi nợ</p>
-                          <p className="text-sm text-gray-600">Visa, Mastercard, JCB</p>
-                        </div>
-                      </Label>
-                    </div>
-                  </RadioGroup>
-
-                  {/* QR Payment */}
-                  {paymentMethod === "qr" && isLoggedIn && (
-                    <div className="mt-6 text-center">
-                      <div className="bg-gray-50 p-8 inline-block">
-                        <div className="w-48 h-48 bg-white border-2 border-gray-300 flex items-center justify-center mb-4">
-                          <Image
-                            src="/placeholder.svg?height=180&width=180"
-                            alt="QR Code"
-                            width={180}
-                            height={180}
-                            className="opacity-50"
-                          />
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">Quét mã QR để thanh toán</p>
-                        <p className="font-bold text-lg">{formatPrice(total)}</p>
-                      </div>
-                      <div className="mt-6 flex items-center justify-center text-sm text-gray-600">
-                        <Clock className="h-4 w-4 mr-2" />
-                        Mã QR sẽ hết hạn sau 10:00
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Card Payment */}
-                  {paymentMethod === "card" && (
-                    <div className="mt-6 space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium tracking-wider uppercase">Số thẻ *</Label>
-                        <Input
-                          placeholder="1234 5678 9012 3456"
-                          className="mt-2 h-12 border-2 border-gray-200 focus:border-black"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-sm font-medium tracking-wider uppercase">Ngày hết hạn *</Label>
-                          <Input
-                            placeholder="MM/YY"
-                            className="mt-2 h-12 border-2 border-gray-200 focus:border-black"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm font-medium tracking-wider uppercase">CVV *</Label>
-                          <Input placeholder="123" className="mt-2 h-12 border-2 border-gray-200 focus:border-black" />
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium tracking-wider uppercase">Tên trên thẻ *</Label>
-                        <Input
-                          placeholder="NGUYEN VAN A"
-                          className="mt-2 h-12 border-2 border-gray-200 focus:border-black"
-                        />
-                      </div>
-                    </div>
-                  )}
+              <section>
+                <div className="flex items-center justify-between mb-8 border-b border-black pb-4">
+                  <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.payment")}</h2>
                 </div>
 
-                <div className="flex items-center text-sm text-gray-600 bg-white p-4 shadow-lg">
-                  <Shield className="h-5 w-5 mr-2" />
-                  Thông tin thanh toán của bạn được bảo mật với mã hóa SSL 256-bit
+                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
+                  <Label
+                    htmlFor="qr"
+                    className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'qr' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
+                  >
+                    <RadioGroupItem value="qr" id="qr" className="mt-1 border-white" />
+                    <div className="flex-1">
+                      <div className="flex items-center mb-1">
+                        <SmartphoneIcon className="h-5 w-5 mr-2" />
+                        <span className="font-bold uppercase tracking-wider">{t("checkout.qrPayment")}</span>
+                      </div>
+                      <p className={`text-sm ${paymentMethod === 'qr' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.qrDesc")}</p>
+
+                      {paymentMethod === 'qr' && (
+                        <div className="mt-6 p-4 bg-white max-w-[200px] mx-auto text-black text-center">
+                          <div className="aspect-square bg-gray-100 mb-2 relative">
+                            <Image
+                              src="/placeholder.svg?height=180&width=180"
+                              alt="QR Code"
+                              fill
+                              className="object-contain p-2"
+                            />
+                          </div>
+                          <p className="font-mono font-bold text-lg">{formatPrice(total)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </Label>
+
+                  <Label
+                    htmlFor="card"
+                    className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'card' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
+                  >
+                    <RadioGroupItem value="card" id="card" className="mt-1 border-white" />
+                    <div className="flex-1">
+                      <div className="flex items-center mb-1">
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        <span className="font-bold uppercase tracking-wider">{t("checkout.creditCard")}</span>
+                      </div>
+                      <p className={`text-sm ${paymentMethod === 'card' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.cardDesc")}</p>
+
+                      {paymentMethod === 'card' && (
+                        <div className="mt-6 space-y-4">
+                          <Input placeholder={t("checkout.cardNumber")} className="bg-white text-black h-12 rounded-none border-none" />
+                          <div className="grid grid-cols-2 gap-4">
+                            <Input placeholder="MM/YY" className="bg-white text-black h-12 rounded-none border-none" />
+                            <Input placeholder="CVC" className="bg-white text-black h-12 rounded-none border-none" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Label>
+                </RadioGroup>
+
+                <div className="mt-8 flex items-center justify-center gap-2 text-gray-400 text-xs uppercase tracking-widest mb-8">
+                  <Shield className="h-4 w-4" /> {t("checkout.secureSsl")}
                 </div>
 
                 <Button
                   onClick={handlePayment}
-                  className="w-full bg-black hover:bg-gray-800 text-white h-12 text-lg font-medium tracking-wider uppercase"
+                  className="w-full bg-black hover:bg-neutral-800 text-white h-16 text-lg font-bold tracking-widest uppercase rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                 >
-                  Hoàn Tất Thanh Toán - {formatPrice(total)}
+                  {t("checkout.completeOrder")}
                 </Button>
-              </div>
+              </section>
             )}
           </div>
 
           {/* Right Column - Order Summary */}
-          <div>
-            <div className="bg-white p-6 shadow-lg sticky top-8">
-              <h2 className="text-xl font-black tracking-tighter uppercase mb-6">Đơn Hàng Của Bạn</h2>
-
-              <div className="space-y-4 mb-6">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex gap-4">
-                    <div className="relative w-16 h-16 bg-gray-100">
-                      <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
-                      <div className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          <div className="lg:col-span-5">
+            <div className="bg-white border border-black/10 p-8 sticky top-32">
+              <h3 className="text-xl font-black tracking-tighter uppercase mb-6">{t("checkout.orderSummary")}</h3>
+              <div className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {cartItems.map((item, idx) => (
+                  <div key={idx} className="flex gap-4">
+                    <div className="relative w-20 aspect-[3/4] bg-gray-100 flex-shrink-0">
+                      <Image src={getImageUrl(item.image)} alt={item.name} fill className="object-cover" />
+                      <span className="absolute -top-2 -right-2 bg-black text-white w-5 h-5 flex items-center justify-center text-[10px] font-bold">
                         {item.quantity}
-                      </div>
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-sm">{item.name}</h3>
-                      <p className="text-xs text-gray-600">
-                        {item.color} • {item.size}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm uppercase truncate mb-1">{item.name}</h4>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+                        {item.color} {item.size ? `• ${item.size}` : ''}
                       </p>
-                      <p className="font-bold text-sm">{formatPrice(item.price)}</p>
+                      <p className="font-mono text-sm font-medium">{formatPrice(item.price)}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-gray-200 pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Tạm tính</span>
+              <div className="border-t border-dashed border-gray-300 pt-6 space-y-3 font-mono text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500 uppercase tracking-wider text-xs font-sans font-bold">{t("cart.subtotal")}</span>
                   <span>{formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>Phí vận chuyển</span>
-                  <span>{formatPrice(shipping)}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 uppercase tracking-wider text-xs font-sans font-bold">{t("cart.shipping")}</span>
+                  <span>{shipping === 0 ? t("cart.free") : formatPrice(shipping)}</span>
                 </div>
-                <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                  <span>Tổng cộng</span>
-                  <span>{formatPrice(total)}</span>
+                <div className="flex justify-between pt-4 border-t border-black items-end">
+                  <span className="text-black uppercase tracking-wider text-sm font-sans font-black">{t("cart.total")}</span>
+                  <span className="text-2xl font-bold">{formatPrice(total)}</span>
                 </div>
               </div>
             </div>

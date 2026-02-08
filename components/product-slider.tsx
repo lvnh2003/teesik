@@ -12,7 +12,7 @@ interface ProductSliderProps {
   category_id: number
 }
 
-export default function ProductSlider({ products: initialProducts, category_id}: ProductSliderProps) {
+export default function ProductSlider({ products: initialProducts, category_id }: ProductSliderProps) {
   const { t } = useLanguage()
   const [products, setProducts] = useState<Product[]>(initialProducts || [])
   const [loading, setLoading] = useState(!initialProducts)
@@ -25,7 +25,7 @@ export default function ProductSlider({ products: initialProducts, category_id}:
       const fetchProducts = async () => {
         setLoading(true)
         try {
-          const { data } = await getProducts({category_id : category_id})
+          const { data } = await getProducts({ category_id: category_id })
           setProducts(data)
         } catch (error) {
           console.error("Error fetching products for slider:", error)
@@ -83,7 +83,7 @@ export default function ProductSlider({ products: initialProducts, category_id}:
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} isSmall={false} />
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
 

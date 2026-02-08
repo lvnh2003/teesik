@@ -2,23 +2,25 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import { ArrowRight, Calendar, Star } from "lucide-react"
+import { ArrowRight, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getImageUrl, getProducts } from "@/lib/admin-api"
+import { getProducts } from "@/lib/admin-api"
 import { Product } from "@/type/product"
-import Loading from "../loading"
+import Loading from "@/app/loading"
 import ProductGrid from "@/components/product-grid"
+import { motion } from "framer-motion"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function NewPage() {
+  const { t } = useLanguage()
   const [newArrivals, setNewArrivals] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchNewProducts = async () => {
       try {
-        const { data } = await getProducts({status:'new'})
+        const { data } = await getProducts({ status: 'new' })
         setNewArrivals(data)
       } catch (error) {
         console.error("Error fetching new products:", error)
@@ -30,154 +32,118 @@ export default function NewPage() {
     fetchNewProducts()
   }, [])
 
-  // Format price in VND
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      minimumFractionDigits: 0,
-    }).format(price)
-  }
-  
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
-  }
-
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FDFBF7]">
       {/* Hero Section */}
-      <section className="py-20 md:py-32 border-b border-gray-200">
-        <div className="container px-4 mx-auto text-center">
-          <Badge className="mb-6 bg-black text-white hover:bg-gray-800 text-xs tracking-wider">NEW ARRIVALS</Badge>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-black uppercase">Whatưs New</h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover our latest collection of premium handbags, fresh from our design studio
-          </p>
+      <section className="pt-32 pb-20 border-b border-black/10">
+        <div className="container px-4 md:px-8 mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="flex items-center gap-4 mb-6">
+              <Badge className="bg-black text-white hover:bg-black rounded-none text-xs uppercase tracking-widest px-3 py-1">
+                {t("new.latestDrop")}
+              </Badge>
+              <span className="text-xs font-bold uppercase tracking-widest text-red-600 animate-pulse">
+                {t("new.justLanded")}
+              </span>
+            </div>
+            <h1 className="text-[12vw] leading-[0.85] font-black tracking-tighter uppercase text-black mb-12 whitespace-pre-line">
+              {t("new.title")}
+            </h1>
+            <p className="text-xl md:text-2xl font-medium text-gray-800 max-w-2xl leading-tight">
+              {t("new.description")}
+            </p>
+          </motion.div>
         </div>
       </section>
 
-      {/* Latest Releases */}
-      <section className="py-20">
-        <div className="container px-4 mx-auto">
-          <div className="mb-16">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tighter mb-4 text-black uppercase">
-              Latest Releases
-            </h2>
-            <p className="text-lg text-gray-600">Just dropped - our newest designs</p>
-          </div>
+      {/* Marquee */}
+      <div className="overflow-hidden border-b border-black/10 bg-black text-white py-4">
+        <div className="animate-marquee whitespace-nowrap flex gap-12">
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="text-sm font-bold uppercase tracking-[0.2em]">
+              {t("new.marquee")}
+            </span>
+          ))}
+        </div>
+      </div>
 
+      {/* Main Content */}
+      <section className="py-20 md:py-32">
+        <div className="container px-4 md:px-8 mx-auto">
           {loading ? (
-            <Loading />
+            <div className="min-h-[50vh] flex items-center justify-center">
+              <Loading />
+            </div>
           ) : (
-            <div className="grid md:grid-cols-3 gap-8 mb-16">
-              {newArrivals.map((product) => {
-                  const mainImage = product?.main_image
-                  const imageUrl = mainImage ? getImageUrl(mainImage.image_path) : "/placeholder.svg"
-  
-                  return (
-                    <Link key={product.id} href={`/products/${product.id}`} className="group">
-                      <div className="relative aspect-[3/4] mb-6 overflow-hidden bg-gray-100">
-                        {product.is_featured && (
-                          <Badge className="absolute top-4 left-4 z-10 bg-red-500 text-white hover:bg-red-600 text-xs tracking-wider">
-                            HOT
-                          </Badge>
-                        )}
-                        {product.is_new && (
-                          <Badge className="absolute top-4 right-4 z-10 bg-black text-white hover:bg-gray-800 text-xs tracking-wider">
-                            NEW
-                          </Badge>
-                        )}
-                        <Image
-                          src={imageUrl || "/placeholder.svg"}
-                          alt={product.name}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <Calendar className="h-3 w-3" />
-                          <span>{product?.created_at ? formatDate(product.created_at) : ""}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">
-                          {product.category?.name || "UNCATEGORIZED"}
-                        </p>
-                        <h3 className="text-lg font-bold tracking-tight uppercase group-hover:text-gray-600 transition-colors">
-                          {product.name}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-black">
-                            {product.formatted_price || formatPrice(product.price)}
-                          </span>
-                          {product.original_price && product.original_price > product.price && (
-                            <span className="text-sm text-gray-500 line-through">
-                              {formatPrice(product.original_price)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                
-              })}
-            </div>
+            <>
+              <div className="mb-20 flex flex-col md:flex-row justify-between items-end gap-8">
+                <div>
+                  <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase mb-2">
+                    {t("new.theLatest")}
+                  </h2>
+                  <p className="text-lg text-gray-500 font-medium max-w-md">
+                    {t("new.latestDesc")}
+                  </p>
+                </div>
+                <div className="text-right hidden md:block">
+                  <p className="text-xs font-bold uppercase tracking-widest mb-1">{t("products.objectsFound")}</p>
+                  <p className="text-4xl font-black font-mono">{newArrivals.length}</p>
+                </div>
+              </div>
+
+              <ProductGrid products={newArrivals} />
+
+              {newArrivals.length === 0 && (
+                <div className="text-center py-32 border border-dashed border-black/20">
+                  <p className="text-gray-400 text-xl font-medium uppercase tracking-widest">{t("new.noItems")}</p>
+                </div>
+              )}
+            </>
           )}
 
-          {newArrivals.length === 0 && !loading && (
-            <div className="text-center py-16">
-              <p className="text-gray-500 text-lg">Chưa có sản phẩm mới nào</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* All New Products */}
-      <section className="py-20 bg-gray-50">
-        <div className="container px-4 mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tighter mb-4 text-black uppercase">
-              All New Products
-            </h2>
-            <p className="text-lg text-gray-600">Complete collection of our latest designs</p>
-          </div>
-
-          <ProductGrid products={newArrivals} />
-
-          <div className="text-center mt-16">
+          <div className="text-center mt-24">
             <Link href="/products">
               <Button
                 size="lg"
-                className="bg-black hover:bg-gray-800 text-white px-12 py-4 text-lg font-medium tracking-wider uppercase"
+                variant="outline"
+                className="bg-transparent border-black text-black hover:bg-black hover:text-white px-12 py-8 text-sm font-bold tracking-widest uppercase rounded-none transition-all"
               >
-                View All Products
-                <ArrowRight className="ml-2 h-5 w-5" />
+                {t("new.viewFull")}
+                <ArrowRight className="ml-3 h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Coming Soon */}
-      <section className="py-20 md:py-32 bg-black text-white">
-        <div className="container px-4 mx-auto text-center">
-          <Star className="h-16 w-16 text-white mx-auto mb-8" />
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 uppercase">Coming Soon</h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Be the first to know about our upcoming releases. Subscribe to get notified when new products drop.
-          </p>
-          <Button
-            size="lg"
-            className="bg-white text-black hover:bg-gray-200 px-12 py-4 text-lg font-medium tracking-wider uppercase"
-          >
-            Notify Me
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+      {/* Newsletter / Coming Soon */}
+      <section className="py-24 bg-black text-white border-t border-white/10 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-32 opacity-10 pointer-events-none">
+          <Star className="w-96 h-96" />
+        </div>
+        <div className="container px-4 mx-auto relative z-10">
+          <div className="max-w-4xl">
+            <h2 className="text-5xl md:text-8xl font-black tracking-tighter mb-8 uppercase leading-none whitespace-pre-line">
+              {t("newsletter.dontMiss")}
+            </h2>
+            <p className="text-xl text-gray-400 mb-12 max-w-xl font-light">
+              {t("newsletter.subtitle")}
+            </p>
+            <div className="max-w-md flex border-b border-white pb-2">
+              <input
+                type="email"
+                placeholder={t("home.emailPlaceholder")}
+                className="bg-transparent border-none text-white placeholder:text-white/40 focus:ring-0 w-full text-lg font-bold uppercase tracking-widest"
+              />
+              <button className="text-white hover:text-gray-300 font-bold uppercase tracking-widest text-sm flex-shrink-0">
+                {t("home.subscribe")}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </div>

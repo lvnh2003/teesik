@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Menu, X, Search, ShoppingBag, User, ChevronDown } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useLanguage } from "@/contexts/language-context"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -13,13 +13,28 @@ import LanguageSwitcher from "@/components/language-switcher"
 import { useAuth } from "@/contexts/auth-context"
 import { Category } from "@/type/product"
 import { getCategories } from "@/lib/admin-api"
+import { motion, useScroll, useMotionValueEvent } from "framer-motion"
+import { useWishlist } from "@/contexts/wishlist-context"
+import { Heart } from "lucide-react"
 
 export default function MainNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchValue, setSearchValue] = useState("")
+  const router = useRouter()
   const { t } = useLanguage()
   const { user, isLoggedIn, logout } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
+  const [isScrolled, setIsScrolled] = useState(false)
+  const { scrollY } = useScroll()
+  const { items } = useWishlist()
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    if (latest > 50) {
+      setIsScrolled(true)
+    } else {
+      setIsScrolled(false)
+    }
+  })
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
@@ -30,16 +45,15 @@ export default function MainNav() {
         }
       } catch (error) {
         console.log(error);
-        
       }
     }
     fetchData()
-  },[])
-  
+  }, [])
+
   const mainNavItems = [
     { label: t("nav.new"), href: "/new" },
     {
-      label: "PRODUCTS",
+      label: t("nav.products"),
       href: "/products",
       hasDropdown: true,
       dropdownItems: categories
@@ -58,13 +72,19 @@ export default function MainNav() {
   }
 
   return (
-    <header className="border-b border-gray-200 bg-white sticky top-0 z-50">
+    <motion.header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200" : "bg-transparent"
+        }`}
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <div className="container px-4 mx-auto">
         <div className="flex items-center justify-between h-20">
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden text-black hover:bg-gray-100">
+              <Button variant="ghost" size="icon" className="md:hidden text-black hover:bg-black/5">
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Open menu</span>
               </Button>
@@ -119,7 +139,7 @@ export default function MainNav() {
                     </Link>
                     {/* Hover Dropdown */}
                     <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                      {item.dropdownItems?.map((dropdownItem : Category) => (
+                      {item.dropdownItems?.map((dropdownItem: Category) => (
                         <Link
                           key={`/products?category=${dropdownItem.id}`}
                           href={`/products?category=${dropdownItem.slug}`}
@@ -154,6 +174,12 @@ export default function MainNav() {
                     placeholder="Search products..."
                     value={searchValue}
                     onChange={handleSearchChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        router.push(`/search?q=${encodeURIComponent(searchValue)}`);
+                        setIsSearchOpen(false);
+                      }
+                    }}
                     className="flex-1 border-0 bg-transparent text-black text-xl font-medium focus-visible:ring-0 placeholder:text-gray-400"
                     autoFocus
                   />
@@ -168,7 +194,7 @@ export default function MainNav() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsSearchOpen(true)}
-                className="text-black hover:bg-gray-100"
+                className="text-black hover:bg-black/5"
               >
                 <Search className="h-5 w-5" />
                 <span className="sr-only">Search</span>
@@ -176,7 +202,7 @@ export default function MainNav() {
             )}
             {isLoggedIn && user ? (
               <div className="relative group">
-                <Button variant="ghost" size="icon" className="text-black hover:bg-gray-100">
+                <Button variant="ghost" size="icon" className="text-black hover:bg-black/5">
                   <User className="h-5 w-5" />
                   <span className="sr-only">Account</span>
                 </Button>
@@ -208,14 +234,27 @@ export default function MainNav() {
               </div>
             ) : (
               <Link href="/account">
-                <Button variant="ghost" size="icon" className="text-black hover:bg-gray-100">
+                <Button variant="ghost" size="icon" className="text-black hover:bg-black/5">
                   <User className="h-5 w-5" />
                   <span className="sr-only">Account</span>
                 </Button>
               </Link>
             )}
+            {/* Wishlist Link */}
+            <Link href="/wishlist">
+              <Button variant="ghost" size="icon" className="relative text-black hover:bg-black/5">
+                <Heart className="h-5 w-5" />
+                {items.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {items.length}
+                  </span>
+                )}
+                <span className="sr-only">Wishlist</span>
+              </Button>
+            </Link>
+
             <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative text-black hover:bg-gray-100">
+              <Button variant="ghost" size="icon" className="relative text-black hover:bg-black/5">
                 <ShoppingBag className="h-5 w-5" />
                 <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   3
@@ -226,6 +265,6 @@ export default function MainNav() {
           </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   )
 }

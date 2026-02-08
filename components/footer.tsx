@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function Footer() {
+  const { t } = useLanguage()
   return (
     <footer className="bg-black text-white">
       <div className="container px-4 mx-auto py-12 md:py-16">
@@ -11,7 +13,7 @@ export default function Footer() {
               <span className="text-xl font-bold tracking-wider">TEESIK</span>
             </Link>
             <p className="text-gray-400 mb-6">
-              Cung cấp túi xách thời trang cao cấp và giải pháp dropshipping toàn cầu.
+              {t("footer.description")}
             </p>
             <div className="flex space-x-4">
               <Link href="#" className="text-gray-400 hover:text-white">
@@ -34,80 +36,80 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="font-bold text-sm tracking-wider mb-6">SHOP</h3>
+            <h3 className="font-bold text-sm tracking-wider mb-6">{t("footer.shop")}</h3>
             <ul className="space-y-4">
               <li>
                 <Link href="/collections/new-arrivals" className="text-gray-400 hover:text-white">
-                  New Arrivals
+                  {t("footer.newArrivals")}
                 </Link>
               </li>
               <li>
                 <Link href="/collections/best-sellers" className="text-gray-400 hover:text-white">
-                  Best Sellers
+                  {t("footer.bestSellers")}
                 </Link>
               </li>
               <li>
                 <Link href="/collections/tote-bags" className="text-gray-400 hover:text-white">
-                  Tote Bags
+                  {t("footer.toteBags")}
                 </Link>
               </li>
               <li>
                 <Link href="/collections/crossbody" className="text-gray-400 hover:text-white">
-                  Crossbody
+                  {t("footer.crossbody")}
                 </Link>
               </li>
               <li>
                 <Link href="/collections/backpacks" className="text-gray-400 hover:text-white">
-                  Backpacks
+                  {t("footer.backpacks")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-bold text-sm tracking-wider mb-6">INFORMATION</h3>
+            <h3 className="font-bold text-sm tracking-wider mb-6">{t("footer.information")}</h3>
             <ul className="space-y-4">
               <li>
                 <Link href="/about" className="text-gray-400 hover:text-white">
-                  About Us
+                  {t("footer.aboutUs")}
                 </Link>
               </li>
               <li>
                 <Link href="/dropshipping" className="text-gray-400 hover:text-white">
-                  Dropshipping
+                  {t("footer.dropshipping")}
                 </Link>
               </li>
               <li>
                 <Link href="/shipping" className="text-gray-400 hover:text-white">
-                  Shipping & Returns
+                  {t("footer.shipping")}
                 </Link>
               </li>
               <li>
                 <Link href="/privacy-policy" className="text-gray-400 hover:text-white">
-                  Privacy Policy
+                  {t("footer.privacyPolicy")}
                 </Link>
               </li>
               <li>
                 <Link href="/terms-of-service" className="text-gray-400 hover:text-white">
-                  Terms of Service
+                  {t("footer.terms")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-bold text-sm tracking-wider mb-6">CONTACT</h3>
+            <h3 className="font-bold text-sm tracking-wider mb-6">{t("footer.contact")}</h3>
             <ul className="space-y-4 text-gray-400">
-              <li>Email: info@teesik.com</li>
-              <li>Phone: +84 123 456 789</li>
-              <li>Address: 123 Street Name, District, City, Vietnam</li>
+              <li>{t("footer.email")}</li>
+              <li>{t("footer.phone")}</li>
+              <li>{t("footer.address")}</li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm">© 2023 LUXEBAGS. All rights reserved.</p>
+            <p className="text-gray-400 text-sm">{t("footer.copyright")}</p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <img src="/placeholder.svg?height=30&width=50" alt="Visa" className="h-8" />
               <img src="/placeholder.svg?height=30&width=50" alt="Mastercard" className="h-8" />

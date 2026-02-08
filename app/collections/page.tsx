@@ -1,15 +1,22 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, MoveRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { motion } from "framer-motion"
+
+import { useLanguage } from "@/contexts/language-context"
 
 export default function CollectionsPage() {
+  const { t } = useLanguage()
+
   const collections = [
     {
       id: 1,
-      name: "SUMMER COLLECTION",
-      description: "Lightweight designs perfect for warm weather adventures",
+      name: t("collection.summer"),
+      description: t("collection.summerDesc"),
       image: "/images/collection-summer.jpg",
       slug: "summer",
       productCount: 24,
@@ -17,8 +24,8 @@ export default function CollectionsPage() {
     },
     {
       id: 2,
-      name: "BUSINESS COLLECTION",
-      description: "Professional bags for the modern workplace",
+      name: t("collection.business"),
+      description: t("collection.businessDesc"),
       image: "/images/collection-business.jpg",
       slug: "business",
       productCount: 18,
@@ -26,8 +33,8 @@ export default function CollectionsPage() {
     },
     {
       id: 3,
-      name: "TRAVEL COLLECTION",
-      description: "Durable and functional bags for your journeys",
+      name: t("collection.travel"),
+      description: t("collection.travelDesc"),
       image: "/images/collection-travel.jpg",
       slug: "travel",
       productCount: 15,
@@ -35,8 +42,8 @@ export default function CollectionsPage() {
     },
     {
       id: 4,
-      name: "NEW ARRIVALS",
-      description: "Latest designs and trending styles",
+      name: t("collection.new"),
+      description: t("collection.newDesc"),
       image: "/images/tote-bag-1.jpg",
       slug: "new-arrivals",
       productCount: 32,
@@ -44,8 +51,8 @@ export default function CollectionsPage() {
     },
     {
       id: 5,
-      name: "BEST SELLERS",
-      description: "Our most popular and loved designs",
+      name: t("collection.bestSellers"),
+      description: t("collection.bestSellersDesc"),
       image: "/images/crossbody-bag-1.jpg",
       slug: "best-sellers",
       productCount: 20,
@@ -53,8 +60,8 @@ export default function CollectionsPage() {
     },
     {
       id: 6,
-      name: "LIMITED EDITION",
-      description: "Exclusive designs in limited quantities",
+      name: t("collection.limited"),
+      description: t("collection.limitedDesc"),
       image: "/images/backpack-1.jpg",
       slug: "limited-edition",
       productCount: 8,
@@ -63,118 +70,84 @@ export default function CollectionsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FDFBF7]">
       {/* Hero Section */}
-      <section className="py-20 md:py-32 border-b border-gray-200">
-        <div className="container px-4 mx-auto text-center">
-          <Badge className="mb-6 bg-black text-white hover:bg-gray-800 text-xs tracking-wider">COLLECTIONS</Badge>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-black uppercase">
-            Our Collections
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Explore our curated collections designed for every lifestyle, occasion, and personal style
-          </p>
+      <section className="pt-32 pb-20 border-b border-black/10">
+        <div className="container px-4 md:px-8 mx-auto">
+          <motion.h1
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            className="text-[12vw] leading-none font-black tracking-tighter uppercase text-black mb-12 text-center md:text-left"
+          >
+            {t("collections.title")}
+          </motion.h1>
+          <div className="md:flex justify-end pr-4 md:pr-12">
+            <p className="text-xl md:text-2xl font-medium max-w-xl leading-tight whitespace-pre-line">
+              {t("collections.description")}
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Featured Collections */}
-      <section className="py-20">
-        <div className="container px-4 mx-auto">
-          <div className="mb-16">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tighter mb-4 text-black uppercase">
-              Featured Collections
-            </h2>
-            <p className="text-lg text-gray-600">Our most popular and trending collections</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
-            {collections
-              .filter((collection) => collection.featured)
-              .map((collection) => (
-                <Link key={collection.id} href={`/collections/${collection.slug}`} className="group">
-                  <div className="relative aspect-[4/5] overflow-hidden bg-gray-100 mb-6">
+      {/* Grid */}
+      <section className="py-20 md:py-32">
+        <div className="container px-4 md:px-8 mx-auto">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-8">
+            {collections.map((collection, index) => (
+              <motion.div
+                key={collection.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <Link href={`/collections/${collection.slug}`} className="group block relative">
+                  <div className="relative aspect-[4/5] md:aspect-[3/4] overflow-hidden bg-gray-200">
                     <Image
                       src={collection.image || "/placeholder.svg"}
                       alt={collection.name}
                       fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter grayscale group-hover:grayscale-0"
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-                    <div className="absolute bottom-6 left-6 right-6">
-                      <Badge className="bg-white text-black hover:bg-gray-100 mb-4">
-                        {collection.productCount} PRODUCTS
-                      </Badge>
+                    <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+
+                    {/* Overlay Info */}
+                    <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col justify-end items-start h-full">
+                      <div className="bg-white/90 backdrop-blur-sm p-6 w-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 ease-out">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-3xl font-black tracking-tighter uppercase mb-0 leading-none">
+                            {collection.name}
+                          </h3>
+                          <ArrowRight className="h-6 w-6 transform -rotate-45 group-hover:rotate-0 transition-transform duration-500" />
+                        </div>
+                        <div className="h-px bg-black/10 w-full my-4 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500" />
+                        <div className="flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                          <span className="text-sm font-bold uppercase tracking-widest">{collection.productCount} {t("collections.items")}</span>
+                          <span className="text-xs uppercase tracking-widest text-gray-500">{t("collections.viewCollection")}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <h3 className="text-xl font-black tracking-tighter mb-2 text-black uppercase group-hover:text-gray-600 transition-colors">
-                    {collection.name}
-                  </h3>
-                  <p className="text-gray-600 mb-4">{collection.description}</p>
-                  <div className="flex items-center text-black font-medium group-hover:text-gray-600 transition-colors">
-                    EXPLORE COLLECTION
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
-              ))}
-          </div>
-        </div>
-      </section>
-
-      {/* All Collections */}
-      <section className="py-20 bg-gray-50">
-        <div className="container px-4 mx-auto">
-          <div className="mb-16">
-            <h2 className="text-3xl md:text-4xl font-black tracking-tighter mb-4 text-black uppercase">
-              All Collections
-            </h2>
-            <p className="text-lg text-gray-600">Browse our complete range of collections</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {collections.map((collection) => (
-              <Link key={collection.id} href={`/collections/${collection.slug}`} className="group">
-                <div className="flex bg-white overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                  <div className="relative w-1/3 aspect-square">
-                    <Image
-                      src={collection.image || "/placeholder.svg"}
-                      alt={collection.name}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="flex-1 p-8 flex flex-col justify-center">
-                    <Badge className="bg-black text-white hover:bg-gray-800 mb-4 w-fit">
-                      {collection.productCount} PRODUCTS
-                    </Badge>
-                    <h3 className="text-2xl font-black tracking-tighter mb-3 text-black uppercase group-hover:text-gray-600 transition-colors">
-                      {collection.name}
-                    </h3>
-                    <p className="text-gray-600 mb-6">{collection.description}</p>
-                    <div className="flex items-center text-black font-medium group-hover:text-gray-600 transition-colors">
-                      VIEW COLLECTION
-                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 md:py-32 bg-black text-white">
-        <div className="container px-4 mx-auto text-center">
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 uppercase">Can't Find What You Need?</h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Contact our team for custom designs or special requests. We're here to help you find the perfect bag.
+      <section className="py-20 md:py-32 bg-black text-white relative overflow-hidden">
+        <div className="container px-4 mx-auto text-center relative z-10">
+          <h2 className="text-5xl md:text-8xl font-black tracking-tighter mb-8 uppercase">{t("collections.customOrders")}</h2>
+          <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto font-light">
+            {t("collections.customOrdersDesc")}
           </p>
           <Button
             size="lg"
-            className="bg-white text-black hover:bg-gray-200 px-12 py-4 text-lg font-medium tracking-wider uppercase"
+            className="bg-white text-black hover:bg-neutral-200 px-12 py-8 text-lg font-bold tracking-widest uppercase rounded-none"
           >
-            Contact Us
-            <ArrowRight className="ml-2 h-5 w-5" />
+            {t("collections.getInTouch")}
           </Button>
         </div>
       </section>

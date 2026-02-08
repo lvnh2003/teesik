@@ -9,9 +9,25 @@ import { useLanguage } from "@/contexts/language-context"
 import { Product } from "@/type/product"
 import { getImageUrl } from "@/lib/admin-api"
 import ProductCard from "./product-card"
+import { motion } from "framer-motion"
 
 interface ProductGridProps {
   products?: Product[]
+}
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
 }
 
 export default function ProductGrid({ products = [] }: ProductGridProps) {
@@ -26,10 +42,18 @@ export default function ProductGrid({ products = [] }: ProductGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12">
+    <motion.div
+      className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12"
+      variants={container}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true }}
+    >
       {products.map((product) => (
-        <ProductCard key={product.id} product={product}/>
+        <motion.div key={product.id} variants={item}>
+          <ProductCard product={product} />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   )
 }
