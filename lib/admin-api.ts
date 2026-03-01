@@ -70,6 +70,7 @@ type ProductQueryParams = {
 
 export async function getProducts(params: ProductQueryParams = {}): Promise<{
   data: Product[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   meta?: any;
 }> {
   const query = new URLSearchParams();
@@ -84,10 +85,40 @@ export async function getProducts(params: ProductQueryParams = {}): Promise<{
   // Use public endpoint
   const url = `/products${queryString ? `?${queryString}` : ''}`;
 
-  return apiRequest<{ data: Product[], meta?: any }>(url, "GET", undefined, {}, false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const response = await apiRequest<any>(url, "GET", undefined, {}, false);
+
+  // Handle Laravel/Pancake Paginator structure which might be flat
+  // Standard Laravel Paginator: { current_page: 1, data: [...], total: 10, ... }
+  // or { data: [...], meta: { ... } } (if using Resources)
+
+  if (response.data && Array.isArray(response.data)) {
+    // Check if meta is already present or if it's a flat structure
+    if (response.meta) {
+      return response;
+    }
+
+    // Construct meta from flat fields if they exist
+    const meta = {
+      current_page: response.current_page,
+      from: response.from,
+      last_page: response.last_page,
+      per_page: response.per_page,
+      to: response.to,
+      total: response.total,
+    };
+
+    return {
+      data: response.data,
+      meta: meta
+    };
+  }
+
+  // Fallback if structure is unexpected
+  return { data: [], meta: {} };
 }
 
-export async function getProduct(id: number): Promise<{ data: Product }> {
+export async function getProduct(id: string | number): Promise<{ data: Product }> {
   return apiRequest<{ data: Product }>(`/products/${id}`, "GET", undefined, {}, false)
 }
 
@@ -133,7 +164,7 @@ export async function createProduct(productData: ProductFormData): Promise<{ dat
   return apiRequest<{ data: Product }>("/admin/products", "POST", productData)
 }
 
-export async function updateProduct(productId: number, formData: FormData) {
+export async function updateProduct(productId: string | number, formData: FormData) {
   const token = getAuthToken()
   if (!token) throw new Error("Authentication required")
 
@@ -154,7 +185,7 @@ export async function updateProduct(productId: number, formData: FormData) {
   return await response.json()
 }
 
-export async function deleteProduct(id: number): Promise<{ success: boolean }> {
+export async function deleteProduct(id: string | number): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>(`/admin/products/${id}`, "DELETE")
 }
 
@@ -230,22 +261,153 @@ export async function deleteCategory(id: number): Promise<{ success: boolean }> 
 
 // ==================== Cart & Checkout API Functions ====================
 
-export async function getCart() {
-  return apiRequest<any>('/cart', 'GET', undefined, {}, false);
+// ==================== Cart & Checkout API Functions ====================
+
+import { Cart } from "@/type"
+
+export async function getCart(): Promise<Cart> {
+  return apiRequest<Cart>('/cart', 'GET', undefined, {}, false);
 }
 
-export async function addToCart(productId: number, quantity: number = 1, variantId?: number) {
-  return apiRequest<any>('/cart/add', 'POST', { product_id: productId, quantity, variant_id: variantId }, {}, false);
+export async function addToCart(productId: string | number, quantity: number = 1, variantId?: string | number) {
+  return apiRequest<unknown>('/cart/add', 'POST', { product_id: productId, quantity, variant_id: variantId }, {}, false);
 }
 
-export async function updateCartItem(productId: number, quantity: number) {
-  return apiRequest<any>('/cart/update', 'POST', { product_id: productId, quantity }, {}, false);
+export async function updateCartItem(productId: string | number, quantity: number) {
+  return apiRequest<unknown>('/cart/update', 'POST', { product_id: productId, quantity }, {}, false);
 }
 
-export async function removeFromCart(productId: number) {
-  return apiRequest<any>('/cart/remove', 'POST', { product_id: productId }, {}, false);
+export async function removeFromCart(productId: string | number) {
+  return apiRequest<unknown>('/cart/remove', 'POST', { product_id: productId }, {}, false);
 }
 
-export async function checkout(data: any) {
-  return apiRequest<any>('/checkout', 'POST', data, {}, false);
+export async function checkout(data: Record<string, unknown>) {
+  return apiRequest<{
+    success: boolean;
+    order?: Order;
+    message?: string;
+  }>('/checkout', 'POST', data, {}, false);
+}
+
+// ==================== Order API Functions ====================
+
+import { Order } from "@/type"
+
+export async function getOrders(params: { page?: number; limit?: number; status?: string; search?: string } = {}): Promise<{
+  data: Order[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  meta?: any;
+}> {
+  const query = new URLSearchParams();
+  if (params.page) query.append('page', params.page.toString());
+  if (params.limit) query.append('limit', params.limit.toString());
+  if (params.status) query.append('status', params.status);
+  if (params.search) query.append('search', params.search);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return apiRequest<{ data: Order[]; meta?: any }>(`/admin/orders?${query.toString()}`);
+}
+
+export async function getOrder(id: number): Promise<{ data: Order }> {
+  return apiRequest<{ data: Order }>(`/admin/orders/${id}`);
+}
+
+export async function updateOrder(id: number, data: Partial<Order>): Promise<{ data: Order }> {
+  return apiRequest<{ data: Order }>(`/admin/orders/${id}`, "PUT", data);
+}
+
+export async function processPayment(orderId: number, paymentMethod: string) {
+  return apiRequest<unknown>('/payment/process', 'POST', { order_id: orderId, payment_method: paymentMethod }, {}, false);
+}
+
+// ==================== Pancake POS Additional API Functions ====================
+import { Customer, Transaction, Purchase, Promotion, Voucher, Combo } from "@/type"
+
+// Generic paginated response type
+export type PaginatedResponse<T> = { data: T[]; meta?: any };
+
+export async function getCustomers(params: { page?: number; limit?: number; search?: string } = {}): Promise<PaginatedResponse<Customer>> {
+  const query = new URLSearchParams()
+  if (params.page) query.append('page', params.page.toString())
+  if (params.limit) query.append('limit', params.limit.toString())
+  if (params.search) query.append('search', params.search)
+  return apiRequest<PaginatedResponse<Customer>>(`/admin/customers?${query.toString()}`)
+}
+
+export async function createCustomer(data: any): Promise<{ data: Customer }> {
+  return apiRequest<{ data: Customer }>('/admin/customers', 'POST', data)
+}
+
+export async function getTransactions(params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Transaction>> {
+  const query = new URLSearchParams()
+  if (params.page) query.append('page', params.page.toString())
+  if (params.limit) query.append('limit', params.limit.toString())
+  return apiRequest<PaginatedResponse<Transaction>>(`/admin/transactions?${query.toString()}`)
+}
+
+export async function getPurchases(params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Purchase>> {
+  const query = new URLSearchParams()
+  if (params.page) query.append('page', params.page.toString())
+  if (params.limit) query.append('limit', params.limit.toString())
+  return apiRequest<PaginatedResponse<Purchase>>(`/admin/purchases?${query.toString()}`)
+}
+
+export async function getPromotions(params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Promotion>> {
+  const query = new URLSearchParams()
+  if (params.page) query.append('page', params.page.toString())
+  if (params.limit) query.append('limit', params.limit.toString())
+  return apiRequest<PaginatedResponse<Promotion>>(`/admin/promotions?${query.toString()}`)
+}
+
+export async function createPromotion(data: any): Promise<{ data: Promotion }> {
+  return apiRequest<{ data: Promotion }>('/admin/promotions', 'POST', data)
+}
+
+export async function updatePromotion(id: string | number, data: any): Promise<{ data: Promotion }> {
+  return apiRequest<{ data: Promotion }>(`/admin/promotions/${id}`, 'PUT', data)
+}
+
+export async function deletePromotion(id: string | number): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>(`/admin/promotions/${id}`, 'DELETE')
+}
+
+export async function getVouchers(params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Voucher>> {
+  const query = new URLSearchParams()
+  if (params.page) query.append('page', params.page.toString())
+  if (params.limit) query.append('limit', params.limit.toString())
+  return apiRequest<PaginatedResponse<Voucher>>(`/admin/vouchers?${query.toString()}`)
+}
+
+export async function createVoucher(data: any): Promise<{ data: Voucher }> {
+  return apiRequest<{ data: Voucher }>('/admin/vouchers', 'POST', data)
+}
+
+export async function getCombos(params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Combo>> {
+  const query = new URLSearchParams()
+  if (params.page) query.append('page', params.page.toString())
+  if (params.limit) query.append('limit', params.limit.toString())
+  return apiRequest<PaginatedResponse<Combo>>(`/admin/combos?${query.toString()}`)
+}
+
+export async function createCombo(data: any): Promise<{ data: Combo }> {
+  return apiRequest<{ data: Combo }>('/admin/combos', 'POST', data)
+}
+
+export async function updateCombo(id: string | number, data: any): Promise<{ data: Combo }> {
+  return apiRequest<{ data: Combo }>(`/admin/combos/${id}`, 'PUT', data)
+}
+
+export async function deleteCombo(id: string | number): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>(`/admin/combos/${id}`, 'DELETE')
+}
+
+export async function getSalesAnalytics(startDate?: string, endDate?: string): Promise<{ data: any }> {
+  const query = new URLSearchParams()
+  if (startDate) query.append('start_date', startDate)
+  if (endDate) query.append('end_date', endDate)
+  return apiRequest<{ data: any }>(`/admin/statistics/sales?${query.toString()}`)
+}
+
+export async function getInventoryAnalytics(): Promise<{ data: any }> {
+  return apiRequest<{ data: any }>('/admin/statistics/inventory')
 }

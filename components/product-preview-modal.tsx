@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChevronLeft, ChevronRight, Star, Tag, Package, Truck, ShieldCheck, ExternalLink } from "lucide-react"
-import type { Product } from "@/lib/admin-api"
+import type { Product, ProductVariant } from "@/type/product"
+import { getImageUrl } from "@/lib/admin-api"
 
 interface ProductPreviewModalProps {
   product: Product | null
@@ -21,9 +22,13 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
 
   if (!product) return null
   console.log(product);
-  
 
-  const hasVariants = product.variants && product.variants.length > 0
+
+  const hasVariants = product.variations && product.variations.length > 0
+  const totalStock = hasVariants
+    ? product.variations!.reduce((acc, variant) => acc + (Number(variant.stock_quantity) || 0), 0)
+    : (Number(product.stock_quantity) || 0)
+
   const discountPercentage =
     product.original_price && product.original_price > product.price
       ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
@@ -31,12 +36,12 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
 
   const handlePrevImage = () => {
     if (!product.images || product.images.length <= 1) return
-    setActiveImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1))
+    setActiveImageIndex((prev) => (prev === 0 ? product.images!.length - 1 : prev - 1))
   }
 
   const handleNextImage = () => {
     if (!product.images || product.images.length <= 1) return
-    setActiveImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1))
+    setActiveImageIndex((prev) => (prev === product.images!.length - 1 ? 0 : prev + 1))
   }
 
   const formatPrice = (price: number) => {
@@ -61,7 +66,7 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
             <div className="relative aspect-square bg-muted rounded-lg overflow-hidden border">
               {product.images && product.images.length > 0 ? (
                 <Image
-                  src={`http://localhost:8000/storage/${product.images[activeImageIndex].image_path}`}
+                  src={getImageUrl(product.images?.[activeImageIndex]?.image_path || "")}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -103,16 +108,15 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
             {/* Thumbnail Images */}
             {product.images && product.images.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {product.images.map((image, index) => (
+                {product.images.map((image: any, index: number) => (
                   <button
                     key={index}
-                    className={`relative w-16 h-16 rounded-md overflow-hidden border-2 flex-shrink-0 ${
-                      activeImageIndex === index ? "border-primary" : "border-muted"
-                    }`}
+                    className={`relative w-16 h-16 rounded-md overflow-hidden border-2 flex-shrink-0 ${activeImageIndex === index ? "border-primary" : "border-muted"
+                      }`}
                     onClick={() => setActiveImageIndex(index)}
                   >
                     <Image
-                      src={`http://localhost:8000/storage/${image.image_path}`}
+                      src={getImageUrl(image.image_path || "")}
                       alt={`${product.name} - Ảnh ${index + 1}`}
                       fill
                       className="object-cover"
@@ -147,9 +151,9 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
               )}
             </div>
 
-            {product.stock_quantity > 0 ? (
+            {totalStock > 0 ? (
               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                Còn hàng
+                Còn hàng ({totalStock})
               </Badge>
             ) : (
               <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
@@ -187,7 +191,7 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
                   <div className="space-y-4">
                     <h4 className="font-medium">Các biến thể sản phẩm</h4>
                     <div className="grid grid-cols-1 gap-2">
-                      {product.variants?.map((variant) => (
+                      {product.variations?.map((variant: ProductVariant) => (
                         <div
                           key={variant.id}
                           className="flex justify-between items-center p-3 border rounded-md"
@@ -196,11 +200,7 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
                             {variant.images && variant.images.length > 0 ? (
                               <div className="w-10 h-10 rounded-md overflow-hidden bg-muted">
                                 <Image
-                                  src={
-                                    "image_path" in variant.images[0]
-                                      ? `http://localhost:8000/storage/${(variant.images[0] as any).image_path}`
-                                      : ""
-                                  }
+                                  src={getImageUrl((variant.images?.[0] as any)?.image_path || "")}
                                   alt={variant.sku || ""}
                                   width={40}
                                   height={40}
@@ -214,22 +214,11 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
                             )}
                             <div>
                               <div className="flex gap-1 flex-wrap">
-                                {Array.isArray(variant.attributes) &&
-                                  variant.attributes.map((attr: string, idx: Key | null | undefined) => {
-                                    let parsed = {};
-                                    try {
-                                      parsed = typeof attr === "string" ? JSON.parse(attr) : {};
-                                    } catch (e) {
-                                      parsed = { name: "?", value: "?" };
-                                    }
-                                    return (
-                                      <Badge key={idx} variant="outline" className="text-xs">
-                                        {(parsed && typeof parsed === "object" && "name" in parsed && "value" in parsed)
-                                          ? `${parsed.name}: ${parsed.value}`
-                                          : "? : ?"}
-                                      </Badge>
-                                    );
-                                  })}
+                                {variant.attributes && Object.entries(variant.attributes).map(([key, value]) => (
+                                  <Badge key={key} variant="outline" className="text-xs">
+                                    {key}: {value}
+                                  </Badge>
+                                ))}
                               </div>
                               <div className="text-xs text-muted-foreground mt-1">
                                 SKU: <span className="font-mono">{variant.sku}</span>

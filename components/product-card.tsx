@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Product } from "@/type/product"
 import { getImageUrl } from "@/lib/admin-api"
 import { useWishlist } from "@/contexts/wishlist-context"
+import { useToast } from "@/components/ui/use-toast"
+import { useCart } from "@/contexts/cart-context"
 
 interface ProductCardProps {
   product: Product
@@ -15,11 +17,33 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem, removeItem, isInWishlist } = useWishlist()
+  const { toast } = useToast()
+  const { addToCart } = useCart()
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     isInWishlist(product.id) ? removeItem(product.id) : addItem(product)
+  }
+
+  const handleQuickAdd = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    try {
+      await addToCart(product.id, 1)
+      toast({
+        title: "Added to Cart",
+        description: `${product.name} added to your cart.`,
+      })
+    } catch (error) {
+      console.error("Quick add error", error)
+      toast({
+        title: "Error",
+        description: "Failed to add to cart.",
+        variant: "destructive"
+      })
+    }
   }
 
   // Format price
@@ -62,10 +86,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="absolute bottom-4 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20">
           <Button
             className="w-full bg-white text-black hover:bg-black hover:text-white uppercase font-bold tracking-widest text-xs h-10 shadow-lg"
-            onClick={(e) => {
-              e.preventDefault()
-              // Add to cart logic or open quick view
-            }}
+            onClick={handleQuickAdd}
           >
             <ShoppingBag className="mr-2 h-3 w-3" /> Quick Add
           </Button>

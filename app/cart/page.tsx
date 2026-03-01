@@ -9,17 +9,9 @@ import { Separator } from "@/components/ui/separator"
 import { getCart, updateCartItem, removeFromCart, getImageUrl } from "@/lib/admin-api"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
+import { CartItem } from "@/type"
 
-interface CartItem {
-  product_id: number
-  variant_id?: number
-  name: string
-  price: number
-  quantity: number
-  image: string
-  color?: string
-  size?: string
-}
+
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -44,7 +36,7 @@ export default function CartPage() {
     fetchCart()
   }, [])
 
-  const updateQuantity = async (productId: number, newQuantity: number) => {
+  const updateQuantity = async (productId: string | number, newQuantity: number) => {
     if (newQuantity < 1) return
     try {
       // Optimistic update
@@ -56,7 +48,7 @@ export default function CartPage() {
     }
   }
 
-  const removeItem = async (productId: number) => {
+  const removeItem = async (productId: string | number) => {
     try {
       setCartItems(prev => prev.filter(item => item.product_id !== productId))
       await removeFromCart(productId)
@@ -82,7 +74,10 @@ export default function CartPage() {
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="text-center max-w-4xl"
         >
-          <h1 className="text-[10vw] leading-[0.85] font-black tracking-tighter text-black mb-8 uppercase opacity-90 whitespace-pre-line">
+          <div className="flex justify-center mb-6">
+            <ShoppingBag className="w-24 h-24 text-gray-200 stroke-[1]" />
+          </div>
+          <h1 className="text-[clamp(3rem,8vw,8rem)] leading-tight font-black tracking-tighter text-black mb-8 uppercase opacity-90 whitespace-pre-line">
             {t("cart.emptyTitle")}
           </h1>
           <p className="text-gray-500 text-lg mb-12 max-w-lg mx-auto font-medium">

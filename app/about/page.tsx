@@ -71,7 +71,7 @@ export default function AboutPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
               >
-                <h1 className="text-[12vw] lg:text-[10vw] font-black tracking-tighter mb-6 text-black uppercase leading-[0.8] whitespace-pre-line">
+                <h1 className="text-[clamp(4rem,10vw,10rem)] font-black tracking-tighter mb-6 text-black uppercase leading-none whitespace-pre-line">
                   {t("about.title")}
                 </h1>
                 <div className="h-2 w-20 bg-black mb-8"></div>

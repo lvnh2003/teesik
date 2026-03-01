@@ -12,13 +12,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { AlertCircle, ArrowLeft, X, Plus, Trash2, ImageIcon, Loader2 } from "lucide-react"
+import { AlertCircle, ArrowLeft, X, Plus, Trash2, ImageIcon, Loader2, Upload } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import Image from "next/image"
 import { Category, Product, ProductVariant } from "@/type/product"
+import { useProductAttributes } from "@/hooks/use-product-attributes"
 
 export default function EditProductPage() {
   const { checkAuth } = useAdminAuth()
@@ -35,13 +36,29 @@ export default function EditProductPage() {
 
   const [formData, setFormData] = useState<Product>()
 
-  // Custom attribute management
-  const [attributes, setAttributes] = useState<{ id: string; name: string; values: string[] }[]>([])
-  const [newAttributeName, setNewAttributeName] = useState("")
-  const [newAttributeValues, setNewAttributeValues] = useState<Record<string, string>>({})
+  // Custom attribute management via hook
+  const {
+    attributes,
+    setAttributes,
+    variants,
+    setVariants,
+    newAttributeName,
+    setNewAttributeName,
+    newAttributeValues,
+    setNewAttributeValues,
+    error: attributesError,
+    addAttributeCategory,
+    removeAttributeCategory,
+    addAttributeValue,
+    removeAttributeValue,
+    generateVariants,
+    updateVariant,
+    removeVariant,
+    handleVariantImageChange,
+    removeVariantImage,
+    calculateTotalVariants
+  } = useProductAttributes()
 
-  // Variants management
-  const [variants, setVariants] = useState<ProductVariant[]>([])
 
   useEffect(() => {
     const init = async () => {
@@ -52,7 +69,7 @@ export default function EditProductPage() {
         setCategories(categoriesResponse.data)
 
         // Tải thông tin sản phẩm
-        const productResponse = await getProduct(Number(productId))
+        const productResponse = await getProduct(productId)
         if (productResponse.data) {
           const product = productResponse.data
 
@@ -62,30 +79,48 @@ export default function EditProductPage() {
             name: product.name || "",
             description: product.description || "",
             price: product.price || 0,
+            original_price: product.original_price || 0, // Fix key mapping
             category_id: product.category_id || 0,
-            is_new: product.is_new ?? false,
-            is_featured: product.is_featured ?? false,
-          })
+            sku: product.sku || "",
+            custom_id: product.custom_id || "",
+            tags: Array.isArray(product.tags) ? product.tags : (product.tags ? String(product.tags).split(',').map((t: string) => t.trim()) : []),
+            note: product.note || "",
+            is_sell_negative: product.is_sell_negative ?? false,
+            hide_config_product: product.hide_config_product ?? false,
+            stock_quantity: product.stock_quantity || 0,
+            images: product.images || []
+          } as Product)
 
 
           // Cập nhật variants nếu có
-          if (product.variants && product.variants.length > 0) {
+          if (product.variations && product.variations.length > 0) {
             // Tạo danh sách thuộc tính từ variants
             const attributeMap = new Map<string, Set<string>>()
 
-            product.variants.forEach((variant: ProductVariant) => {
-              if (Array.isArray(variant.attributes)) {
-                variant.attributes.forEach((attrStr: string) => {
+            product.variations.forEach((variant: ProductVariant) => {
+              // Handle attributes as Record<string, string>
+              if (variant.attributes && typeof variant.attributes === 'object' && !Array.isArray(variant.attributes)) {
+                Object.entries(variant.attributes).forEach(([name, value]) => {
+                  if (!attributeMap.has(name)) {
+                    attributeMap.set(name, new Set())
+                  }
+                  attributeMap.get(name)?.add(String(value))
+                })
+              }
+              // Fallback for potential legacy array format (just in case)
+              else if (Array.isArray(variant.attributes)) {
+                (variant.attributes as unknown[]).forEach((attrStr: unknown) => {
                   try {
-                    const attr = JSON.parse(attrStr)
-                    if (attr && attr.name && attr.value) {
-                      if (!attributeMap.has(attr.name)) {
-                        attributeMap.set(attr.name, new Set())
+                    const attr = typeof attrStr === 'string' ? JSON.parse(attrStr) : attrStr
+                    if (typeof attr === 'object' && attr !== null && 'name' in attr && 'value' in attr) {
+                      const typedAttr = attr as { name: string; value: string };
+                      if (!attributeMap.has(typedAttr.name)) {
+                        attributeMap.set(typedAttr.name, new Set())
                       }
-                      attributeMap.get(attr.name)?.add(attr.value)
+                      attributeMap.get(typedAttr.name)?.add(typedAttr.value)
                     }
                   } catch (e) {
-                    console.error("Invalid attribute JSON:", attrStr)
+                    // ignore
                   }
                 })
               }
@@ -101,19 +136,29 @@ export default function EditProductPage() {
             setAttributes(attributesArray)
 
             // Chuyển đổi variants
-            const formattedVariants = product.variants.map(
+            const formattedVariants = product.variations.map(
               (variant: ProductVariant) => {
-                // Tạo object attributes từ mảng
-                const variantAttributes: Record<string, string> = {}
-                if (Array.isArray(variant.attributes) && variant.attributes.length > 0) {
-                  variant.attributes.forEach((attrStr: string) => {
+                // Tạo object attributes
+                let variantAttributes: Record<string, string> = {}
+
+                if (variant.attributes && typeof variant.attributes === 'object' && !Array.isArray(variant.attributes)) {
+                  // If it's already a Record, use it (filtering out null/undefined if necessary)
+                  Object.entries(variant.attributes).forEach(([k, v]) => {
+                    if (v !== null && v !== undefined) {
+                      variantAttributes[k] = String(v)
+                    }
+                  })
+                } else if (Array.isArray(variant.attributes) && variant.attributes.length > 0) {
+                  // Legacy array handling
+                  (variant.attributes as unknown[]).forEach((attrStr) => {
                     try {
-                      const attr = JSON.parse(attrStr)
-                      if (attr && attr.name && attr.value) {
-                        variantAttributes[attr.name] = attr.value
+                      const attr = typeof attrStr === 'string' ? JSON.parse(attrStr) : attrStr
+                      if (typeof attr === 'object' && attr !== null && 'name' in attr && 'value' in attr) {
+                        const typedAttr = attr as { name: string; value: string };
+                        variantAttributes[typedAttr.name] = typedAttr.value
                       }
                     } catch (e) {
-                      console.error("Invalid attribute JSON:", attrStr)
+                      // ignore
                     }
                   })
                 }
@@ -135,21 +180,23 @@ export default function EditProductPage() {
                   price: variant.price || 0,
                   original_price: variant.original_price || 0,
                   stock_quantity: variant.stock_quantity || 0,
+                  weight: variant.weight || 0,
                   images: variant.images || [],
                   image: null,
                   imagePreviewUrl: variantImagePath,
-                  isDelete: false, 
+                  isDelete: false,
                 }
               },
             )
 
-            
 
-            setVariants(formattedVariants)
+
+            setVariants(formattedVariants as any)
           }
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to load product data")
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to load product data"
+        setError(message)
       } finally {
         setIsLoading(false)
       }
@@ -180,179 +227,25 @@ export default function EditProductPage() {
     })
   }
 
-  const handleVariantImageChange = (e: React.ChangeEvent<HTMLInputElement>, variantId: number | string) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      const previewUrl = URL.createObjectURL(file)
+  // NOTE: Image handling for edit is slightly different due to existing images,
+  // but variant image handling is now via hook.
 
-      setVariants((prev) =>
-        prev.map((variant) => {
-          if (variant.id === variantId) {
-            // Nếu là URL từ browser, cần revoke để tránh memory leak
-            if (variant.imagePreviewUrl && !variant.imagePreviewUrl.includes("http://localhost:8000/storage/")) {
-              URL.revokeObjectURL(variant.imagePreviewUrl)
-            }
-            return {
-              ...variant,
-              image: file,
-              imagePreviewUrl: previewUrl,
-            }
-          }
-          return variant
-        }),
-      )
+  // Main Product Images Handlers
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files)
+      setSelectedImages((prev) => [...prev, ...filesArray])
     }
   }
 
-  const removeVariantImage = (variantId: number | string) => {
-    setVariants((prev) =>
-      prev.map((variant) => {
-        if (variant.id === variantId) {
-          // Nếu là URL từ browser, cần revoke để tránh memory leak
-          if (variant.imagePreviewUrl && !variant.imagePreviewUrl.includes("http://localhost:8000/storage/")) {
-            URL.revokeObjectURL(variant.imagePreviewUrl)
-          }
-          return {
-            ...variant,
-            image: null,
-            imagePreviewUrl: "",
-          }
-        }
-        return variant
-      }),
-    )
+  const removeNewImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
-  // Add new attribute category
-  const addAttributeCategory = () => {
-    if (!newAttributeName.trim()) return
-
-    const attributeId = `attr-${Date.now()}`
-    setAttributes((prev) => [...prev, { id: attributeId, name: newAttributeName.trim(), values: [] }])
-    setNewAttributeName("")
-    setNewAttributeValues((prev) => ({ ...prev, [attributeId]: "" }))
-  }
-
-  // Remove attribute category
-  const removeAttributeCategory = (attributeId: string) => {
-    setAttributes((prev) => prev.filter((attr) => attr.id !== attributeId))
-
-    if (variants.length > 0) {
-      const attrName = attributes.find((a) => a.id === attributeId)?.name
-      if (attrName) {
-        setVariants((prev) =>
-          prev.map((variant) => {
-            const newAttributes = { ...variant.attributes }
-            delete newAttributes[attrName]
-            return { ...variant, attributes: newAttributes }
-          }),
-        )
-      }
-    }
-  }
-
-  // Add attribute value
-  const addAttributeValue = (attributeId: string) => {
-    const value = newAttributeValues[attributeId]?.trim()
-    if (!value) return
-
-    setAttributes((prev) =>
-      prev.map((attr) => (attr.id === attributeId ? { ...attr, values: [...attr.values, value] } : attr)),
-    )
-
-    setNewAttributeValues((prev) => ({ ...prev, [attributeId]: "" }))
-  }
-
-  // Remove attribute value
-  const removeAttributeValue = (attributeId: string, valueToRemove: string): void => {
-    setAttributes((prev) =>
-      prev.map((attr) =>
-        attr.id === attributeId ? { ...attr, values: attr.values.filter((v) => v !== valueToRemove) } : attr,
-      ),
-    )
-  }
-
-  // Generate all possible variants from attributes
-  const generateVariants = (): void => {
-    const activeAttributes = attributes.filter((attr) => attr.values.length > 0)
-    if (activeAttributes.length === 0) {
-      setError("Vui lòng thêm ít nhất một phân loại và giá trị")
-      return
-    }
-
-    const combinations: Record<string, string>[] = []
-
-    const generateCombinations = (index: number, current: Record<string, string>) => {
-      if (index === activeAttributes.length) {
-        combinations.push({ ...current })
-        return
-      }
-
-      const attr = activeAttributes[index]
-      for (const value of attr.values) {
-        current[attr.name] = value
-        generateCombinations(index + 1, current)
-      }
-    }
-
-    generateCombinations(0, {})
-
-    // Kiểm tra xem variant đã tồn tại chưa
-    const existingVariantMap = new Map<string, (typeof variants)[0]>()
-
-    variants.forEach((variant) => {
-      const key = JSON.stringify(variant.attributes)
-      existingVariantMap.set(key, variant)
-    })
-
-    // Tạo mảng variants mới, giữ lại các variant đã tồn tại
-    const newVariants = combinations.map((combo) => {
-      const key = JSON.stringify(combo)
-      if (existingVariantMap.has(key)) {
-        return existingVariantMap.get(key)!
-      }
-
-      return {
-        id: `new-${Date.now()}-${Math.random()}`,
-        product_id: Number.parseInt(productId),
-        attributes: combo,
-        sku: "",
-        price: formData?.price ?? "",
-        original_price: formData?.original_price ?? "",
-        stock_quantity: "0",
-        is_active: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        images: [],
-        image: null,
-        imagePreviewUrl: "",
-        isDelete: false, 
-      }
-    })
-
-    // Ensure all newVariants are of the correct type
-    setVariants(newVariants as typeof variants)
-    setError("")
-  }
-  const updateVariant = (variantId: number, field: string, value: string) => {
-    setVariants((prev) => prev.map((variant) => (variant.id === variantId ? { ...variant, [field]: value } : variant)))
-  }
-
-  // Remove variant
-  const removeVariant = (variantId: number | string): void => {
-    // Clean up image preview URL
-    const variant = variants.find((v) => v.id === variantId)
-    if (variant && variant.imagePreviewUrl) {
-      URL.revokeObjectURL(variant.imagePreviewUrl)
-    }
-
-    setVariants((prev) => prev.map((variant) => variant.id === variantId ? { ...variant, isDelete: true } : variant))
-  }
-
-  // Calculate total number of variants
-  const calculateTotalVariants = () => {
-    return attributes.filter((attr) => attr.values.length > 0).reduce((acc, attr) => acc * attr.values.length, 1)
-  }
+  // Note: For existing images, we might need a way to mark them for deletion.
+  // For now, valid display is a start. Deletion of existing main images 
+  // might require separate API or specific logic not yet in PancakeService.
+  // We will display them and allow adding new ones.
 
   // Sửa hàm handleSubmit để xử lý đúng hình ảnh biến thể
 
@@ -380,33 +273,55 @@ export default function EditProductPage() {
         formDataToSend.append("name", formData.name ?? "")
         formDataToSend.append("description", formData.description ?? "")
         formDataToSend.append("category_id", String(formData.category_id ?? ""))
-        formDataToSend.append("is_new", formData.is_new ? "1" : "0")
-        formDataToSend.append("is_featured", formData.is_featured ? "1" : "0")
+        formDataToSend.append("custom_id", formData.custom_id ?? "")
+        formDataToSend.append("note", formData.note ?? "")
+        formDataToSend.append("is_sell_negative", formData.is_sell_negative ? "1" : "0")
+        formDataToSend.append("hide_config_product", formData.hide_config_product ? "1" : "0")
+
+        if (formData.tags) {
+          const tagsString = typeof formData.tags === 'string' ? formData.tags : formData.tags.join(',');
+          const tagsArray = tagsString.split(',').map((t: string) => t.trim()).filter(Boolean)
+          tagsArray.forEach((t: string, i: number) => formDataToSend.append(`tags[${i}]`, t))
+        }
+      }
+
+      // Product attributes (Global)
+      if (attributes.length > 0) {
+        attributes.forEach((attr, index) => {
+          formDataToSend.append(`product_attributes[${index}][name]`, attr.name)
+          attr.values.forEach((val, valIndex) => {
+            formDataToSend.append(`product_attributes[${index}][values][${valIndex}]`, val)
+          })
+        })
       }
 
       if (variants.length > 0) {
         // Product with variants
         variants.forEach((variant, index) => {
-          // If variant has an ID that's a number, it's an existing variant
-          if (typeof variant.id === "number") {
-            formDataToSend.append(`variants[${index}][id]`, variant.id.toString())
+          // If variant has an ID that's not temporary (doesn't start with 'new-')
+          if (variant.id && !String(variant.id).startsWith('new-')) {
+            formDataToSend.append(`variations[${index}][id]`, variant.id.toString())
           }
 
-          formDataToSend.append(`variants[${index}][sku]`, variant.sku)
-          formDataToSend.append(`variants[${index}][price]`, String(variant.price))
-          formDataToSend.append(`variants[${index}][original_price]`,  String(variant.original_price) || "")
-          formDataToSend.append(`variants[${index}][stock_quantity]`,  String(variant.stock_quantity))
-          formDataToSend.append(`variants[${index}][isDelete]`,  String(variant.isDelete))
+          formDataToSend.append(`variations[${index}][sku]`, variant.sku)
+          formDataToSend.append(`variations[${index}][price]`, String(variant.price))
+          formDataToSend.append(`variations[${index}][original_price]`, String(variant.original_price) || "")
+          formDataToSend.append(`variations[${index}][stock_quantity]`, String(variant.stock_quantity))
+          formDataToSend.append(`variations[${index}][weight]`, String(variant.weight || 0))
+          formDataToSend.append(`variations[${index}][isDelete]`, String(variant.isDelete))
 
           // Convert attributes object to array format
+          let attrIndex = 0;
           Object.entries(variant.attributes).forEach(([key, value]) => {
-            formDataToSend.append(`variants[${index}][attributes][]`, JSON.stringify({ name: key, value: value }))
+            formDataToSend.append(`variations[${index}][attributes][${attrIndex}][name]`, key)
+            formDataToSend.append(`variations[${index}][attributes][${attrIndex}][value]`, String(value))
+            attrIndex++
           })
 
           // Variant image handling - Đảm bảo gửi đúng định dạng như khi tạo mới
           if (variant.image instanceof File) {
             // Nếu có hình ảnh mới được chọn, gửi file hình ảnh
-            formDataToSend.append(`variants[${index}][image]`, variant.image)
+            formDataToSend.append(`variations[${index}][image]`, variant.image)
 
             // Debug để kiểm tra
             console.log(`Adding image for variant ${index}:`, variant.image.name)
@@ -420,7 +335,7 @@ export default function EditProductPage() {
         console.log(pair[0], pair[1] instanceof File ? `File: ${(pair[1] as File).name}` : pair[1])
       }
 
-      const response = await updateProduct(Number(productId), formDataToSend)
+      const response = await updateProduct(productId, formDataToSend)
 
       if (response.success) {
         toast({
@@ -431,11 +346,13 @@ export default function EditProductPage() {
       } else {
         throw new Error(response.message || "Failed to update product")
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to update product")
+
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update product"
+      setError(message)
       toast({
         title: "Lỗi",
-        description: err.message || "Không thể cập nhật sản phẩm",
+        description: message,
         variant: "destructive",
       })
     } finally {
@@ -443,9 +360,12 @@ export default function EditProductPage() {
     }
   }
 
-  // Sửa hàm handleVariantImageChange để xử lý đúng hình ảnh biến thể
 
-  // Sửa hàm removeVariantImage để xử lý đúng việc xóa hình ảnh biến thể
+
+  // Note: For existing images, we might need a way to mark them for deletion.
+  // For now, valid display is a start. Deletion of existing main images 
+  // might require separate API or specific logic not yet in PancakeService.
+  // We will display them and allow adding new ones.
 
   if (isLoading) {
     return (
@@ -504,6 +424,20 @@ export default function EditProductPage() {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
+              <Label htmlFor="custom_id" className="text-base">
+                Mã sản phẩm (Bên trong Pancake)
+              </Label>
+              <Input
+                id="custom_id"
+                name="custom_id"
+                value={formData?.custom_id ?? ""}
+                onChange={handleInputChange}
+                className="mt-2"
+                placeholder="VD: QUANAO-001"
+              />
+            </div>
+
+            <div>
               <Label htmlFor="name" className="text-base">
                 Tên sản phẩm *
               </Label>
@@ -539,6 +473,25 @@ export default function EditProductPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label htmlFor="tags" className="text-base">
+                Thẻ (Tags)
+              </Label>
+              <Input
+                id="tags"
+                name="tags"
+                value={Array.isArray(formData?.tags) ? formData.tags.join(', ') : (formData?.tags ?? "")}
+                onChange={(e) => {
+                  setFormData((prev) => {
+                    if (!prev) return prev;
+                    return { ...prev, tags: e.target.value.split(',').map(t => t.trim()) };
+                  });
+                }}
+                className="mt-2"
+                placeholder="Cách nhau bằng dấu phẩy (VD: the1, the2)"
+              />
+            </div>
           </div>
 
           <div>
@@ -556,28 +509,92 @@ export default function EditProductPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-6">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="is_new"
-                checked={formData?.is_new ?? false}
-                onCheckedChange={(checked) => handleCheckboxChange("is_new", checked as boolean)}
-              />
-              <Label htmlFor="is_new" className="font-medium">
-                Sản phẩm mới
-              </Label>
-            </div>
+          <div>
+            <Label htmlFor="note" className="text-base">
+              Ghi chú nội bộ
+            </Label>
+            <Input
+              id="note"
+              name="note"
+              value={formData?.note ?? ""}
+              onChange={handleInputChange}
+              className="mt-2"
+              placeholder="Nhập ghi chú"
+            />
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="is_featured"
-                checked={formData?.is_featured ?? false}
-                onCheckedChange={(checked) => handleCheckboxChange("is_featured", checked as boolean)}
+                id="is_sell_negative"
+                checked={formData?.is_sell_negative ?? false}
+                onCheckedChange={(checked) => handleCheckboxChange("is_sell_negative", checked as boolean)}
               />
-              <Label htmlFor="is_featured" className="font-medium">
-                Sản phẩm nổi bật
+              <Label htmlFor="is_sell_negative" className="font-medium text-blue-600">
+                Cho phép bán tồn kho âm
               </Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hide_config_product"
+                checked={formData?.hide_config_product ?? false}
+                onCheckedChange={(checked) => handleCheckboxChange("hide_config_product", checked as boolean)}
+              />
+              <Label htmlFor="hide_config_product" className="font-medium">
+                Không in sản phẩm khi in đơn
+              </Label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Product Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Hình ảnh sản phẩm</CardTitle>
+          <CardDescription>Quản lý hình ảnh sản phẩm</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Existing Images (Display Only for now) */}
+            {formData?.images?.map((image, index) => (
+              <div key={`existing-${image.id}`} className="relative aspect-square rounded-md overflow-hidden border">
+                <Image
+                  src={getImageUrl(image.image_path)}
+                  alt={image.alt_text || "Product Image"}
+                  width={200}
+                  height={200}
+                  className="object-cover w-full h-full"
+                />
+                <div className="absolute top-1 right-1 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                  Đã lưu
+                </div>
+              </div>
+            ))}
+
+            {/* New Images */}
+            {selectedImages.map((image, index) => (
+              <div key={`new-${index}`} className="relative aspect-square rounded-md overflow-hidden border group">
+                <img
+                  src={URL.createObjectURL(image)}
+                  alt={`New Product ${index + 1}`}
+                  className="object-cover w-full h-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeNewImage(index)}
+                  className="absolute top-1 right-1 bg-destructive/90 text-white rounded-full p-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+
+            <label className="flex flex-col items-center justify-center aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50 transition-colors cursor-pointer">
+              <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+              <span className="text-xs text-muted-foreground">Tải ảnh lên</span>
+              <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+            </label>
           </div>
         </CardContent>
       </Card>
@@ -692,7 +709,7 @@ export default function EditProductPage() {
                 <p className="font-medium">
                   Tổng số biến thể: <span className="text-primary">{calculateTotalVariants()}</span>
                 </p>
-                <Button type="button" onClick={generateVariants} className="w-full mt-3">
+                <Button type="button" onClick={() => generateVariants(String(formData?.price || ''), String(formData?.original_price || ''), String(formData?.stock_quantity || ''))} className="w-full mt-3">
                   Tạo tất cả biến thể
                 </Button>
               </CardContent>
@@ -713,11 +730,12 @@ export default function EditProductPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="text-left p-3 font-medium">Biến thể</th>
-                    <th className="text-left p-3 font-medium">SKU *</th>
+                    <th className="text-left p-3 font-medium">Thuộc tính</th>
+                    <th className="text-left p-3 font-medium">Mã vạch *</th>
                     <th className="text-left p-3 font-medium">Giá bán</th>
-                    <th className="text-left p-3 font-medium">Giá gốc</th>
-                    <th className="text-left p-3 font-medium">Tồn kho</th>
+                    <th className="text-left p-3 font-medium">Giá nhập</th>
+                    <th className="text-left p-3 font-medium">Trọng lượng (g)</th>
+                    <th className="text-left p-3 font-medium">Có thể bán</th>
                     <th className="text-left p-3 font-medium">Hình ảnh</th>
                     <th className="text-left p-3 font-medium">Thao tác</th>
                   </tr>
@@ -755,8 +773,17 @@ export default function EditProductPage() {
                         <Input
                           type="number"
                           value={variant.original_price}
-                          onChange={(e) => updateVariant(variant.id, "original_price", e.target.value)}
-                          className="w-24"
+                          disabled
+                          title="Giá nhập chỉ có thể thay đổi trên bộ đệm quản lý kho Pancake"
+                          className="w-24 bg-muted text-muted-foreground cursor-not-allowed"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          value={variant.weight || ""}
+                          onChange={(e) => updateVariant(variant.id, "weight", e.target.value)}
+                          className="w-20"
                         />
                       </td>
                       <td className="p-3">

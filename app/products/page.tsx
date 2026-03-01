@@ -209,25 +209,46 @@ export default function ProductsPage() {
           </div>
         ) : (
           <>
-            <AnimatePresence mode="popLayout">
+            {sortedProducts.length === 0 ? (
               <motion.div
-                layout
-                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-32 px-4 text-center border border-black/5 bg-gray-50 mt-12"
               >
-                {sortedProducts.map((product, index) => (
-                  <motion.div
-                    layout
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.4, delay: index * 0.05 }}
-                  >
-                    <ProductCard product={product} />
-                  </motion.div>
-                ))}
+                <div className="mb-6 text-gray-300">
+                  <Filter className="w-16 h-16 stroke-[1]" />
+                </div>
+                <h2 className="text-3xl font-black uppercase tracking-tighter mb-8">
+                  {t("products.noProductsFound")}
+                </h2>
+                <Button
+                  onClick={() => { setSelectedCategory(null); setSortBy("featured"); }}
+                  className="bg-black text-white hover:bg-gray-800 uppercase font-bold tracking-widest px-8 rounded-none"
+                >
+                  {t("products.clearFilters")}
+                </Button>
               </motion.div>
-            </AnimatePresence>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                <motion.div
+                  layout
+                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-12 md:gap-x-8 md:gap-y-16"
+                >
+                  {sortedProducts.map((product, index) => (
+                    <motion.div
+                      layout
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.4, delay: index * 0.05 }}
+                    >
+                      <ProductCard product={product} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            )}
 
             {/* Pagination */}
             {totalPages > 1 && (

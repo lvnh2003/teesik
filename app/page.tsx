@@ -9,6 +9,7 @@ import { useEffect, useState, useRef } from "react"
 import { getProducts } from "@/lib/admin-api"
 import { Product } from "@/type/product"
 import { motion, useScroll, useTransform } from "framer-motion"
+import PhotoSlider from "@/components/photo-slider"
 
 export default function Home() {
   const { t } = useLanguage()
@@ -60,7 +61,7 @@ export default function Home() {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col items-center justify-center flex-grow text-center"
         >
-          <h1 className="text-[15vw] leading-[0.8] font-black tracking-tighter uppercase mix-blend-difference text-black">
+          <h1 className="text-[clamp(4rem,12vw,12rem)] leading-[0.85] font-black tracking-tighter uppercase mix-blend-difference text-black pb-4">
             Teesik
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-b from-black to-transparent">Objects</span>
@@ -94,10 +95,13 @@ export default function Home() {
       </section>
 
       {/* Marquee - Spacer */}
-      <div className="relative z-10 bg-black text-white py-4 overflow-hidden rotate-[-1deg] scale-105 origin-left mt-[80vh]">
+      <PhotoSlider />
+
+      {/* Marquee - Spacer */}
+      <div className="relative z-20 bg-black text-white py-4 overflow-hidden border-y border-white/10 shadow-xl">
         <div className="whitespace-nowrap animate-marquee flex gap-8">
           {[...Array(10)].map((_, i) => (
-            <span key={i} className="text-4xl font-black uppercase tracking-tight mx-4">
+            <span key={i} className="text-2xl font-black uppercase tracking-widest mx-4">
               {t("home.marquee")}
             </span>
           ))}
@@ -105,7 +109,7 @@ export default function Home() {
       </div>
 
       {/* Main Content - White Background to cover Hero */}
-      <div className="relative z-10 bg-[#FDFBF7] pt-24 pb-32 rounded-t-[3rem] -mt-10 shadow-2xl">
+      <div className="relative z-10 bg-[#FDFBF7] pt-32 pb-32 rounded-t-[3rem] shadow-2xl">
 
         {/* Intro Text */}
         <section className="container mx-auto px-6 mb-32">

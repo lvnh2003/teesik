@@ -7,6 +7,7 @@ import MainNav from "@/components/main-nav"
 import Footer from "@/components/footer"
 import { AuthProvider } from "@/contexts/auth-context"
 import { WishlistProvider } from "@/contexts/wishlist-context"
+import { CartProvider } from "@/contexts/cart-context"
 import { usePathname } from "next/navigation"
 
 // Định nghĩa font Playfair Display
@@ -38,9 +39,11 @@ export default function RootLayout({
         <AuthProvider>
           <LanguageProvider>
             <WishlistProvider>
-              {!isAdminRoute && <MainNav />}
-              <main>{children}</main>
-              {!isAdminRoute && <Footer />}
+              <CartProvider>
+                {!isAdminRoute && <MainNav />}
+                <main>{children}</main>
+                {!isAdminRoute && <Footer />}
+              </CartProvider>
             </WishlistProvider>
           </LanguageProvider>
         </AuthProvider>

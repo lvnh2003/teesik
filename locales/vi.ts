@@ -262,6 +262,7 @@ export const vi = {
     "checkout.paymentError": "Có lỗi xảy ra khi thanh toán",
 
     // About
+    "about.title": "VỀ CHÚNG TÔI",
     "about.home": "TRANG CHỦ",
     "about.ourStory": "CÂU CHUYỆN\nCỦA CHÚNG TÔI",
     "about.storyText": "Được thành lập với tinh thần nổi loạn và một mục tiêu cao cả: cung cấp các sản phẩm thiết kế với mức giá mang tính cách mạng, đồng thời dẫn đầu xu hướng cho các doanh nghiệp có trách nhiệm xã hội.",

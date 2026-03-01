@@ -78,7 +78,7 @@ export default function CollectionsPage() {
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
-            className="text-[12vw] leading-none font-black tracking-tighter uppercase text-black mb-12 text-center md:text-left"
+            className="text-[clamp(3rem,8vw,8rem)] leading-tight font-black tracking-tighter uppercase text-black mb-12 text-center md:text-left whitespace-pre-line"
           >
             {t("collections.title")}
           </motion.h1>

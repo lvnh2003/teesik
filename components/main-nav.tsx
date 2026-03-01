@@ -15,6 +15,7 @@ import { Category } from "@/type/product"
 import { getCategories } from "@/lib/admin-api"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 import { useWishlist } from "@/contexts/wishlist-context"
+import { useCart } from "@/contexts/cart-context"
 import { Heart } from "lucide-react"
 
 export default function MainNav() {
@@ -27,6 +28,7 @@ export default function MainNav() {
   const [isScrolled, setIsScrolled] = useState(false)
   const { scrollY } = useScroll()
   const { items } = useWishlist()
+  const { cartCount } = useCart()
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (latest > 50) {
@@ -194,16 +196,16 @@ export default function MainNav() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsSearchOpen(true)}
-                className="text-black hover:bg-black/5"
+                className="text-black hover:bg-black/5 hover:scale-110 transition-transform"
               >
-                <Search className="h-5 w-5" />
+                <Search className="h-6 w-6" />
                 <span className="sr-only">Search</span>
               </Button>
             )}
             {isLoggedIn && user ? (
               <div className="relative group">
-                <Button variant="ghost" size="icon" className="text-black hover:bg-black/5">
-                  <User className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="text-black hover:bg-black/5 hover:scale-110 transition-transform">
+                  <User className="h-6 w-6" />
                   <span className="sr-only">Account</span>
                 </Button>
 
@@ -211,7 +213,7 @@ export default function MainNav() {
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                   <div className="p-4 border-b border-gray-200">
                     <p className="font-medium text-sm">
-                      {user.first_name} {user.last_name}
+                      {user.name}
                     </p>
                     <p className="text-xs text-gray-600">{user.email}</p>
                   </div>
@@ -234,18 +236,17 @@ export default function MainNav() {
               </div>
             ) : (
               <Link href="/account">
-                <Button variant="ghost" size="icon" className="text-black hover:bg-black/5">
-                  <User className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="text-black hover:bg-black/5 hover:scale-110 transition-transform">
+                  <User className="h-6 w-6" />
                   <span className="sr-only">Account</span>
                 </Button>
               </Link>
             )}
-            {/* Wishlist Link */}
             <Link href="/wishlist">
-              <Button variant="ghost" size="icon" className="relative text-black hover:bg-black/5">
-                <Heart className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="relative text-black hover:bg-black/5 hover:scale-110 transition-transform">
+                <Heart className="h-6 w-6" />
                 {items.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                     {items.length}
                   </span>
                 )}
@@ -254,11 +255,13 @@ export default function MainNav() {
             </Link>
 
             <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative text-black hover:bg-black/5">
-                <ShoppingBag className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  3
-                </span>
+              <Button variant="ghost" size="icon" className="relative text-black hover:bg-black/5 hover:scale-110 transition-transform">
+                <ShoppingBag className="h-6 w-6" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
                 <span className="sr-only">Cart</span>
               </Button>
             </Link>

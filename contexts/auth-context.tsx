@@ -3,7 +3,6 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import {
-  type User,
   login as apiLogin,
   register as apiRegister,
   getCurrentUser,
@@ -11,6 +10,7 @@ import {
   removeAuthToken,
   isAuthenticated,
 } from "@/lib/auth"
+import type { User } from "@/type"
 
 interface AuthContextType {
   user: User | null

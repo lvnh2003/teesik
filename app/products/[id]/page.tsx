@@ -12,12 +12,16 @@ import ProductSlider from "@/components/product-slider"
 import { getImageUrl, getProduct } from "@/lib/admin-api"
 import type { Product, ProductImage, ProductVariant } from "@/type/product"
 import Loading from "@/app/loading"
+import { useToast } from "@/components/ui/use-toast"
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion"
 import { useLanguage } from "@/contexts/language-context"
+import { useCart } from "@/contexts/cart-context"
 
 export default function ProductPage() {
   const { t } = useLanguage()
+  const { toast } = useToast()
+  const { addToCart } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
@@ -32,12 +36,12 @@ export default function ProductPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data: productData } = await getProduct(Number(id))
+        const { data: productData } = await getProduct(id)
         setProduct(productData)
 
         // Set default variant and attributes
-        if (productData && productData.variants && productData.variants.length > 0) {
-          const firstVariant = productData.variants[0]
+        if (productData && productData.variations && productData.variations.length > 0) {
+          const firstVariant = productData.variations[0]
           setSelectedVariant(firstVariant)
           if (firstVariant.attributes) {
             setSelectedAttributes(firstVariant.attributes)
@@ -149,7 +153,7 @@ export default function ProductPage() {
     : ["/placeholder.svg?height=1000&width=800"]
 
   // Get unique attributes from all variants
-  const attributeOptions = (product.variants || []).reduce(
+  const attributeOptions = (product.variations || []).reduce(
     (acc, variant) => {
       if (variant.attributes) {
         Object.entries(variant.attributes).forEach(([key, value]) => {
@@ -168,7 +172,7 @@ export default function ProductPage() {
     setSelectedAttributes(newAttributes)
 
     // Find matching variant
-    const matchingVariant = product.variants?.find((variant) => {
+    const matchingVariant = product.variations?.find((variant) => {
       if (!variant.attributes) return false
       return Object.entries(newAttributes).every(([key, val]) => variant.attributes[key] === val)
     })
@@ -182,7 +186,7 @@ export default function ProductPage() {
   // Check if variant is available (has stock)
   const isVariantAvailable = (attributeName: string, value: string) => {
     const testAttributes = { ...selectedAttributes, [attributeName]: value }
-    const matchingVariant = product.variants?.find((variant) => {
+    const matchingVariant = product.variations?.find((variant) => {
       if (!variant.attributes) return false
       return Object.entries(testAttributes).every(([key, val]) => variant.attributes[key] === val)
     })
@@ -197,6 +201,30 @@ export default function ProductPage() {
     currentOriginalPrice && currentOriginalPrice > currentPrice
       ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100)
       : null
+
+  const handleAddToCart = async () => {
+    if (!product) return
+
+    try {
+      setLoading(true)
+      await addToCart(product.id, quantity, selectedVariant?.id)
+
+      toast({
+        title: t("cart.added"),
+        description: `${product.name} ${selectedVariant ? (selectedVariant.attributes?.color + ' / ' + selectedVariant.attributes?.size) : ''}`,
+      })
+
+    } catch (error) {
+      console.error("Add to cart error", error)
+      toast({
+        title: "Error",
+        description: "Could not add to cart",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="bg-white min-h-screen pb-20">
@@ -320,6 +348,7 @@ export default function ProductPage() {
                   size="lg"
                   className="flex-1 rounded-none bg-black hover:bg-gray-800 text-white h-16 text-sm font-bold tracking-widest uppercase"
                   disabled={currentStock === 0}
+                  onClick={handleAddToCart}
                 >
                   <ShoppingBag className="mr-3 h-4 w-4" />
                   {currentStock > 0 ? t("product.addToCollection") : t("product.soldOut")}

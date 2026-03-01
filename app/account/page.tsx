@@ -127,10 +127,7 @@ export default function AccountPage() {
 
             {/* Login Form */}
             <TabsContent value="login">
-              <div className="bg-white p-8 shadow-lg">
-                <h2 className="text-2xl font-black tracking-tighter mb-6 text-black uppercase text-center">
-                  Đăng Nhập
-                </h2>
+              <div className="bg-white p-8 shadow-lg pt-12">
                 <form onSubmit={handleLoginSubmit} className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium tracking-wider uppercase mb-2">Email</label>
@@ -172,10 +169,10 @@ export default function AccountPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" disabled={isLoading} />
-                      <span className="text-sm text-gray-600">Ghi nhớ đăng nhập</span>
+                  <div className="flex items-center justify-between mt-6">
+                    <label className="flex items-center h-5 cursor-pointer">
+                      <input type="checkbox" className="mr-2 h-4 w-4 bg-gray-50 border-gray-300 rounded focus:ring-black" disabled={isLoading} />
+                      <span className="text-sm text-gray-600 select-none">Ghi nhớ đăng nhập</span>
                     </label>
                     <a href="#" className="text-sm text-black hover:text-gray-600 font-medium">
                       Quên mật khẩu?
@@ -195,23 +192,22 @@ export default function AccountPage() {
 
             {/* Register Form */}
             <TabsContent value="register">
-              <div className="bg-white p-8 shadow-lg">
-                <h2 className="text-2xl font-black tracking-tighter mb-6 text-black uppercase text-center">Đăng Ký</h2>
+              <div className="bg-white p-8 shadow-lg pt-12">
                 <form onSubmit={handleRegisterSubmit} className="space-y-6">
                   <div>
-                      <label className="block text-sm font-medium tracking-wider uppercase mb-2">Họ và tên</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                        <Input
-                          type="text"
-                          placeholder="Nguyen Van A"
-                          value={registerData.name}
-                          onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                          className="pl-12 h-12 border-2 border-gray-200 focus:border-black"
-                          required
-                          disabled={isLoading}
-                        />
-                      </div>
+                    <label className="block text-sm font-medium tracking-wider uppercase mb-2">Họ và tên</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                      <Input
+                        type="text"
+                        placeholder="Nguyen Van A"
+                        value={registerData.name}
+                        onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                        className="pl-12 h-12 border-2 border-gray-200 focus:border-black"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -293,8 +289,8 @@ export default function AccountPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-start">
-                    <input type="checkbox" className="mr-3 mt-1" required disabled={isLoading} />
+                  <div className="flex items-start mt-6">
+                    <input type="checkbox" className="mr-3 mt-1 h-4 w-4 bg-gray-50 border-gray-300 rounded focus:ring-black" required disabled={isLoading} />
                     <span className="text-sm text-gray-600">
                       Tôi đồng ý với{" "}
                       <a href="#" className="text-black font-medium hover:text-gray-600">

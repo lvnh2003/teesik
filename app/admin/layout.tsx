@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { checkAdminRole } from "@/lib/admin-auth"
-import { LayoutDashboard, Package, Users, ShoppingCart, Settings, LogOut, Menu, X, ChevronDown } from "lucide-react"
+import { LayoutDashboard, Package, Users, ShoppingCart, Settings, LogOut, Menu, X, ChevronDown, CreditCard, ShoppingBag, Tag, BarChart, Contact } from "lucide-react"
 import { removeAuthToken } from "@/lib/auth"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -69,7 +69,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       ],
     },
     { name: "Người dùng", href: "/admin/users", icon: <Users className="h-5 w-5" /> },
+    { name: "Khách hàng", href: "/admin/customers", icon: <Contact className="h-5 w-5" /> },
     { name: "Đơn hàng", href: "/admin/orders", icon: <ShoppingCart className="h-5 w-5" /> },
+    { name: "Giao dịch", href: "/admin/transactions", icon: <CreditCard className="h-5 w-5" /> },
+    { name: "Nhập hàng", href: "/admin/purchases", icon: <ShoppingBag className="h-5 w-5" /> },
+    {
+      name: "Marketing",
+      href: "/admin/promotions",
+      icon: <Tag className="h-5 w-5" />,
+      subItems: [
+        { name: "Khuyến mãi", href: "/admin/promotions" },
+        { name: "Voucher", href: "/admin/vouchers" },
+        { name: "Combo", href: "/admin/combos" },
+      ],
+    },
+    { name: "Thống kê", href: "/admin/statistics", icon: <BarChart className="h-5 w-5" /> },
     { name: "Cài đặt", href: "/admin/settings", icon: <Settings className="h-5 w-5" /> },
   ]
 
@@ -91,9 +105,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar for desktop */}
       <aside
-        className={`bg-gray-900 text-white w-64 fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`bg-gray-900 text-white w-64 fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-800">
           <Link href="/admin" className="text-xl font-bold tracking-tight">
@@ -122,9 +135,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <div className="mb-2">
                       <button
                         onClick={() => toggleSubmenu(item.name)}
-                        className={`flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-gray-800 ${
-                          isActive ? "bg-gray-800" : ""
-                        }`}
+                        className={`flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-gray-800 ${isActive ? "bg-gray-800" : ""
+                          }`}
                       >
                         <div className="flex items-center">
                           {item.icon}
@@ -140,9 +152,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                               <li key={subItem.name}>
                                 <Link
                                   href={subItem.href}
-                                  className={`block px-4 py-2 rounded-lg hover:bg-gray-800 ${
-                                    isSubActive ? "bg-gray-800" : ""
-                                  }`}
+                                  className={`block px-4 py-2 rounded-lg hover:bg-gray-800 ${isSubActive ? "bg-gray-800" : ""
+                                    }`}
                                   onClick={() => setIsSidebarOpen(false)} // Close sidebar on mobile when clicking sub-item
                                 >
                                   {subItem.name}
@@ -156,9 +167,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   ) : (
                     <Link
                       href={item.href}
-                      className={`flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 ${
-                        isActive ? "bg-gray-800" : ""
-                      }`}
+                      className={`flex items-center px-4 py-3 rounded-lg hover:bg-gray-800 ${isActive ? "bg-gray-800" : ""
+                        }`}
                       onClick={() => setIsSidebarOpen(false)} // Close sidebar on mobile when clicking item
                     >
                       {item.icon}

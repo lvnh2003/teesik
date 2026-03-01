@@ -11,19 +11,11 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { getCart, checkout, getImageUrl } from "@/lib/admin-api"
+import { getCart, checkout, getImageUrl, processPayment } from "@/lib/admin-api"
 import { useLanguage } from "@/contexts/language-context"
+import { CartItem } from "@/type"
 
-interface CartItem {
-  product_id: number
-  variant_id?: number
-  name: string
-  price: number
-  quantity: number
-  image: string
-  color?: string
-  size?: string
-}
+
 
 export default function CheckoutPage() {
   const { t } = useLanguage()
@@ -88,16 +80,32 @@ export default function CheckoutPage() {
 
   const handlePayment = async () => {
     try {
-      await checkout({
+      const result = await checkout({
         customer_name: customerName,
         customer_email: guestEmail || 'user@example.com',
         address: `${address}, ${district}, ${city}`,
         phone: phone,
         payment_method: paymentMethod
       })
-      setOrderStep("success")
-    } catch (e) {
-      alert("Có lỗi xảy ra khi thanh toán")
+
+      if (result.success && result.order) {
+        // Process mock payment
+        try {
+          if (paymentMethod !== 'cod') { // Assuming COD doesn't need immediate payment processing
+            await processPayment(result.order.id, paymentMethod)
+          }
+          setOrderStep("success")
+        } catch (paymentError) {
+          console.error("Payment failed", paymentError)
+          alert("Đặt hàng thành công nhưng thanh toán thất bại. Vui lòng liên hệ bộ phận CSKH.")
+          setOrderStep("success") // Still show success as order was created
+        }
+      } else {
+        alert("Dữ liệu trả về không hợp lệ")
+      }
+    } catch (e: any) {
+      console.error(e)
+      alert("Có lỗi xảy ra khi thanh toán: " + (e.message || "Lỗi không xác định"))
     }
   }
 

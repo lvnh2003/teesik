@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useAdminAuth } from "@/lib/admin-auth"
-import { getProducts, deleteProduct, getProduct } from "@/lib/admin-api"
+import { getProducts, deleteProduct, getProduct, getImageUrl } from "@/lib/admin-api"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -20,6 +20,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
   Plus,
+  Minus,
+  PlusCircle,
   Search,
   Edit,
   AlertCircle,
@@ -59,21 +61,32 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [productToDelete, setProductToDelete] = useState<number | null>(null)
+  const [productToDelete, setProductToDelete] = useState<string | number | null>(null)
   const [sortField, setSortField] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
 
   // Trạng thái cho modal xem trước sản phẩm
   const [previewModalOpen, setPreviewModalOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [loadingProductId, setLoadingProductId] = useState<number | null>(null)
-  const [duplicatingProductId, setDuplicatingProductId] = useState<number | null>(null)
+  const [loadingProductId, setLoadingProductId] = useState<string | number | null>(null)
+  const [duplicatingProductId, setDuplicatingProductId] = useState<string | number | null>(null)
+  const [expandedProductIds, setExpandedProductIds] = useState<Set<string | number>>(new Set())
+
+  const toggleProductExpand = (productId: string | number) => {
+    const newExpanded = new Set(expandedProductIds)
+    if (newExpanded.has(productId)) {
+      newExpanded.delete(productId)
+    } else {
+      newExpanded.add(productId)
+    }
+    setExpandedProductIds(newExpanded)
+  }
 
   useEffect(() => {
     const fetchProducts = async () => {
       await checkAuth()
       try {
-        const response = await getProducts(currentPage)
+        const response = await getProducts({ page: currentPage })
         if (response.data) {
           setProducts(response.data)
         }
@@ -93,7 +106,7 @@ export default function ProductsPage() {
     fetchProducts()
   }, [currentPage])
 
-  const handleDeleteClick = (productId: number) => {
+  const handleDeleteClick = (productId: string | number) => {
     setProductToDelete(productId)
     setDeleteDialogOpen(true)
   }
@@ -131,7 +144,7 @@ export default function ProductsPage() {
   }
 
   // Xử lý xem trước sản phẩm
-  const handlePreviewProduct = async (productId: number) => {
+  const handlePreviewProduct = async (productId: string | number) => {
     setLoadingProductId(productId)
     try {
       const response = await getProduct(productId)
@@ -214,7 +227,7 @@ export default function ProductsPage() {
 
   // Count variants for a product
   const getVariantCount = (product: Product) => {
-    return product.variants?.length || 0
+    return product.variations?.length || 0
   }
 
   if (isLoading) {
@@ -274,6 +287,7 @@ export default function ProductsPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-[40px]"></TableHead>
               <TableHead className="w-[100px]">Ảnh</TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
                 <div className="flex items-center">
@@ -328,226 +342,234 @@ export default function ProductsPage() {
                 const variantCount = getVariantCount(product)
 
                 return (
-                  <TableRow key={product.id} className="group">
-                    <TableCell>
-                      <div className="relative h-16 w-16 rounded-md overflow-hidden border bg-muted/20">
-                        <Image
-                          src={
-                            product.images && product.images.length > 0
-                              ? `http://localhost:8000/storage/${product.images[0].image_path}`
-                              : "/placeholder.svg?height=64&width=64"
-                          }
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                        />
-                        {product.images && product.images.length > 1 && (
-                          <div className="absolute bottom-0 right-0 bg-background/80 rounded-tl-md px-1 py-0.5 text-xs font-medium">
-                            +{product.images.length - 1}
+                  <>
+                    <TableRow key={product.id} className="group cursor-pointer hover:bg-muted/30" onClick={() => variantCount > 0 && toggleProductExpand(product.id)}>
+                      <TableCell onClick={(e) => {
+                        e.stopPropagation();
+                        if (variantCount > 0) toggleProductExpand(product.id);
+                      }}>
+                        {variantCount > 0 && (
+                          <div className="flex items-center justify-center p-1 rounded-sm hover:bg-muted cursor-pointer">
+                            {expandedProductIds.has(product.id) ? (
+                              <Minus className="h-4 w-4 text-primary" />
+                            ) : (
+                              <PlusCircle className="h-4 w-4 text-primary" />
+                            )}
                           </div>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-[280px]">
-                        <div className="font-medium truncate">{product.name}</div>
-                        <div className="text-xs text-muted-foreground mt-1 truncate">ID: {product.id}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
-                                {product.sku || "-"}
-                              </span>
-                              {product.sku && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(product.sku || "")
-                                    toast({
-                                      title: "Đã sao chép",
-                                      description: "Mã SKU đã được sao chép vào clipboard",
-                                    })
-                                  }}
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </Button>
-                              )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="relative h-12 w-12 rounded-md overflow-hidden border bg-muted/20">
+                          <Image
+                            src={getImageUrl(product.images?.[0]?.image_path || "")}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                          />
+                          {product.images && product.images.length > 1 && (
+                            <div className="absolute bottom-0 right-0 bg-background/80 rounded-tl-md px-1 py-0.5 text-[10px] font-medium">
+                              +{product.images.length - 1}
                             </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Sao chép SKU</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                    <TableCell>
-                      {product.category?.name ? (
-                        <Badge variant="outline" className="font-normal">
-                          {product.category.name}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {new Intl.NumberFormat("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                            maximumFractionDigits: 0,
-                          }).format(product.price)}
+                          )}
                         </div>
-
-                        {discountPercentage && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-xs text-muted-foreground line-through">
-                              {new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                                maximumFractionDigits: 0,
-                              }).format(product.original_price || 0)}
-                            </span>
-                            <Badge className="bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800">
-                              -{discountPercentage}%
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div
-                        className={cn(
-                          "font-medium",
-                          product.stock_quantity <= 0
-                            ? "text-destructive"
-                            : product.stock_quantity < 10
-                              ? "text-amber-500"
-                              : "",
-                        )}
-                      >
-                        {product.stock_quantity}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {variantCount > 0 ? (
-                        <div className="flex items-center gap-1.5">
-                          <Layers className="h-4 w-4 text-muted-foreground" />
-                          <span>{variantCount}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[280px]">
+                          <div className="font-medium truncate text-sm">{product.name}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5 truncate hidden">ID: {product.id}</div>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">Không có</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1.5">
-                        {product.is_new && (
-                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800">Mới</Badge>
-                        )}
-                        {product.is_featured && (
-                          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100 hover:text-purple-800">
-                            Nổi bật
-                          </Badge>
-                        )}
-                        {product.stock_quantity <= 0 && (
-                          <Badge className="bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800">
-                            Hết hàng
-                          </Badge>
-                        )}
-                        {!product.is_new && !product.is_featured && product.stock_quantity > 0 && (
-                          <Badge variant="outline" className="text-muted-foreground">
-                            Bình thường
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
+                      </TableCell>
+                      <TableCell>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => handlePreviewProduct(product.id)}
-                                disabled={loadingProductId === product.id}
-                              >
-                                {loadingProductId === product.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Eye className="h-4 w-4" />
+                              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+                                  {product.sku || "-"}
+                                </span>
+                                {product.sku && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 opacity-0 group-hover:opacity-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(product.sku || "")
+                                      toast({
+                                        title: "Đã sao chép",
+                                        description: "Mã SKU đã được sao chép vào clipboard",
+                                      })
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
                                 )}
-                              </Button>
+                              </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Xem sản phẩm</p>
+                              <p>Sao chép SKU</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+                      </TableCell>
+                      <TableCell>
+                        {product.category?.name ? (
+                          <Badge variant="outline" className="font-normal text-xs">
+                            {product.category.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-sm">
+                            {new Intl.NumberFormat("vi-VN", {
+                              style: "currency",
+                              currency: "VND",
+                              maximumFractionDigits: 0,
+                            }).format(product.price)}
+                          </div>
 
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Link href={`/admin/products/${product.id}/edit`}>
-                                <Button variant="outline" size="icon" className="h-8 w-8">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Chỉnh sửa</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
+                          {discountPercentage && (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[10px] text-muted-foreground line-through">
+                                {new Intl.NumberFormat("vi-VN", {
+                                  style: "currency",
+                                  currency: "VND",
+                                  maximumFractionDigits: 0,
+                                }).format(product.original_price || 0)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div
+                          className={cn(
+                            "font-medium text-sm",
+                            product.stock_quantity <= 0
+                              ? "text-destructive"
+                              : product.stock_quantity < 10
+                                ? "text-amber-500"
+                                : "",
+                          )}
+                        >
+                          {product.stock_quantity}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {variantCount > 0 ? (
+                          <div className="flex items-center gap-1.5">
+                            <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm">{variantCount}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">Không có</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1.5">
+                          {product.is_new && (
+                            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800 text-[10px] px-1.5 py-0">Mới</Badge>
+                          )}
+                          {product.stock_quantity <= 0 && (
+                            <Badge className="bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800 text-[10px] px-1.5 py-0">
+                              Hết hàng
+                            </Badge>
+                          )}
+                          {!product.is_new && product.stock_quantity > 0 && (
+                            <Badge variant="outline" className="text-muted-foreground text-[10px] px-1.5 py-0">
+                              Bình thường
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        {/* Actions */}
+                        <div className="flex justify-end space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handlePreviewProduct(product.id)}
+                          >
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                          <Link href={`/admin/products/${product.id}/edit`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Edit className="h-4 w-4 text-muted-foreground" />
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Thao tác</DropdownMenuLabel>
-                            <DropdownMenuItem
-                              // onClick={() => handleDuplicateProduct(product.id)}
-                              disabled={duplicatingProductId === product.id}
-                            >
-                              {duplicatingProductId === product.id ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Đang nhân bản...
-                                </>
-                              ) : (
-                                <>
-                                  <CopyIcon className="h-4 w-4 mr-2" />
-                                  Nhân bản
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Star className="h-4 w-4 mr-2" />
-                              {product.is_featured ? "Bỏ nổi bật" : "Thêm vào nổi bật"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => handleDeleteClick(product.id)}
-                            >
-                              <AlertCircle className="h-4 w-4 mr-2" />
-                              Xóa sản phẩm
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Expanded Variations Row */}
+                    {expandedProductIds.has(product.id) && product.variations && product.variations.length > 0 && (
+                      <TableRow className="bg-muted/10 hover:bg-muted/10">
+                        <TableCell colSpan={10} className="p-0">
+                          <div className="px-10 py-4 bg-muted/10 border-b border-t shadow-inner">
+                            <Table className="bg-background rounded-md border text-xs">
+                              <TableHeader className="bg-muted/30">
+                                <TableRow>
+                                  <TableHead className="w-[60px] h-8">Ảnh</TableHead>
+                                  <TableHead className="h-8">Mã SKU</TableHead>
+                                  <TableHead className="h-8">Thuộc tính</TableHead>
+                                  <TableHead className="h-8 text-right">Giá bán</TableHead>
+                                  <TableHead className="h-8 text-right">Giá gốc</TableHead>
+                                  <TableHead className="h-8 text-center">Tồn kho</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {product.variations.map((variant) => (
+                                  <TableRow key={variant.id} className="hover:bg-muted/30 h-10">
+                                    <TableCell className="p-2">
+                                      <div className="relative h-8 w-8 rounded overflow-hidden border bg-white">
+                                        <Image
+                                          src={getImageUrl((variant.images?.[0] as { image_path: string })?.image_path || "")}
+                                          alt={variant.sku}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="font-mono">{variant.sku}</TableCell>
+                                    <TableCell>
+                                      <div className="flex gap-1 flex-wrap">
+                                        {variant.attributes && Object.entries(variant.attributes).map(([key, value]) => (
+                                          <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground">
+                                            {key}: {String(value)}
+                                          </span>
+                                        ))}
+                                        {(!variant.attributes || Object.keys(variant.attributes).length === 0) && (
+                                          <span className="text-muted-foreground italic">Mặc định</span>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(variant.price)}
+                                    </TableCell>
+                                    <TableCell className="text-right text-muted-foreground">
+                                      {(variant.original_price || 0) > 0 ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(variant.original_price || 0) : "-"}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <span className={cn(
+                                        variant.stock_quantity <= 0 ? "text-destructive font-medium border-red-200 bg-red-50 px-2 py-0.5 rounded" : "bg-green-50 text-green-700 px-2 py-0.5 rounded border-green-200 border"
+                                      )}>
+                                        {variant.stock_quantity}
+                                      </span>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+
                 )
               })
             ) : (

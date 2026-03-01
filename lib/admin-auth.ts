@@ -1,16 +1,14 @@
 import { getAuthToken, getCurrentUser } from "./auth"
-import { redirect } from "next/navigation"
 import { getCookie } from "cookies-next"
 // Check if user is admin
-export async function checkAdminRole(): Promise<boolean> {
-  try {
-    const token = getAuthToken()
-    if (!token) return false
+export async function checkAdminRole() {
+  const token = getAuthToken()
+  if (!token) return false
 
-    const response = await getCurrentUser()
-    
-    return response.data.user.role === "admin"
-  } catch (error) {
+  try {
+    const user = await getCurrentUser()
+    return user.data.user.role === "admin"
+  } catch {
     return false
   }
 }

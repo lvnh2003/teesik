@@ -91,16 +91,21 @@ export default function NewPage() {
                 </div>
                 <div className="text-right hidden md:block">
                   <p className="text-xs font-bold uppercase tracking-widest mb-1">{t("products.objectsFound")}</p>
-                  <p className="text-4xl font-black font-mono">{newArrivals.length}</p>
+                  <p className="text-4xl font-black tracking-tighter">{newArrivals.length}</p>
                 </div>
               </div>
 
               <ProductGrid products={newArrivals} />
 
               {newArrivals.length === 0 && (
-                <div className="text-center py-32 border border-dashed border-black/20">
-                  <p className="text-gray-400 text-xl font-medium uppercase tracking-widest">{t("new.noItems")}</p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-32 border border-black/5 bg-gray-50 flex flex-col items-center justify-center"
+                >
+                  <Star className="w-16 h-16 text-gray-300 stroke-[1] mb-6" />
+                  <p className="text-gray-500 text-xl font-medium uppercase tracking-widest">{t("new.noItems")}</p>
+                </motion.div>
               )}
             </>
           )}

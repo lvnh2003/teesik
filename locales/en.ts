@@ -259,6 +259,7 @@ export const en = {
     "checkout.paymentError": "An error occurred during payment",
 
     // About
+    "about.title": "ABOUT US",
     "about.home": "HOME",
     "about.ourStory": "OUR\nSTORY",
     "about.storyText": "Founded with a rebellious spirit and a lofty objective: to offer designer objects at a revolutionary price, while leading the way for socially conscious businesses.",

@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { getAuthToken } from "@/lib/auth"
 import { Category } from "@/type/product"
+import { useProductAttributes } from "@/hooks/use-product-attributes"
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 export default function CreateProductPage() {
   const { checkAuth } = useAdminAuth()
@@ -33,30 +34,35 @@ export default function CreateProductPage() {
     price: "",
     original_price: "",
     category_id: "",
-    is_new: false,
-    is_featured: false,
     stock_quantity: "0",
     sku: "",
+    custom_id: "",
+    tags: "",
+    note: "",
+    is_sell_negative: false,
+    hide_config_product: false,
   })
 
-  // Custom attribute management
-  const [attributes, setAttributes] = useState<{ id: string; name: string; values: string[] }[]>([])
-  const [newAttributeName, setNewAttributeName] = useState("")
-  const [newAttributeValues, setNewAttributeValues] = useState<Record<string, string>>({})
-
-  // Variants management
-  const [variants, setVariants] = useState<
-    {
-      id: string
-      attributes: Record<string, string>
-      sku: string
-      price: string
-      original_price: string
-      stock_quantity: string
-      image: File | null
-      imagePreviewUrl: string
-    }[]
-  >([])
+  // Use custom hook for attributes and variants
+  const {
+    attributes,
+    variants,
+    newAttributeName,
+    setNewAttributeName,
+    newAttributeValues,
+    setNewAttributeValues,
+    error: attributesError,
+    addAttributeCategory,
+    removeAttributeCategory,
+    addAttributeValue,
+    removeAttributeValue,
+    generateVariants,
+    updateVariant,
+    removeVariant,
+    handleVariantImageChange,
+    removeVariantImage,
+    calculateTotalVariants
+  } = useProductAttributes()
 
   useEffect(() => {
     const init = async () => {
@@ -64,8 +70,9 @@ export default function CreateProductPage() {
       try {
         const response = await getCategories()
         setCategories(response.data)
-      } catch (err: any) {
-        setError(err.message || "Failed to load categories")
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to load categories"
+        setError(message)
       }
     }
 
@@ -85,157 +92,16 @@ export default function CreateProductPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-
-  const handleVariantImageChange = (e: React.ChangeEvent<HTMLInputElement>, variantId: string) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      const previewUrl = URL.createObjectURL(file)
-
-      setVariants((prev) =>
-        prev.map((variant) => {
-          if (variant.id === variantId) {
-            // Clean up previous preview URL if it exists
-            if (variant.imagePreviewUrl) {
-              URL.revokeObjectURL(variant.imagePreviewUrl)
-            }
-            return {
-              ...variant,
-              image: file,
-              imagePreviewUrl: previewUrl,
-            }
-          }
-          return variant
-        }),
-      )
+  // Main Product Images Handlers
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files)
+      setSelectedImages((prev) => [...prev, ...filesArray])
     }
   }
 
-  const removeVariantImage = (variantId: string) => {
-    setVariants((prev) =>
-      prev.map((variant) => {
-        if (variant.id === variantId) {
-          if (variant.imagePreviewUrl) {
-            URL.revokeObjectURL(variant.imagePreviewUrl)
-          }
-          return {
-            ...variant,
-            image: null,
-            imagePreviewUrl: "",
-          }
-        }
-        return variant
-      }),
-    )
-  }
-
-  // Add new attribute category
-  const addAttributeCategory = () => {
-    if (!newAttributeName.trim()) return
-
-    const attributeId = `attr-${Date.now()}`
-    setAttributes((prev) => [...prev, { id: attributeId, name: newAttributeName.trim(), values: [] }])
-    setNewAttributeName("")
-    setNewAttributeValues((prev) => ({ ...prev, [attributeId]: "" }))
-  }
-
-  // Remove attribute category
-  const removeAttributeCategory = (attributeId: string) => {
-    setAttributes((prev) => prev.filter((attr) => attr.id !== attributeId))
-
-    if (variants.length > 0) {
-      const attrName = attributes.find((a) => a.id === attributeId)?.name
-      if (attrName) {
-        setVariants((prev) =>
-          prev.map((variant) => {
-            const newAttributes = { ...variant.attributes }
-            delete newAttributes[attrName]
-            return { ...variant, attributes: newAttributes }
-          }),
-        )
-      }
-    }
-  }
-
-  // Add attribute value
-  const addAttributeValue = (attributeId: string) => {
-    const value = newAttributeValues[attributeId]?.trim()
-    if (!value) return
-
-    setAttributes((prev) =>
-      prev.map((attr) => (attr.id === attributeId ? { ...attr, values: [...attr.values, value] } : attr)),
-    )
-
-    setNewAttributeValues((prev) => ({ ...prev, [attributeId]: "" }))
-  }
-
-  // Remove attribute value
-  const removeAttributeValue = (attributeId: string, valueToRemove: string) => {
-    setAttributes((prev) =>
-      prev.map((attr) =>
-        attr.id === attributeId ? { ...attr, values: attr.values.filter((v) => v !== valueToRemove) } : attr,
-      ),
-    )
-  }
-
-  // Generate all possible variants from attributes
-  const generateVariants = () => {
-    const activeAttributes = attributes.filter((attr) => attr.values.length > 0)
-    if (activeAttributes.length === 0) {
-      setError("Vui lòng thêm ít nhất một phân loại và giá trị")
-      return
-    }
-
-    const combinations: Record<string, string>[] = []
-
-    const generateCombinations = (index: number, current: Record<string, string>) => {
-      if (index === activeAttributes.length) {
-        combinations.push({ ...current })
-        return
-      }
-
-      const attr = activeAttributes[index]
-      for (const value of attr.values) {
-        current[attr.name] = value
-        generateCombinations(index + 1, current)
-      }
-    }
-
-    generateCombinations(0, {})
-
-    const newVariants = combinations.map((combo, index) => ({
-      id: `variant-${Date.now()}-${index}`,
-      attributes: combo,
-      sku: "", // Empty SKU for manual input
-      price: formData.price,
-      original_price: formData.original_price,
-      stock_quantity: formData.stock_quantity,
-      image: null,
-      imagePreviewUrl: "",
-    }))
-
-    setVariants(newVariants)
-    setError("")
-  }
-
-  // Update variant
-  const updateVariant = (variantId: string, field: string, value: string) => {
-    setVariants((prev) => prev.map((variant) => (variant.id === variantId ? { ...variant, [field]: value } : variant)))
-  }
-
-  // Remove variant
-  const removeVariant = (variantId: string) => {
-    // Clean up image preview URL
-    const variant = variants.find((v) => v.id === variantId)
-    if (variant && variant.imagePreviewUrl) {
-      URL.revokeObjectURL(variant.imagePreviewUrl)
-    }
-
-    setVariants((prev) => prev.filter((variant) => variant.id !== variantId))
-  }
-
-  // Calculate total number of variants
-  const calculateTotalVariants = () => {
-    return attributes.filter((attr) => attr.values.length > 0).reduce((acc, attr) => acc * attr.values.length, 1)
+  const removeImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -244,6 +110,12 @@ export default function CreateProductPage() {
     setError("")
 
     try {
+      if (attributesError) {
+        setError(attributesError)
+        setIsLoading(false)
+        return
+      }
+
       // Validate that all variants have SKUs
       if (variants.length > 0) {
         const missingSkus = variants.filter((v) => !v.sku.trim())
@@ -255,40 +127,64 @@ export default function CreateProductPage() {
       }
 
       const formDataToSend = new FormData()
-      
+
       // Basic product info
       formDataToSend.append('name', formData.name)
       formDataToSend.append('description', formData.description)
       formDataToSend.append('category_id', formData.category_id)
-      formDataToSend.append('is_new', formData.is_new.toString())
-      formDataToSend.append('is_featured', formData.is_featured.toString())
       formDataToSend.append('sku', formData.sku)
+      formDataToSend.append('custom_id', formData.custom_id)
+      formDataToSend.append('note', formData.note)
+      formDataToSend.append('price', formData.price)
+      formDataToSend.append('original_price', formData.original_price)
+      formDataToSend.append('stock_quantity', formData.stock_quantity)
+      formDataToSend.append('is_sell_negative', formData.is_sell_negative.toString())
+      formDataToSend.append('hide_config_product', formData.hide_config_product.toString())
+
+      if (formData.tags) {
+        const tagsArray = formData.tags.split(',').map(t => t.trim()).filter(Boolean)
+        tagsArray.forEach((t, i) => formDataToSend.append(`tags[${i}]`, t))
+      }
 
       // General images
       selectedImages.forEach((image, index) => {
         formDataToSend.append(`images[${index}]`, image)
       })
 
+      // Product attributes
+      if (attributes.length > 0) {
+        attributes.forEach((attr, index) => {
+          formDataToSend.append(`product_attributes[${index}][name]`, attr.name)
+          attr.values.forEach((val, valIndex) => {
+            formDataToSend.append(`product_attributes[${index}][values][${valIndex}]`, val)
+          })
+        })
+      }
+
       if (variants.length > 0) {
         // Product with variants
         variants.forEach((variant, index) => {
-          formDataToSend.append(`variants[${index}][sku]`, variant.sku)
-          formDataToSend.append(`variants[${index}][price]`, variant.price)
-          formDataToSend.append(`variants[${index}][original_price]`, variant.original_price)
-          formDataToSend.append(`variants[${index}][stock_quantity]`, variant.stock_quantity)
-          
+          formDataToSend.append(`variations[${index}][sku]`, variant.sku)
+          formDataToSend.append(`variations[${index}][price]`, String(variant.price))
+          formDataToSend.append(`variations[${index}][original_price]`, String(variant.original_price || 0))
+          formDataToSend.append(`variations[${index}][stock_quantity]`, String(variant.stock_quantity || 0))
+          formDataToSend.append(`variations[${index}][weight]`, String(variant.weight || 0))
+
           // Convert attributes object to array format
+          let attrIndex = 0;
           Object.entries(variant.attributes).forEach(([key, value]) => {
-            formDataToSend.append(`variants[${index}][attributes][]`, JSON.stringify({ name: key, value: value }))
+            formDataToSend.append(`variations[${index}][attributes][${attrIndex}][name]`, key)
+            formDataToSend.append(`variations[${index}][attributes][${attrIndex}][value]`, String(value))
+            attrIndex++
           })
 
           // Variant image
           if (variant.image instanceof File) {
-            formDataToSend.append(`variants[${index}][image]`, variant.image, variant.image.name)
+            formDataToSend.append(`variations[${index}][image]`, variant.image, variant.image.name)
           }
         })
       }
-      
+
       const token = getAuthToken()
       if (!token) throw new Error("Authentication required")
 
@@ -297,7 +193,7 @@ export default function CreateProductPage() {
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
-          
+
         },
         body: formDataToSend,
       })
@@ -307,8 +203,9 @@ export default function CreateProductPage() {
       }
 
       router.push("/admin/products")
-    } catch (err: any) {
-      setError(err.message || "Failed to create product")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to create product"
+      setError(message)
       setIsLoading(false)
     }
   }
@@ -354,6 +251,20 @@ export default function CreateProductPage() {
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
+              <Label htmlFor="custom_id" className="text-base">
+                Mã sản phẩm (Bên trong Pancake)
+              </Label>
+              <Input
+                id="custom_id"
+                name="custom_id"
+                value={formData.custom_id}
+                onChange={handleInputChange}
+                className="mt-2"
+                placeholder="VD: QUANAO-001"
+              />
+            </div>
+
+            <div>
               <Label htmlFor="name" className="text-base">
                 Tên sản phẩm *
               </Label>
@@ -389,6 +300,20 @@ export default function CreateProductPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label htmlFor="tags" className="text-base">
+                Thẻ (Tags)
+              </Label>
+              <Input
+                id="tags"
+                name="tags"
+                value={formData.tags}
+                onChange={handleInputChange}
+                className="mt-2"
+                placeholder="Cách nhau bằng dấu phẩy (VD: the1, the2)"
+              />
+            </div>
           </div>
 
           <div>
@@ -406,27 +331,141 @@ export default function CreateProductPage() {
             />
           </div>
 
+          <div>
+            <Label htmlFor="note" className="text-base">
+              Ghi chú nội bộ
+            </Label>
+            <Input
+              id="note"
+              name="note"
+              value={formData.note}
+              onChange={handleInputChange}
+              className="mt-2"
+              placeholder="Nhập ghi chú"
+            />
+          </div>
+
           <div className="flex gap-6 pt-2">
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="is_new"
-                checked={formData.is_new}
-                onCheckedChange={(checked) => handleCheckboxChange("is_new", checked as boolean)}
+                id="is_sell_negative"
+                checked={formData.is_sell_negative}
+                onCheckedChange={(checked) => handleCheckboxChange("is_sell_negative", checked as boolean)}
               />
-              <Label htmlFor="is_new" className="font-medium">
-                Sản phẩm mới
+              <Label htmlFor="is_sell_negative" className="font-medium text-blue-600">
+                Cho phép bán tồn kho âm
               </Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
-                id="is_featured"
-                checked={formData.is_featured}
-                onCheckedChange={(checked) => handleCheckboxChange("is_featured", checked as boolean)}
+                id="hide_config_product"
+                checked={formData.hide_config_product}
+                onCheckedChange={(checked) => handleCheckboxChange("hide_config_product", checked as boolean)}
               />
-              <Label htmlFor="is_featured" className="font-medium">
-                Sản phẩm nổi bật
+              <Label htmlFor="hide_config_product" className="font-medium">
+                Không in sản phẩm khi in đơn
               </Label>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pricing and Inventory */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Thông tin bán hàng</CardTitle>
+          <CardDescription>Thiết lập giá và quản lý kho</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="sku" className="text-base">
+                Mã sản phẩm (SKU / Mã vạch)
+              </Label>
+              <Input
+                id="sku"
+                name="sku"
+                value={formData.sku}
+                onChange={handleInputChange}
+                className="mt-2"
+                placeholder="VD: SP001"
+              />
+            </div>
+            <div>
+              <Label htmlFor="stock_quantity" className="text-base">
+                Tồn kho / Có thể bán
+              </Label>
+              <Input
+                id="stock_quantity"
+                name="stock_quantity"
+                type="number"
+                value={formData.stock_quantity}
+                onChange={handleInputChange}
+                className="mt-2"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <Label htmlFor="price" className="text-base">
+                Giá bán
+              </Label>
+              <Input
+                id="price"
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleInputChange}
+                className="mt-2"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <Label htmlFor="original_price" className="text-base">
+                Giá nhập
+              </Label>
+              <Input
+                id="original_price"
+                name="original_price"
+                type="number"
+                value={formData.original_price}
+                onChange={handleInputChange}
+                className="mt-2"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Product Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Hình ảnh sản phẩm</CardTitle>
+          <CardDescription>Đăng tải hình ảnh cho sản phẩm</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {selectedImages.map((image, index) => (
+              <div key={index} className="relative aspect-square rounded-md overflow-hidden border group">
+                <img
+                  src={URL.createObjectURL(image)}
+                  alt={`Product ${index + 1}`}
+                  className="object-cover w-full h-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-1 right-1 bg-destructive/90 text-white rounded-full p-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            <label className="flex flex-col items-center justify-center aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50 transition-colors cursor-pointer">
+              <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+              <span className="text-xs text-muted-foreground">Tải ảnh lên</span>
+              <input type="file" multiple accept="image/*" className="hidden" onChange={handleImageChange} />
+            </label>
           </div>
         </CardContent>
       </Card>
@@ -541,7 +580,7 @@ export default function CreateProductPage() {
                 <p className="font-medium">
                   Tổng số biến thể: <span className="text-primary">{calculateTotalVariants()}</span>
                 </p>
-                <Button type="button" onClick={generateVariants} className="w-full mt-3">
+                <Button type="button" onClick={() => generateVariants(formData.price, formData.original_price, formData.stock_quantity)} className="w-full mt-3">
                   Tạo tất cả biến thể
                 </Button>
               </CardContent>
@@ -562,11 +601,12 @@ export default function CreateProductPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="text-left p-3 font-medium">Biến thể</th>
-                    <th className="text-left p-3 font-medium">SKU *</th>
+                    <th className="text-left p-3 font-medium">Thuộc tính</th>
+                    <th className="text-left p-3 font-medium">Mã vạch *</th>
                     <th className="text-left p-3 font-medium">Giá bán</th>
-                    <th className="text-left p-3 font-medium">Giá gốc</th>
-                    <th className="text-left p-3 font-medium">Tồn kho</th>
+                    <th className="text-left p-3 font-medium">Giá nhập</th>
+                    <th className="text-left p-3 font-medium">Trọng lượng (g)</th>
+                    <th className="text-left p-3 font-medium">Có thể bán</th>
                     <th className="text-left p-3 font-medium">Hình ảnh</th>
                     <th className="text-left p-3 font-medium">Thao tác</th>
                   </tr>
@@ -606,6 +646,14 @@ export default function CreateProductPage() {
                           value={variant.original_price}
                           onChange={(e) => updateVariant(variant.id, "original_price", e.target.value)}
                           className="w-24"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          value={variant.weight || ""}
+                          onChange={(e) => updateVariant(variant.id, "weight", e.target.value)}
+                          className="w-20"
                         />
                       </td>
                       <td className="p-3">
