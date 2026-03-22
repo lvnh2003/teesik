@@ -2,7 +2,8 @@
 
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { OrderService } from "@/services/orders"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { User, Mail, Phone, Calendar, ShoppingBag, Heart, Settings } from "lucide-react"
@@ -10,10 +11,17 @@ import { User, Mail, Phone, Calendar, ShoppingBag, Heart, Settings } from "lucid
 export default function DashboardPage() {
   const { user, isLoggedIn, isLoading, logout } = useAuth()
   const router = useRouter()
+  const [orders, setOrders] = useState<any[]>([])
+  const [loadingOrders, setLoadingOrders] = useState(true)
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
       router.push("/account")
+    } else if (isLoggedIn) {
+      OrderService.getUserOrders()
+        .then(res => setOrders(res?.data || []))
+        .catch(() => setOrders([]))
+        .finally(() => setLoadingOrders(false))
     }
   }, [isLoggedIn, isLoading, router])
 
@@ -115,7 +123,7 @@ export default function DashboardPage() {
                   <h3 className="text-lg font-black tracking-tighter uppercase">Đơn Hàng</h3>
                   <ShoppingBag className="h-6 w-6 text-gray-400" />
                 </div>
-                <p className="text-3xl font-bold mb-2">0</p>
+                <p className="text-3xl font-bold mb-2">{loadingOrders ? "..." : orders.length}</p>
                 <p className="text-sm text-gray-600">Tổng số đơn hàng</p>
                 <Button
                   variant="outline"
@@ -144,10 +152,23 @@ export default function DashboardPage() {
 
             {/* Recent Activity */}
             <div className="bg-white p-6 shadow-lg">
-              <h3 className="text-lg font-black tracking-tighter uppercase mb-6">Hoạt Động Gần Đây</h3>
+              <h3 className="text-lg font-black tracking-tighter uppercase mb-6">Đơn hàng gần đây</h3>
               <div className="text-center py-12">
-                <p className="text-gray-600">Chưa có hoạt động nào</p>
-                <p className="text-sm text-gray-500 mt-2">Bắt đầu mua sắm để xem lịch sử hoạt động</p>
+                {orders.length > 0 ? (
+                  <div className="text-left space-y-4">
+                    {orders.slice(0, 3).map(o => (
+                       <div key={o.id} className="border-b last:border-0 pb-4">
+                          <p className="font-bold">Đơn hàng #{o.id}</p>
+                          <p className="text-gray-500 text-sm">Trạng thái: {o.status} • {o.total_amount}</p>
+                       </div>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-gray-600">Chưa có hoạt động nào</p>
+                    <p className="text-sm text-gray-500 mt-2">Bắt đầu mua sắm để xem lịch sử hoạt động</p>
+                  </>
+                )}
               </div>
             </div>
           </div>

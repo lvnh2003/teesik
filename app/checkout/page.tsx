@@ -11,7 +11,9 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { getCart, checkout, getImageUrl, processPayment } from "@/lib/admin-api"
+import { OrderService } from "@/services/orders"
+import { CartService } from "@/services/cart"
+import { getImageUrl } from "@/services/core"
 import { useLanguage } from "@/contexts/language-context"
 import { CartItem } from "@/type"
 
@@ -31,7 +33,7 @@ export default function CheckoutPage() {
   const [district, setDistrict] = useState("")
   const [otp, setOtp] = useState("")
   const [showOtpInput, setShowOtpInput] = useState(false)
-  const [orderStep, setOrderStep] = useState("checkout") // checkout, payment, success
+  const [orderStep, setOrderStep] = useState("CartService.checkout") // CartService.checkout, payment, success
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [subtotal, setSubtotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -39,7 +41,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const data = await getCart()
+        const data = await CartService.getCart()
         setCartItems(data.items || [])
         setSubtotal(data.total || 0)
         if (!data.items || data.items.length === 0) {
@@ -80,7 +82,7 @@ export default function CheckoutPage() {
 
   const handlePayment = async () => {
     try {
-      const result = await checkout({
+      const result = await CartService.checkout({
         customer_name: customerName,
         customer_email: guestEmail || 'user@example.com',
         address: `${address}, ${district}, ${city}`,
@@ -92,7 +94,7 @@ export default function CheckoutPage() {
         // Process mock payment
         try {
           if (paymentMethod !== 'cod') { // Assuming COD doesn't need immediate payment processing
-            await processPayment(result.order.id, paymentMethod)
+            await OrderService.processPayment(result.order.id, paymentMethod)
           }
           setOrderStep("success")
         } catch (paymentError) {
@@ -109,7 +111,7 @@ export default function CheckoutPage() {
     }
   }
 
-  if (isLoading) return <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">{t("checkout.loading")}</div>
+  if (isLoading) return <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">{t("CartService.checkout.loading")}</div>
 
   // Success Page
   if (orderStep === "success") {
@@ -117,17 +119,17 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white border border-black p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
           <CheckCircle className="h-16 w-16 text-black mx-auto mb-6" />
-          <h1 className="text-3xl font-black tracking-tighter mb-4 text-black uppercase leading-none">{t("checkout.orderConfirmed")}</h1>
+          <h1 className="text-3xl font-black tracking-tighter mb-4 text-black uppercase leading-none">{t("CartService.checkout.orderConfirmed")}</h1>
           <p className="text-gray-600 mb-8 font-medium">
-            {t("checkout.thankYou")}
+            {t("CartService.checkout.thankYou")}
           </p>
           <div className="bg-[#FDFBF7] p-6 mb-8 border border-black/10">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{t("checkout.orderNumber")}</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{t("CartService.checkout.orderNumber")}</p>
             <p className="font-mono text-2xl font-bold">#{Math.floor(Math.random() * 1000000)}</p>
           </div>
           <Link href="/products">
             <Button className="w-full h-14 bg-black hover:bg-neutral-800 text-white rounded-none uppercase font-bold tracking-widest text-sm">
-              {t("checkout.continueShopping")}
+              {t("CartService.checkout.continueShopping")}
             </Button>
           </Link>
         </div>
@@ -142,10 +144,10 @@ export default function CheckoutPage() {
         <div className="container mx-auto">
           <Link href="/cart" className="inline-flex items-center text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-black mb-8 transition-colors">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            {t("checkout.returnToBag")}
+            {t("CartService.checkout.returnToBag")}
           </Link>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter uppercase leading-none">
-            {t("checkout.title")}
+            {t("CartService.checkout.title")}
           </h1>
         </div>
       </header>
@@ -154,32 +156,32 @@ export default function CheckoutPage() {
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-24">
           {/* Left Column - Forms */}
           <div className="lg:col-span-7">
-            {orderStep === "checkout" && (
+            {orderStep === "CartService.checkout" && (
               <div className="space-y-12">
                 {/* 1. Identity */}
                 <section>
                   <div className="flex items-center justify-between mb-8 border-b border-black pb-4">
-                    <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.identity")}</h2>
+                    <h2 className="text-2xl font-black tracking-tighter uppercase">{t("CartService.checkout.identity")}</h2>
                     <Badge className="rounded-none bg-black text-white hover:bg-black font-mono font-normal">
-                      {isLoggedIn ? t("checkout.loggedIn") : t("checkout.guest")}
+                      {isLoggedIn ? t("CartService.checkout.loggedIn") : t("CartService.checkout.guest")}
                     </Badge>
                   </div>
 
                   {!isLoggedIn ? (
                     <Tabs defaultValue="guest" className="w-full">
                       <TabsList className="w-full grid grid-cols-2 bg-transparent p-0 mb-8 rounded-none border border-black">
-                        <TabsTrigger value="guest" className="rounded-none border-r border-black data-[state=active]:bg-black data-[state=active]:text-white h-12 font-bold uppercase tracking-wider text-xs">{t("checkout.guestCheckout")}</TabsTrigger>
-                        <TabsTrigger value="login" className="rounded-none data-[state=active]:bg-black data-[state=active]:text-white h-12 font-bold uppercase tracking-wider text-xs">{t("checkout.memberLogin")}</TabsTrigger>
+                        <TabsTrigger value="guest" className="rounded-none border-r border-black data-[state=active]:bg-black data-[state=active]:text-white h-12 font-bold uppercase tracking-wider text-xs">{t("CartService.checkout.guestCheckout")}</TabsTrigger>
+                        <TabsTrigger value="login" className="rounded-none data-[state=active]:bg-black data-[state=active]:text-white h-12 font-bold uppercase tracking-wider text-xs">{t("CartService.checkout.memberLogin")}</TabsTrigger>
                       </TabsList>
                       <TabsContent value="guest" className="space-y-6">
                         <div className="grid gap-6">
                           <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.emailLabel")}</Label>
+                            <Label className="text-xs font-bold uppercase tracking-widest">{t("CartService.checkout.emailLabel")}</Label>
                             <Input
                               type="email"
                               value={guestEmail}
                               onChange={(e) => setGuestEmail(e.target.value)}
-                              placeholder={t("checkout.emailPlaceholder")}
+                              placeholder={t("CartService.checkout.emailPlaceholder")}
                               className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                             />
                           </div>
@@ -187,9 +189,9 @@ export default function CheckoutPage() {
                       </TabsContent>
                       <TabsContent value="login">
                         <div className="text-center py-8 border border-dashed border-black/30">
-                          <p className="text-gray-500 mb-4">{t("checkout.signInDesc")}</p>
+                          <p className="text-gray-500 mb-4">{t("CartService.checkout.signInDesc")}</p>
                           <Link href="/account">
-                            <Button className="rounded-none bg-black text-white px-8 uppercase font-bold tracking-widest text-xs h-10">{t("checkout.signIn")}</Button>
+                            <Button className="rounded-none bg-black text-white px-8 uppercase font-bold tracking-widest text-xs h-10">{t("CartService.checkout.signIn")}</Button>
                           </Link>
                         </div>
                       </TabsContent>
@@ -204,7 +206,7 @@ export default function CheckoutPage() {
                 {/* 2. Shipping */}
                 <section>
                   <div className="flex items-center justify-between mb-8 border-b border-black pb-4">
-                    <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.shipping")}</h2>
+                    <h2 className="text-2xl font-black tracking-tighter uppercase">{t("CartService.checkout.shipping")}</h2>
                   </div>
 
                   <div className="grid gap-6">
@@ -261,12 +263,12 @@ export default function CheckoutPage() {
                         className="w-full bg-black hover:bg-neutral-800 text-white h-14 rounded-none uppercase font-bold tracking-widest text-sm"
                         disabled={!guestEmail || !customerName || !phone || !address}
                       >
-                        {t("checkout.verifyAndContinue")}
+                        {t("CartService.checkout.verifyAndContinue")}
                       </Button>
                     ) : (
                       <div className="space-y-4">
                         <div className="p-6 bg-black text-white">
-                          <Label className="text-xs font-bold uppercase tracking-widest text-white/70">{t("checkout.enterCode")}</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest text-white/70">{t("CartService.checkout.enterCode")}</Label>
                           <Input
                             type="text"
                             placeholder="000000"
@@ -275,14 +277,14 @@ export default function CheckoutPage() {
                             className="mt-2 h-16 border-b-2 border-white border-t-0 border-x-0 bg-transparent text-center text-4xl tracking-[0.5em] font-mono focus-visible:ring-0 placeholder:text-white/20"
                             maxLength={6}
                           />
-                          <p className="text-xs text-white/50 mt-4 text-center">{t("checkout.codeSentTo").replace("{email}", guestEmail)}</p>
+                          <p className="text-xs text-white/50 mt-4 text-center">{t("CartService.checkout.codeSentTo").replace("{email}", guestEmail)}</p>
                         </div>
                         <Button
                           onClick={handleVerifyOtp}
                           className="w-full bg-white text-black border border-black hover:bg-black hover:text-white h-14 rounded-none uppercase font-bold tracking-widest text-sm transition-colors"
                           disabled={otp.length !== 6}
                         >
-                          {t("checkout.confirmCode")}
+                          {t("CartService.checkout.confirmCode")}
                         </Button>
                       </div>
                     )}
@@ -294,7 +296,7 @@ export default function CheckoutPage() {
             {orderStep === "payment" && (
               <section>
                 <div className="flex items-center justify-between mb-8 border-b border-black pb-4">
-                  <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.payment")}</h2>
+                  <h2 className="text-2xl font-black tracking-tighter uppercase">{t("CartService.checkout.payment")}</h2>
                 </div>
 
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
@@ -306,18 +308,19 @@ export default function CheckoutPage() {
                     <div className="flex-1">
                       <div className="flex items-center mb-1">
                         <SmartphoneIcon className="h-5 w-5 mr-2" />
-                        <span className="font-bold uppercase tracking-wider">{t("checkout.qrPayment")}</span>
+                        <span className="font-bold uppercase tracking-wider">{t("CartService.checkout.qrPayment")}</span>
                       </div>
-                      <p className={`text-sm ${paymentMethod === 'qr' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.qrDesc")}</p>
+                      <p className={`text-sm ${paymentMethod === 'qr' ? 'text-white/70' : 'text-gray-500'}`}>{t("CartService.checkout.qrDesc")}</p>
 
                       {paymentMethod === 'qr' && (
                         <div className="mt-6 p-4 bg-white max-w-[200px] mx-auto text-black text-center">
                           <div className="aspect-square bg-gray-100 mb-2 relative">
                             <Image
-                              src="/placeholder.svg?height=180&width=180"
+                              src={`https://img.vietqr.io/image/970436-0987654321-qr_only.png?amount=${total}&addInfo=TEESIK&accountName=TEESIK%20STORE`}
                               alt="QR Code"
                               fill
                               className="object-contain p-2"
+                              unoptimized
                             />
                           </div>
                           <p className="font-mono font-bold text-lg">{formatPrice(total)}</p>
@@ -334,13 +337,13 @@ export default function CheckoutPage() {
                     <div className="flex-1">
                       <div className="flex items-center mb-1">
                         <CreditCard className="h-5 w-5 mr-2" />
-                        <span className="font-bold uppercase tracking-wider">{t("checkout.creditCard")}</span>
+                        <span className="font-bold uppercase tracking-wider">{t("CartService.checkout.creditCard")}</span>
                       </div>
-                      <p className={`text-sm ${paymentMethod === 'card' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.cardDesc")}</p>
+                      <p className={`text-sm ${paymentMethod === 'card' ? 'text-white/70' : 'text-gray-500'}`}>{t("CartService.checkout.cardDesc")}</p>
 
                       {paymentMethod === 'card' && (
                         <div className="mt-6 space-y-4">
-                          <Input placeholder={t("checkout.cardNumber")} className="bg-white text-black h-12 rounded-none border-none" />
+                          <Input placeholder={t("CartService.checkout.cardNumber")} className="bg-white text-black h-12 rounded-none border-none" />
                           <div className="grid grid-cols-2 gap-4">
                             <Input placeholder="MM/YY" className="bg-white text-black h-12 rounded-none border-none" />
                             <Input placeholder="CVC" className="bg-white text-black h-12 rounded-none border-none" />
@@ -352,14 +355,14 @@ export default function CheckoutPage() {
                 </RadioGroup>
 
                 <div className="mt-8 flex items-center justify-center gap-2 text-gray-400 text-xs uppercase tracking-widest mb-8">
-                  <Shield className="h-4 w-4" /> {t("checkout.secureSsl")}
+                  <Shield className="h-4 w-4" /> {t("CartService.checkout.secureSsl")}
                 </div>
 
                 <Button
                   onClick={handlePayment}
                   className="w-full bg-black hover:bg-neutral-800 text-white h-16 text-lg font-bold tracking-widest uppercase rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                 >
-                  {t("checkout.completeOrder")}
+                  {t("CartService.checkout.completeOrder")}
                 </Button>
               </section>
             )}
@@ -368,7 +371,7 @@ export default function CheckoutPage() {
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-5">
             <div className="bg-white border border-black/10 p-8 sticky top-32">
-              <h3 className="text-xl font-black tracking-tighter uppercase mb-6">{t("checkout.orderSummary")}</h3>
+              <h3 className="text-xl font-black tracking-tighter uppercase mb-6">{t("CartService.checkout.orderSummary")}</h3>
               <div className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 {cartItems.map((item, idx) => (
                   <div key={idx} className="flex gap-4">

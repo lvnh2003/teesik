@@ -4,8 +4,8 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAdminAuth } from "@/lib/admin-auth"
-import { createProduct, getCategories } from "@/lib/admin-api"
+import { useAdminAuth } from "@/services/auth"
+import { ProductService } from "@/services/products"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -16,7 +16,7 @@ import { AlertCircle, ArrowLeft, Upload, X, Plus, Trash2, ImageIcon } from "luci
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { getAuthToken } from "@/lib/auth"
+import { AuthService } from "@/services/auth"
 import { Category } from "@/type/product"
 import { useProductAttributes } from "@/hooks/use-product-attributes"
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
@@ -68,7 +68,7 @@ export default function CreateProductPage() {
     const init = async () => {
       await checkAuth()
       try {
-        const response = await getCategories()
+        const response = await ProductService.getCategories()
         setCategories(response.data)
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Failed to load categories"
@@ -185,7 +185,7 @@ export default function CreateProductPage() {
         })
       }
 
-      const token = getAuthToken()
+      const token = AuthService.getAuthToken()
       if (!token) throw new Error("Authentication required")
 
       const response = await fetch(`${API_BASE_URL}/admin/products`, {

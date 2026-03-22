@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from "react"
-import { getCart, addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart, updateCartItem as apiUpdateCartItem } from "@/lib/admin-api"
+import { CartService } from "@/services/cart"
 import { toast } from "@/components/ui/use-toast"
 
 export interface CartItem {
@@ -34,7 +34,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const fetchCart = async () => {
         try {
-            const data: any = await getCart()
+            const data: any = await CartService.getCart()
             setItems(data.items || [])
         } catch (error) {
             console.error("Failed to load cart", error)
@@ -56,7 +56,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         try {
             // Optimistic update (optional, but tricky with variants/merging. Let's rely on refresh for accuracy for now or simple optimistic)
             // ideally we just call API and refresh.
-            await apiAddToCart(productId, quantity, variantId)
+            await CartService.addToCart(productId, quantity, variantId)
             await fetchCart()
             // toast handled by caller usually, or we can do it here? 
             // The caller (product page) was handling toast. Let's keep it that way or move it here. 
@@ -70,7 +70,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const removeFromCart = async (productId: string | number) => {
         try {
             setItems(prev => prev.filter(item => item.product_id !== productId))
-            await apiRemoveFromCart(productId)
+            await CartService.removeFromCart(productId)
             await fetchCart()
         } catch (error) {
             console.error("Remove from cart error", error)
@@ -82,7 +82,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const updateQuantity = async (productId: string | number, quantity: number) => {
         try {
             setItems(prev => prev.map(item => item.product_id === productId ? { ...item, quantity } : item))
-            await apiUpdateCartItem(productId, quantity)
+            await CartService.updateCartItem(productId, quantity)
             await fetchCart()
         } catch (error) {
             console.error("Update quantity error", error)

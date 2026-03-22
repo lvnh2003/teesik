@@ -8,8 +8,8 @@ import { toast } from "sonner" // Assuming sonner is installed or stick to conso
 interface WishlistContextType {
     items: Product[]
     addItem: (product: Product) => void
-    removeItem: (productId: number) => void
-    isInWishlist: (productId: number) => boolean
+    removeItem: (productId: string | number) => void
+    isInWishlist: (productId: string | number) => boolean
     clearWishlist: () => void
 }
 
@@ -46,12 +46,12 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
         toast.success("Đã thêm vào danh sách yêu thích")
     }
 
-    const removeItem = (productId: number) => {
+    const removeItem = (productId: string | number) => {
         setItems((prev) => prev.filter((i) => i.id !== productId))
         toast.success("Đã xóa khỏi danh sách yêu thích")
     }
 
-    const isInWishlist = (productId: number) => {
+    const isInWishlist = (productId: string | number) => {
         return items.some((i) => i.id === productId)
     }
 

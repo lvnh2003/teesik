@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ShoppingBag, Heart } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { Product } from "@/type/product"
-import { getImageUrl } from "@/lib/admin-api"
+import { getImageUrl } from "@/services/core"
 import ProductCard from "./product-card"
 import { motion } from "framer-motion"
 

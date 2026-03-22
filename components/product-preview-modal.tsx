@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ChevronLeft, ChevronRight, Star, Tag, Package, Truck, ShieldCheck, ExternalLink } from "lucide-react"
 import type { Product, ProductVariant } from "@/type/product"
-import { getImageUrl } from "@/lib/admin-api"
+import { getImageUrl } from "@/services/core"
 
 interface ProductPreviewModalProps {
   product: Product | null

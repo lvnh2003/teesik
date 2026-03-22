@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getPurchases } from "@/lib/admin-api"
+import { PosService } from "@/services/pos"
 import { Purchase } from "@/type"
 import { format } from "date-fns"
 import { Loader2, Plus, ArrowDownCircle } from "lucide-react"
@@ -15,7 +15,7 @@ export default function AdminPurchasesPage() {
     const fetchPurchases = async () => {
         setLoading(true)
         try {
-            const response = await getPurchases({
+            const response = await PosService.getPurchases({
                 page: currentPage,
                 limit: 10
             })

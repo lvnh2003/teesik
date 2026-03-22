@@ -13,12 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  createCategory, // Đã đổi tên hàm để tránh nhầm lẫn với getCategories
-  deleteCategory,
-  getCategories,
-  updateCategory,
-} from "@/lib/admin-api"
+import { ProductService } from "@/services/products"
 import { PlusCircle, Edit, Trash2, Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -49,7 +44,7 @@ export default function AdminCategoriesPage() {
   const fetchCategories = async () => {
     setLoading(true)
     try {
-      const { data }= await getCategories() 
+      const { data }= await ProductService.getCategories() 
       setCategories(data)
     } catch (error) {
       console.error("Failed to fetch categories:", error)
@@ -82,9 +77,9 @@ export default function AdminCategoriesPage() {
     try {
       let result
       if (editingCategory) {
-        result = await updateCategory(editingCategory.id, values)
+        result = await ProductService.updateCategory(editingCategory.id, values)
       } else {
-        result = await createCategory(values.name)
+        result = await ProductService.createCategory(values.name)
       }
 
       if (result.data) {
@@ -109,7 +104,7 @@ export default function AdminCategoriesPage() {
     if (categoryToDelete === null) return
 
     try {
-      const result = await deleteCategory(categoryToDelete)
+      const result = await ProductService.deleteCategory(categoryToDelete)
       console.log(result);
       
       if (result.success) {

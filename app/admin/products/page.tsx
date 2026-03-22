@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useAdminAuth } from "@/lib/admin-auth"
-import { getProducts, deleteProduct, getProduct, getImageUrl } from "@/lib/admin-api"
+import { useAdminAuth } from "@/services/auth"
+import { ProductService } from "@/services/products"
+import { getImageUrl } from "@/services/core"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -86,7 +87,7 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
       await checkAuth()
       try {
-        const response = await getProducts({ page: currentPage })
+        const response = await ProductService.getProducts({ page: currentPage })
         if (response.data) {
           setProducts(response.data)
         }
@@ -114,7 +115,7 @@ export default function ProductsPage() {
   const handleDeleteConfirm = async () => {
     if (productToDelete) {
       try {
-        await deleteProduct(productToDelete)
+        await ProductService.deleteProduct(productToDelete)
         setProducts(products.filter((product) => product.id !== productToDelete))
         toast({
           title: "Xóa thành công",
@@ -147,7 +148,7 @@ export default function ProductsPage() {
   const handlePreviewProduct = async (productId: string | number) => {
     setLoadingProductId(productId)
     try {
-      const response = await getProduct(productId)
+      const response = await ProductService.getProduct(productId)
       if (response.data) {
         setSelectedProduct(response.data)
         setPreviewModalOpen(true)

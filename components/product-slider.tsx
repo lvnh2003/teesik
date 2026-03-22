@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { Product } from "@/type/product"
-import { getProducts } from "@/lib/admin-api"
+import { ProductService } from "@/services/products"
 import ProductCard from "@/components/product-card"
 
 interface ProductSliderProps {
@@ -25,7 +25,7 @@ export default function ProductSlider({ products: initialProducts, category_id }
       const fetchProducts = async () => {
         setLoading(true)
         try {
-          const { data } = await getProducts({ category_id: category_id })
+          const { data } = await ProductService.getProducts({ category_id: category_id })
           setProducts(data)
         } catch (error) {
           console.error("Error fetching products for slider:", error)

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getCustomers } from "@/lib/admin-api"
+import { PosService } from "@/services/pos"
 import { Customer } from "@/type"
 import { format } from "date-fns"
 import { Loader2, Search, UserPlus } from "lucide-react"
@@ -16,7 +16,7 @@ export default function AdminCustomersPage() {
     const fetchCustomers = async () => {
         setLoading(true)
         try {
-            const response = await getCustomers({
+            const response = await PosService.getCustomers({
                 page: currentPage,
                 limit: 10,
                 search: search

@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import ProductCard from "@/components/product-card"
-import { getCategories, getProducts } from "@/lib/admin-api"
+import { ProductService } from "@/services/products"
 import { Category, Product } from "@/type/product"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -23,14 +23,22 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [sortBy, setSortBy] = useState("featured")
+  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null)
+
+  const formatCategoryName = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower === 'quần ảos') return 'QUẦN ÁO';
+    if (lower === 'túi sách') return 'TÚI XÁCH';
+    return name;
+  }
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
         const [productsResponse, categoriesResponse] = await Promise.all([
-          getProducts({ page: currentPage, per_page: 12 }),
-          getCategories(),
+          ProductService.getProducts({ page: currentPage, per_page: 12 }),
+          ProductService.getCategories(),
         ])
 
         setProducts(productsResponse.data)
@@ -48,9 +56,19 @@ export default function ProductsPage() {
     fetchData()
   }, [currentPage])
 
-  const filteredProducts = selectedCategory
-    ? products.filter((product) => product.category?.id === selectedCategory)
-    : products
+  const filteredProducts = products.filter((product) => {
+    if (selectedCategory && product.category?.id !== selectedCategory) return false;
+    
+    if (selectedPriceRange) {
+      const price = product.variants?.[0]?.price || product.price || 0;
+      if (selectedPriceRange === "Under 500k" && price >= 500000) return false;
+      if (selectedPriceRange === "500k - 1m" && (price < 500000 || price >= 1000000)) return false;
+      if (selectedPriceRange === "1m - 1.5m" && (price < 1000000 || price >= 1500000)) return false;
+      if (selectedPriceRange === "Over 1.5m" && price < 1500000) return false;
+    }
+    
+    return true;
+  })
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortBy) {
@@ -101,7 +119,7 @@ export default function ProductsPage() {
                     htmlFor={`category-${category.id}`}
                     className="text-sm font-medium uppercase cursor-pointer text-gray-600 hover:text-black transition-colors"
                   >
-                    {category.name}
+                    {formatCategoryName(category.name)}
                   </label>
                 </div>
               ))}
@@ -124,6 +142,8 @@ export default function ProductsPage() {
                 <div key={priceItem.value} className="flex items-center space-x-3">
                   <Checkbox
                     id={priceItem.value.toLowerCase().replace(/\s/g, "-")}
+                    checked={selectedPriceRange === priceItem.value}
+                    onCheckedChange={() => setSelectedPriceRange(selectedPriceRange === priceItem.value ? null : priceItem.value)}
                     className="rounded-none border-gray-400 data-[state=checked]:bg-black data-[state=checked]:border-black"
                   />
                   <label
@@ -222,7 +242,7 @@ export default function ProductsPage() {
                   {t("products.noProductsFound")}
                 </h2>
                 <Button
-                  onClick={() => { setSelectedCategory(null); setSortBy("featured"); }}
+                  onClick={() => { setSelectedCategory(null); setSelectedPriceRange(null); setSortBy("featured"); }}
                   className="bg-black text-white hover:bg-gray-800 uppercase font-bold tracking-widest px-8 rounded-none"
                 >
                   {t("products.clearFilters")}

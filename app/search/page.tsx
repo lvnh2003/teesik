@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Product } from "@/type/product"
-import { getProducts } from "@/lib/admin-api"
+import { ProductService } from "@/services/products"
 import ProductGrid from "@/components/product-grid"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -23,7 +23,7 @@ export default function SearchPage() {
             setLoading(true)
             try {
                 if (query) {
-                    const response = await getProducts({ search: query })
+                    const response = await ProductService.getProducts({ search: query })
                     setProducts(response.data)
                 } else {
                     setProducts([])

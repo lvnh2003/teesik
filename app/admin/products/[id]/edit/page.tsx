@@ -4,8 +4,9 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { useAdminAuth } from "@/lib/admin-auth"
-import { getProduct, updateProduct, getCategories, getImageUrl } from "@/lib/admin-api"
+import { useAdminAuth } from "@/services/auth"
+import { ProductService } from "@/services/products"
+import { getImageUrl } from "@/services/core"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -65,11 +66,11 @@ export default function EditProductPage() {
       await checkAuth()
       try {
         // Tải danh mục
-        const categoriesResponse = await getCategories()
+        const categoriesResponse = await ProductService.getCategories()
         setCategories(categoriesResponse.data)
 
         // Tải thông tin sản phẩm
-        const productResponse = await getProduct(productId)
+        const productResponse = await ProductService.getProduct(productId)
         if (productResponse.data) {
           const product = productResponse.data
 
@@ -335,16 +336,16 @@ export default function EditProductPage() {
         console.log(pair[0], pair[1] instanceof File ? `File: ${(pair[1] as File).name}` : pair[1])
       }
 
-      const response = await updateProduct(productId, formDataToSend)
+      const response = await ProductService.updateProduct(productId, formDataToSend)
 
-      if (response.success) {
+      if (response.data) {
         toast({
           title: "Cập nhật thành công",
           description: "Sản phẩm đã được cập nhật thành công",
         })
         router.push("/admin/products")
       } else {
-        throw new Error(response.message || "Failed to update product")
+        throw new Error("Failed to update product")
       }
 
     } catch (err: unknown) {

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { getProducts } from "@/lib/admin-api"
+import { ProductService } from "@/services/products"
 import { Product } from "@/type/product"
 import Loading from "@/app/loading"
 import ProductGrid from "@/components/product-grid"
@@ -20,7 +20,7 @@ export default function NewPage() {
   useEffect(() => {
     const fetchNewProducts = async () => {
       try {
-        const { data } = await getProducts({ status: 'new' })
+        const { data } = await ProductService.getProducts({ status: 'new' })
         setNewArrivals(data)
       } catch (error) {
         console.error("Error fetching new products:", error)

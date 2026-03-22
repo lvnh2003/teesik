@@ -1,24 +1,21 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { deleteCombo, getCombos } from "@/lib/admin-api"
+import { PosService } from "@/services/pos"
 import { Combo } from "@/type"
-import { Loader2, Plus, PackageOpen, Edit, Trash2 } from "lucide-react"
-import CreateComboModal from "@/components/create-combo-modal"
-import UpdateComboModal from "@/components/update-combo-modal"
+import { Loader2, PackageOpen } from "lucide-react"
 
 export default function AdminCombosPage() {
     const [combos, setCombos] = useState<Combo[]>([])
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-    const [comboToEdit, setComboToEdit] = useState<Combo | null>(null)
+
 
     const fetchCombos = async () => {
         setLoading(true)
         try {
-            const response = await getCombos({
+            const response = await PosService.getCombos({
                 page: currentPage,
                 limit: 10
             })
@@ -33,17 +30,7 @@ export default function AdminCombosPage() {
         }
     }
 
-    const handleDelete = async (id: string | number) => {
-        if (!confirm("Bạn có chắc chắn muốn xóa combo này? Hành động này không thể hoàn tác.")) return;
-        try {
-            await deleteCombo(id);
-            alert("Xóa combo thành công!");
-            fetchCombos();
-        } catch (error: any) {
-            console.error("Failed to delete combo", error);
-            alert("Lỗi khi xóa combo: " + error.message);
-        }
-    };
+
 
     useEffect(() => {
         fetchCombos()
@@ -53,13 +40,6 @@ export default function AdminCombosPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-3xl font-bold tracking-tight">Quản lý Combo</h1>
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors"
-                >
-                    <Plus className="h-4 w-4" />
-                    Tạo Combo
-                </button>
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow space-y-4">
@@ -76,13 +56,12 @@ export default function AdminCombosPage() {
                                     <th className="px-6 py-3">Tên Combo</th>
                                     <th className="px-6 py-3">Giá trị</th>
                                     <th className="px-6 py-3">Trạng thái</th>
-                                    <th className="px-6 py-3 text-right">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {combos.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                                        <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
                                             Không tìm thấy combo nào
                                         </td>
                                     </tr>
@@ -104,24 +83,6 @@ export default function AdminCombosPage() {
                                                     }`}>
                                                     {combo.status === 'active' || !combo.status ? "Hoạt động" : "Tạm dừng"}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => setComboToEdit(combo)}
-                                                        className="p-1 hover:bg-gray-100 rounded text-blue-600 transition-colors"
-                                                        title="Chỉnh sửa"
-                                                    >
-                                                        <Edit className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(combo.id)}
-                                                        className="p-1 hover:bg-gray-100 rounded text-red-600 transition-colors"
-                                                        title="Xóa"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </button>
-                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -155,22 +116,6 @@ export default function AdminCombosPage() {
                 </div>
             </div>
 
-            <CreateComboModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={() => {
-                    setCurrentPage(1)
-                    fetchCombos()
-                }}
-            />
-            <UpdateComboModal
-                isOpen={!!comboToEdit}
-                combo={comboToEdit}
-                onClose={() => setComboToEdit(null)}
-                onSuccess={() => {
-                    fetchCombos()
-                }}
-            />
         </div>
     )
 }

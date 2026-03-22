@@ -6,7 +6,8 @@ import Image from "next/image"
 import { Trash2, ShoppingBag, ArrowRight, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { getCart, updateCartItem, removeFromCart, getImageUrl } from "@/lib/admin-api"
+import { CartService } from "@/services/cart"
+import { getImageUrl } from "@/services/core"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
 import { CartItem } from "@/type"
@@ -22,7 +23,7 @@ export default function CartPage() {
   const fetchCart = async () => {
     setIsLoading(true)
     try {
-      const data = await getCart()
+      const data = await CartService.getCart()
       setCartItems(data.items || [])
       setSubtotal(data.total || 0)
     } catch (error) {
@@ -41,7 +42,7 @@ export default function CartPage() {
     try {
       // Optimistic update
       setCartItems(prev => prev.map(item => item.product_id === productId ? { ...item, quantity: newQuantity } : item))
-      await updateCartItem(productId, newQuantity)
+      await CartService.updateCartItem(productId, newQuantity)
       fetchCart() // Sync to be sure
     } catch (error) {
       console.error("Failed to update quantity", error)
@@ -51,7 +52,7 @@ export default function CartPage() {
   const removeItem = async (productId: string | number) => {
     try {
       setCartItems(prev => prev.filter(item => item.product_id !== productId))
-      await removeFromCart(productId)
+      await CartService.removeFromCart(productId)
       fetchCart()
     } catch (error) {
       console.error("Failed to remove item", error)

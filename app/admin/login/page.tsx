@@ -7,8 +7,7 @@ import { useRouter } from "next/navigation"
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { login as apiLogin, isAuthenticated, setAuthToken } from "@/lib/auth"
-import { checkAdminRole } from "@/lib/admin-auth"
+import { AuthService } from "@/services/auth"
 
 export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -23,8 +22,8 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (isAuthenticated()) {
-        const isAdmin = await checkAdminRole()
+      if (AuthService.isAuthenticated()) {
+        const isAdmin = await AuthService.checkAdminRole()
         if (isAdmin) {
           router.push("/admin")
         }
@@ -40,11 +39,11 @@ export default function AdminLoginPage() {
     setIsLoading(true)
 
     try {
-      const response = await apiLogin(loginData)
-      setAuthToken(response.data.token)
+      const response = await AuthService.login(loginData)
+      AuthService.setAuthToken(response.data.token)
 
       // Check if user is admin
-      const isAdmin = await checkAdminRole()
+      const isAdmin = await AuthService.checkAdminRole()
 
       if (isAdmin) {
         router.push("/admin")
@@ -62,7 +61,7 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="max-w-md w-full p-8 bg-white shadow-lg rounded-lg">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">LUXEBAGS ADMIN</h1>
+          <h1 className="text-3xl font-bold tracking-tight">TEESIK ADMIN</h1>
           <p className="text-gray-600 mt-2">Đăng nhập vào trang quản trị</p>
         </div>
 

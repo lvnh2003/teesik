@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { getOrder, updateOrder } from "@/lib/admin-api"
+import { OrderService } from "@/services/orders"
 import { Order } from "@/type"
 import { format } from "date-fns"
 import { Loader2, ArrowLeft, Save } from "lucide-react"
@@ -23,7 +23,7 @@ export default function AdminOrderDetailPage() {
         const fetchOrder = async () => {
             if (!params.id) return
             try {
-                const response = await getOrder(Number(params.id))
+                const response = await OrderService.getOrder(Number(params.id))
                 setOrder(response.data)
                 setStatus(response.data.status)
                 setPaymentStatus(response.data.payment_status)
@@ -42,13 +42,13 @@ export default function AdminOrderDetailPage() {
         if (!order) return
         setSaving(true)
         try {
-            await updateOrder(order.id, {
+            await OrderService.updateOrder(order.id, {
                 status: status as any,
                 payment_status: paymentStatus as any
             })
             toast.success("Cập nhật đơn hàng thành công")
             // Refresh data
-            const response = await getOrder(order.id)
+            const response = await OrderService.getOrder(order.id)
             setOrder(response.data)
         } catch (error) {
             console.error("Failed to update order", error)

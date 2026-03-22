@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getSalesAnalytics, getInventoryAnalytics } from "@/lib/admin-api"
+import { PosService } from "@/services/pos"
 import { Loader2, TrendingUp, Package, DollarSign, Activity } from "lucide-react"
 
 export default function AdminStatisticsPage() {
@@ -13,8 +13,8 @@ export default function AdminStatisticsPage() {
         setLoading(true)
         try {
             const [salesRes, inventoryRes] = await Promise.all([
-                getSalesAnalytics(),
-                getInventoryAnalytics()
+                PosService.getSalesAnalytics(),
+                PosService.getInventoryAnalytics()
             ])
             setSalesData(salesRes.data)
             setInventoryData(inventoryRes.data)

@@ -5,7 +5,7 @@ import Image from "next/image"
 import { X, ArrowRight, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWishlist } from "@/contexts/wishlist-context"
-import { getImageUrl } from "@/lib/admin-api"
+import { getImageUrl } from "@/services/core"
 import { useLanguage } from "@/contexts/language-context"
 import { motion, AnimatePresence } from "framer-motion"
 

@@ -2,14 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-import {
-  login as apiLogin,
-  register as apiRegister,
-  getCurrentUser,
-  setAuthToken,
-  removeAuthToken,
-  isAuthenticated,
-} from "@/lib/auth"
+import { AuthService } from "@/services/auth"
 import type { User } from "@/type"
 
 interface AuthContextType {
@@ -38,14 +31,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        if (isAuthenticated()) {
-          const response = await getCurrentUser()
+        if (AuthService.isAuthenticated()) {
+          const response = await AuthService.getCurrentUser()
           setUser(response.data.user)
           setIsLoggedIn(true)
         }
       } catch (error) {
         console.error("Auth check failed:", error)
-        removeAuthToken()
+        AuthService.removeAuthToken()
       } finally {
         setIsLoading(false)
       }
@@ -57,9 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true)
-      const response = await apiLogin({ email, password })
+      const response = await AuthService.login({ email, password })
 
-      setAuthToken(response.data.token)
+      AuthService.setAuthToken(response.data.token)
       setUser(response.data.user)
       setIsLoggedIn(true)
     } catch (error) {
@@ -78,9 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     try {
       setIsLoading(true)
-      const response = await apiRegister(userData)
+      const response = await AuthService.register({ ...userData, role: "customer" })
 
-      setAuthToken(response.data.token)
+      AuthService.setAuthToken(response.data.token)
       setUser(response.data.user)
       setIsLoggedIn(true)
     } catch (error) {
@@ -91,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
-    removeAuthToken()
+    AuthService.removeAuthToken()
     setUser(null)
     setIsLoggedIn(false)
   }

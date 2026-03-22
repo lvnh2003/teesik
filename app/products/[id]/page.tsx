@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import ProductSlider from "@/components/product-slider"
-import { getImageUrl, getProduct } from "@/lib/admin-api"
+import { ProductService } from "@/services/products"
+import { getImageUrl } from "@/services/core"
 import type { Product, ProductImage, ProductVariant } from "@/type/product"
 import Loading from "@/app/loading"
 import { useToast } from "@/components/ui/use-toast"
@@ -36,7 +37,7 @@ export default function ProductPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data: productData } = await getProduct(id)
+        const { data: productData } = await ProductService.getProduct(id)
         setProduct(productData)
 
         // Set default variant and attributes

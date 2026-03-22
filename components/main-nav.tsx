@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import LanguageSwitcher from "@/components/language-switcher"
 import { useAuth } from "@/contexts/auth-context"
 import { Category } from "@/type/product"
-import { getCategories } from "@/lib/admin-api"
+import { ProductService } from "@/services/products"
 import { motion, useScroll, useMotionValueEvent } from "framer-motion"
 import { useWishlist } from "@/contexts/wishlist-context"
 import { useCart } from "@/contexts/cart-context"
@@ -41,7 +41,7 @@ export default function MainNav() {
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
       try {
-        const response = await getCategories();
+        const response = await ProductService.getCategories();
         if (response.data) {
           setCategories(response.data);
         }

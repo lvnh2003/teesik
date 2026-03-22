@@ -1,8 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAdminAuth } from "@/lib/admin-auth"
-import { getDashboardStats } from "@/lib/admin-api"
+import { AuthService } from "@/services/auth"
+import { useAdminAuth } from "@/services/auth"
+import { ProductService } from "@/services/products"
+import { OrderService } from "@/services/orders"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, Users, ShoppingCart, DollarSign, TrendingUp, Eye, Star } from "lucide-react"
 import {
@@ -35,16 +38,34 @@ export default function AdminDashboardPage() {
       try {
         // Try to get real data first, then fallback to fake data
         try {
-          const response = await getDashboardStats()
+          const response = await AuthService.getDashboardStats()
           setStats(response.data)
         } catch (err) {
-          // Use fake data if API fails
-          setStats(fakeStats)
+          try {
+             const [productsRes, ordersRes] = await Promise.all([
+               ProductService.getProducts({ per_page: 1 }),
+               OrderService.getOrders({ limit: 6 })
+             ]);
+
+             const total_products = productsRes.meta?.total || productsRes.data?.length || fakeStats.total_products;
+             const total_orders = ordersRes.meta?.total || ordersRes.data?.length || fakeStats.total_orders;
+             const recent_orders = (ordersRes.data && ordersRes.data.length > 0) ? ordersRes.data : fakeStats.recent_orders;
+
+             setStats({
+                ...fakeStats,
+                total_products,
+                total_orders,
+                recent_orders,
+             } as any);
+             setError("Dữ liệu tổng quan chung đang gặp sự cố, hiển thị số liệu thay thế.")
+          } catch(e) {
+             setStats(fakeStats as any)
+             setError("Không thể tải dữ liệu, hiển thị dữ liệu mẫu.")
+          }
         }
       } catch (err: any) {
         setError(err.message || "Failed to load dashboard data")
-        // Still show fake data even if there's an error
-        setStats(fakeStats)
+        setStats(fakeStats as any)
       } finally {
         setIsLoading(false)
       }

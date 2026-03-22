@@ -5,9 +5,8 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { checkAdminRole } from "@/lib/admin-auth"
 import { LayoutDashboard, Package, Users, ShoppingCart, Settings, LogOut, Menu, X, ChevronDown, CreditCard, ShoppingBag, Tag, BarChart, Contact } from "lucide-react"
-import { removeAuthToken } from "@/lib/auth"
+import { AuthService } from "@/services/auth"
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
@@ -24,7 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return
       }
 
-      const adminStatus = await checkAdminRole()
+      const adminStatus = await AuthService.checkAdminRole()
       setIsAdmin(adminStatus)
 
       if (!adminStatus) {
@@ -48,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [pathname])
 
   const handleLogout = () => {
-    removeAuthToken()
+    AuthService.removeAuthToken()
     router.push("/admin/login")
   }
 
@@ -110,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-800">
           <Link href="/admin" className="text-xl font-bold tracking-tight">
-            LUXEBAGS ADMIN
+            TEESIK ADMIN
           </Link>
           <button
             onClick={() => setIsSidebarOpen(false)}

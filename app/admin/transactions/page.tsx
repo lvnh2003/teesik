@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getTransactions } from "@/lib/admin-api"
+import { PosService } from "@/services/pos"
 import { Transaction } from "@/type"
 import { format } from "date-fns"
 import { Loader2, CreditCard } from "lucide-react"
@@ -15,7 +15,7 @@ export default function AdminTransactionsPage() {
     const fetchTransactions = async () => {
         setLoading(true)
         try {
-            const response = await getTransactions({
+            const response = await PosService.getTransactions({
                 page: currentPage,
                 limit: 10
             })

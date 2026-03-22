@@ -6,18 +6,24 @@ import { ArrowRight, ArrowUpRight, Globe, Calendar, ArrowDown } from "lucide-rea
 import { useLanguage } from "@/contexts/language-context"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState, useRef } from "react"
-import { getProducts } from "@/lib/admin-api"
-import { Product } from "@/type/product"
+import { ProductService } from "@/services/products"
+import { Product, Category } from "@/type/product"
 import { motion, useScroll, useTransform } from "framer-motion"
 import PhotoSlider from "@/components/photo-slider"
 
 export default function Home() {
   const { t } = useLanguage()
   const [newArrivals, setNewArrivals] = useState<Product[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+
+  const formatCategoryName = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower === 'quần ảos') return 'QUẦN ÁO';
+    if (lower === 'túi sách') return 'TÚI XÁCH';
+    return name;
+  }
   const containerRef = useRef(null)
 
   const { scrollYProgress } = useScroll({
@@ -28,12 +34,14 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const [newRes, featuredRes] = await Promise.all([
-          getProducts({ is_new: 'true', per_page: 6 }),
-          getProducts({ is_featured: 'true', per_page: 4 })
+        const [newRes, featuredRes, catRes] = await Promise.all([
+          ProductService.getProducts({ is_new: 'true', per_page: 6 }),
+          ProductService.getProducts({ is_featured: 'true', per_page: 4 }),
+          ProductService.getCategories()
         ])
         setNewArrivals(newRes.data)
         setFeaturedProducts(featuredRes.data)
+        setCategories(catRes.data)
       } catch (error) {
         console.error("Error fetching products:", error)
       } finally {
@@ -171,24 +179,18 @@ export default function Home() {
         {/* Featured Categories - Big Grid */}
         <section className="container mx-auto px-6 mb-32">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: t("home.toteBags"), img: "/images/tote-bag-1.jpg", link: "/collections/tote-bags", size: "col-span-1" },
-              { name: t("footer.backpacks"), img: "/images/backpack-1.jpg", link: "/collections/backpacks", size: "col-span-1" },
-              { name: t("home.accessories"), img: "/images/crossbody-bag-1.jpg", link: "/collections/accessories", size: "md:col-span-2 aspect-[2/1]" }
-
-            ].map((cat, i) => (
-              <Link key={i} href={cat.link} className={`relative group overflow-hidden ${cat.size} block`}>
-                <div className={`relative w-full ${cat.size.includes('aspect') ? 'aspect-[2/1]' : 'aspect-square'} bg-gray-200`}>
-                  <Image
-                    src={cat.img}
-                    alt={cat.name}
-                    fill
-                    className="object-cover transition-transform duration-1000 group-hover:scale-110 grayscale group-hover:grayscale-0"
-                  />
+            {categories.slice(0, 3).map((cat, i) => {
+              const size = i === 2 ? "md:col-span-2 aspect-[2/1]" : "col-span-1";
+              return (
+              <Link key={cat.id} href={`/products`} className={`relative group overflow-hidden ${size} block`}>
+                <div className={`relative w-full ${size.includes('aspect') ? 'aspect-[2/1]' : 'aspect-square'} bg-gray-200`}>
+                  <div className="absolute inset-0 bg-neutral-900 flex items-center justify-center">
+                     <span className="text-white opacity-20 text-xs">Image</span>
+                  </div>
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500" />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <h3 className="text-white text-5xl md:text-7xl font-black uppercase tracking-tighter text-center opacity-80 group-hover:opacity-100 transition-opacity duration-300">
-                      {cat.name}
+                      {formatCategoryName(cat.name)}
                     </h3>
                     <div className="mt-4 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
                       <span className="bg-white text-black px-6 py-2 uppercase font-bold tracking-widest text-xs">
@@ -198,7 +200,7 @@ export default function Home() {
                   </div>
                 </div>
               </Link>
-            ))}
+            )})}
           </div>
         </section>
 

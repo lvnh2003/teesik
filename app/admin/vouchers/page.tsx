@@ -1,22 +1,20 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getVouchers } from "@/lib/admin-api"
+import { PosService } from "@/services/pos"
 import { Voucher } from "@/type"
-import { Loader2, Plus, Ticket } from "lucide-react"
-import CreateVoucherModal from "@/components/create-voucher-modal"
+import { Loader2, Ticket } from "lucide-react"
 
 export default function AdminVouchersPage() {
     const [vouchers, setVouchers] = useState<Voucher[]>([])
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
     const fetchVouchers = async () => {
         setLoading(true)
         try {
-            const response = await getVouchers({
+            const response = await PosService.getVouchers({
                 page: currentPage,
                 limit: 10
             })
@@ -39,13 +37,6 @@ export default function AdminVouchersPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-3xl font-bold tracking-tight">Quản lý Voucher</h1>
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-colors"
-                >
-                    <Plus className="h-4 w-4" />
-                    Tạo Voucher
-                </button>
             </div>
 
             <div className="bg-blue-50 text-blue-800 rounded-md p-3 text-sm flex gap-2 items-start mt-4">
@@ -127,14 +118,6 @@ export default function AdminVouchersPage() {
                 </div>
             </div>
 
-            <CreateVoucherModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={() => {
-                    setCurrentPage(1)
-                    fetchVouchers()
-                }}
-            />
         </div>
     )
 }

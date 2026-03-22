@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getOrders } from "@/lib/admin-api"
+import { OrderService } from "@/services/orders"
 import { Order } from "@/type"
 import { format } from "date-fns"
 import { Loader2, Search, Filter } from "lucide-react"
@@ -18,7 +18,7 @@ export default function AdminOrdersPage() {
     const fetchOrders = async () => {
         setLoading(true)
         try {
-            const response = await getOrders({
+            const response = await OrderService.getOrders({
                 page: currentPage,
                 limit: 10,
                 status: statusFilter,
