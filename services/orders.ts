@@ -12,8 +12,14 @@ export const OrderService = {
     return localFetch<{ data: Order[]; meta?: any }>(`/admin/orders?${query.toString()}`);
   },
 
-  getUserOrders: async () => {
-    return localFetch<{ data: Order[] }>(`/orders/user`).catch(() => ({ data: [] }));
+  getUserOrders: async (params: { page?: number; limit?: number; status?: string; search?: string } = {}) => {
+    const query = new URLSearchParams();
+    if (params.page) query.append('page', params.page.toString());
+    if (params.limit) query.append('limit', params.limit.toString());
+    if (params.status) query.append('status', params.status);
+    if (params.search) query.append('search', params.search);
+
+    return localFetch<{ data: Order[], meta?: any }>(`/orders/user?${query.toString()}`).catch(() => ({ data: [], meta: null }));
   },
 
   getOrder: async (id: number) => {

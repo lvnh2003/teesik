@@ -31,7 +31,15 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation()
 
     try {
-      await addToCart(product.id, 1)
+      await addToCart({
+        product_id: product.id,
+        variant_id: undefined,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        slug: product.slug || "",
+        image: product.main_image?.image_path || (product.images?.[0] && typeof product.images[0] !== 'string' ? product.images[0].image_path : (typeof product.images?.[0] === 'string' ? product.images[0] : "/placeholder.svg")),
+      })
       toast({
         title: "Added to Cart",
         description: `${product.name} added to your cart.`,

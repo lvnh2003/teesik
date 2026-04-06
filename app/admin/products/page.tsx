@@ -210,8 +210,10 @@ export default function ProductsPage() {
         return 0
     }
 
-    if (valueA < valueB) return sortDirection === "asc" ? -1 : 1
-    if (valueA > valueB) return sortDirection === "asc" ? 1 : -1
+    const a1 = valueA ?? 0
+    const b1 = valueB ?? 0
+    if (a1 < b1) return sortDirection === "asc" ? -1 : 1
+    if (a1 > b1) return sortDirection === "asc" ? 1 : -1
     return 0
   })
 
@@ -449,9 +451,9 @@ export default function ProductsPage() {
                         <div
                           className={cn(
                             "font-medium text-sm",
-                            product.stock_quantity <= 0
+                            (product.stock_quantity ?? 0) <= 0
                               ? "text-destructive"
-                              : product.stock_quantity < 10
+                              : (product.stock_quantity ?? 0) < 10
                                 ? "text-amber-500"
                                 : "",
                           )}
@@ -474,12 +476,12 @@ export default function ProductsPage() {
                           {product.is_new && (
                             <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800 text-[10px] px-1.5 py-0">Mới</Badge>
                           )}
-                          {product.stock_quantity <= 0 && (
+                          {(product.stock_quantity ?? 0) <= 0 && (
                             <Badge className="bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800 text-[10px] px-1.5 py-0">
                               Hết hàng
                             </Badge>
                           )}
-                          {!product.is_new && product.stock_quantity > 0 && (
+                          {!product.is_new && (product.stock_quantity ?? 0) > 0 && (
                             <Badge variant="outline" className="text-muted-foreground text-[10px] px-1.5 py-0">
                               Bình thường
                             </Badge>

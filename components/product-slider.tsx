@@ -9,7 +9,7 @@ import ProductCard from "@/components/product-card"
 
 interface ProductSliderProps {
   products?: Product[]
-  category_id: number
+  category_id?: number
 }
 
 export default function ProductSlider({ products: initialProducts, category_id }: ProductSliderProps) {

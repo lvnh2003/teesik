@@ -25,22 +25,9 @@ export const ProductService = {
     const url = `/products${queryString ? `?${queryString}` : ''}`;
     
     const response = await localFetch<any>(url);
-    
-    const fakeStock = (products: Product[]) => {
-       return products.map(p => {
-          if ((p.stock_quantity || 0) <= 0) p.stock_quantity = 100;
-          if (p.variations) {
-             p.variations = p.variations.map(v => {
-                if ((v.stock_quantity || 0) <= 0) v.stock_quantity = 100;
-                return v;
-             });
-          }
-          return p;
-       });
-    };
 
     if (response.data && Array.isArray(response.data)) {
-      if (response.meta) return { data: fakeStock(response.data), meta: response.meta };
+      if (response.meta) return { data: response.data, meta: response.meta };
       
       const meta = {
         current_page: response.current_page,
@@ -50,24 +37,13 @@ export const ProductService = {
         to: response.to,
         total: response.total,
       };
-      return { data: fakeStock(response.data), meta };
+      return { data: response.data, meta };
     }
     return { data: [], meta: {} };
   },
 
   getProduct: async (id: string | number) => {
-    return localFetch<{ data: Product }>(`/products/${id}`).then(res => {
-        if (res.data) {
-           if ((res.data.stock_quantity || 0) <= 0) res.data.stock_quantity = 100;
-           if (res.data.variations) {
-               res.data.variations = res.data.variations.map(v => {
-                  if ((v.stock_quantity || 0) <= 0) v.stock_quantity = 100;
-                  return v;
-               });
-           }
-        }
-        return res;
-    });
+    return localFetch<{ data: Product }>(`/products/${id}`);
   },
 
   createProduct: async (productData: ProductFormData) => {
@@ -106,7 +82,7 @@ export const ProductService = {
   },
 
   getCategories: async () => {
-    return localFetch<{ data: Category[] }>("/admin/categories");
+    return localFetch<{ data: Category[] }>("/categories");
   },
 
   createCategory: async (name: string) => {

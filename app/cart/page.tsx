@@ -1,62 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Trash2, ShoppingBag, ArrowRight, Minus, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { CartService } from "@/services/cart"
 import { getImageUrl } from "@/services/core"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
-import { CartItem } from "@/type"
 
-
+import { useCart } from "@/contexts/cart-context"
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [subtotal, setSubtotal] = useState(0)
+  const { items: cartItems, isLoading, updateQuantity, removeFromCart } = useCart()
   const { t } = useLanguage()
 
-  const fetchCart = async () => {
-    setIsLoading(true)
-    try {
-      const data = await CartService.getCart()
-      setCartItems(data.items || [])
-      setSubtotal(data.total || 0)
-    } catch (error) {
-      console.error("Failed to load cart", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchCart()
-  }, [])
-
-  const updateQuantity = async (productId: string | number, newQuantity: number) => {
+  const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0)
+  
+  const handleUpdateQuantity = (productId: string | number, variantId: string | number | undefined, newQuantity: number) => {
     if (newQuantity < 1) return
-    try {
-      // Optimistic update
-      setCartItems(prev => prev.map(item => item.product_id === productId ? { ...item, quantity: newQuantity } : item))
-      await CartService.updateCartItem(productId, newQuantity)
-      fetchCart() // Sync to be sure
-    } catch (error) {
-      console.error("Failed to update quantity", error)
-    }
+    updateQuantity(productId, variantId, newQuantity)
   }
 
-  const removeItem = async (productId: string | number) => {
-    try {
-      setCartItems(prev => prev.filter(item => item.product_id !== productId))
-      await CartService.removeFromCart(productId)
-      fetchCart()
-    } catch (error) {
-      console.error("Failed to remove item", error)
-    }
+  const handleRemoveItem = (productId: string | number, variantId?: string | number) => {
+    removeFromCart(productId, variantId)
   }
 
   const shipping = subtotal > 1000000 ? 0 : 50000
@@ -128,7 +94,7 @@ export default function CartPage() {
                       <h3 className="font-bold text-xl md:text-3xl uppercase tracking-tighter leading-none hover:underline decoration-1 underline-offset-4">{item.name}</h3>
                     </Link>
                     <button
-                      onClick={() => removeItem(item.product_id)}
+                      onClick={() => handleRemoveItem(item.product_id, item.variant_id)}
                       className="text-gray-400 hover:text-red-600 transition-colors p-2 -mr-2"
                     >
                       <Trash2 className="h-5 w-5" />
@@ -139,11 +105,9 @@ export default function CartPage() {
                     <p className="font-mono text-lg font-medium">
                       {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.price)}
                     </p>
-                    {(item.color || item.size) && (
+                    {item.attributes && Object.keys(item.attributes).length > 0 && (
                       <p className="text-xs uppercase tracking-widest text-gray-500">
-                        {item.color && <span>{item.color}</span>}
-                        {item.color && item.size && <span className="mx-2">/</span>}
-                        {item.size && <span>{item.size}</span>}
+                        {Object.values(item.attributes).join(" / ")}
                       </p>
                     )}
                   </div>
@@ -153,7 +117,7 @@ export default function CartPage() {
                     <div className="flex items-center border border-black w-fit">
                       <button
                         className="w-10 h-10 flex items-center justify-center hover:bg-black hover:text-white transition-colors"
-                        onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                        onClick={() => handleUpdateQuantity(item.product_id, item.variant_id, item.quantity - 1)}
                         disabled={item.quantity <= 1}
                       >
                         <Minus className="h-3 w-3" />
@@ -161,7 +125,7 @@ export default function CartPage() {
                       <span className="w-12 text-center font-mono font-bold text-sm">{item.quantity}</span>
                       <button
                         className="w-10 h-10 flex items-center justify-center hover:bg-black hover:text-white transition-colors"
-                        onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                        onClick={() => handleUpdateQuantity(item.product_id, item.variant_id, item.quantity + 1)}
                       >
                         <Plus className="h-3 w-3" />
                       </button>

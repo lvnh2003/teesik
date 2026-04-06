@@ -1,14 +1,7 @@
-"use client"
 import type React from "react"
 import { Playfair_Display, Be_Vietnam_Pro } from "next/font/google"
 import "@/app/globals.css"
-import { LanguageProvider } from "@/contexts/language-context"
-import MainNav from "@/components/main-nav"
-import Footer from "@/components/footer"
-import { AuthProvider } from "@/contexts/auth-context"
-import { WishlistProvider } from "@/contexts/wishlist-context"
-import { CartProvider } from "@/contexts/cart-context"
-import { usePathname } from "next/navigation"
+import ClientLayout from "@/components/client-layout"
 
 // Định nghĩa font Playfair Display
 const playfair = Playfair_Display({
@@ -30,24 +23,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const pathname = usePathname()
-
-  const isAdminRoute = pathname?.startsWith("/admin")
   return (
     <html lang="vi" suppressHydrationWarning className={`${beVietnamPro.variable} ${playfair.variable}`}>
       <body suppressHydrationWarning>
-        <AuthProvider>
-          <LanguageProvider>
-            <WishlistProvider>
-              <CartProvider>
-                {!isAdminRoute && <MainNav />}
-                <main>{children}</main>
-                {!isAdminRoute && <Footer />}
-              </CartProvider>
-            </WishlistProvider>
-          </LanguageProvider>
-        </AuthProvider>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   )
 }
+

@@ -1,8 +1,6 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from "react"
-import { CartService } from "@/services/cart"
-import { toast } from "@/components/ui/use-toast"
 
 export interface CartItem {
     product_id: string | number
@@ -11,8 +9,7 @@ export interface CartItem {
     price: number
     quantity: number
     image: string
-    color?: string
-    size?: string
+    attributes?: Record<string, string>
     slug: string
 }
 
@@ -20,74 +17,77 @@ interface CartContextType {
     items: CartItem[]
     cartCount: number
     isLoading: boolean
-    addToCart: (productId: string | number, quantity?: number, variantId?: string | number) => Promise<void>
-    removeFromCart: (productId: string | number) => Promise<void>
-    updateQuantity: (productId: string | number, quantity: number) => Promise<void>
+    addToCart: (item: CartItem) => Promise<void>
+    removeFromCart: (productId: string | number, variantId?: string | number) => Promise<void>
+    updateQuantity: (productId: string | number, variantId: string | number | undefined, quantity: number) => Promise<void>
     refreshCart: () => Promise<void>
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+const CART_STORAGE_KEY = "teesik_cart"
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    const fetchCart = async () => {
-        try {
-            const data: any = await CartService.getCart()
-            setItems(data.items || [])
-        } catch (error) {
-            console.error("Failed to load cart", error)
-            setItems([])
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
+    // Sync from LocalStorage on mount
     useEffect(() => {
-        fetchCart()
+        const storedCart = localStorage.getItem(CART_STORAGE_KEY)
+        if (storedCart) {
+            try {
+                setItems(JSON.parse(storedCart))
+            } catch (e) {
+                console.error("Failed to parse cart storage", e)
+            }
+        }
+        setIsLoading(false)
     }, [])
 
+    // Sync to LocalStorage whenever items change
+    useEffect(() => {
+        if (!isLoading) {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+        }
+    }, [items, isLoading])
+
     const refreshCart = async () => {
-        await fetchCart()
-    }
-
-    const addToCart = async (productId: string | number, quantity: number = 1, variantId?: string | number) => {
-        try {
-            // Optimistic update (optional, but tricky with variants/merging. Let's rely on refresh for accuracy for now or simple optimistic)
-            // ideally we just call API and refresh.
-            await CartService.addToCart(productId, quantity, variantId)
-            await fetchCart()
-            // toast handled by caller usually, or we can do it here? 
-            // The caller (product page) was handling toast. Let's keep it that way or move it here. 
-            // Caller handling gives more flexibility on message.
-        } catch (error) {
-            console.error("Add to cart error", error)
-            throw error
+        // Now just a no-op, since state is local, or could re-read from storage
+        const storedCart = localStorage.getItem(CART_STORAGE_KEY)
+        if (storedCart) {
+            try {
+                setItems(JSON.parse(storedCart))
+            } catch (e) {}
         }
     }
 
-    const removeFromCart = async (productId: string | number) => {
-        try {
-            setItems(prev => prev.filter(item => item.product_id !== productId))
-            await CartService.removeFromCart(productId)
-            await fetchCart()
-        } catch (error) {
-            console.error("Remove from cart error", error)
-            // Revert on error?
-            await fetchCart()
-        }
+    const addToCart = async (newItem: CartItem) => {
+        setItems(prevItems => {
+            const existingItemIndex = prevItems.findIndex(
+                i => i.product_id === newItem.product_id && i.variant_id === newItem.variant_id
+            )
+            
+            if (existingItemIndex >= 0) {
+                const updatedItems = [...prevItems]
+                updatedItems[existingItemIndex].quantity += newItem.quantity
+                return updatedItems
+            } else {
+                return [...prevItems, newItem]
+            }
+        })
     }
 
-    const updateQuantity = async (productId: string | number, quantity: number) => {
-        try {
-            setItems(prev => prev.map(item => item.product_id === productId ? { ...item, quantity } : item))
-            await CartService.updateCartItem(productId, quantity)
-            await fetchCart()
-        } catch (error) {
-            console.error("Update quantity error", error)
-            await fetchCart()
-        }
+    const removeFromCart = async (productId: string | number, variantId?: string | number) => {
+        setItems(prev => prev.filter(item => !(item.product_id === productId && item.variant_id === variantId)))
+    }
+
+    const updateQuantity = async (productId: string | number, variantId: string | number | undefined, quantity: number) => {
+        setItems(prev => prev.map(item => {
+            if (item.product_id === productId && item.variant_id === variantId) {
+                return { ...item, quantity: Math.max(1, quantity) }
+            }
+            return item
+        }))
     }
 
     const cartCount = items.reduce((total, item) => total + item.quantity, 0)

@@ -70,7 +70,7 @@ export default function CreateProductPage() {
       try {
         const response = await ProductService.getCategories()
         setCategories(response.data)
-      } catch (err: unknown) {
+      } catch (err: any) {
         const message = err instanceof Error ? err.message : "Failed to load categories"
         setError(message)
       }
@@ -203,7 +203,7 @@ export default function CreateProductPage() {
       }
 
       router.push("/admin/products")
-    } catch (err: unknown) {
+    } catch (err: any) {
       const message = err instanceof Error ? err.message : "Failed to create product"
       setError(message)
       setIsLoading(false)

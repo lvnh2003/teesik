@@ -4,6 +4,7 @@ export interface Product {
   name: string
   description: string
   category?: Category
+  category_id?: number
   images?: ProductImage[]
   created_at?: string
   updated_at?: string
@@ -14,6 +15,12 @@ export interface Product {
   note?: string
   is_sell_negative?: boolean
   hide_config_product?: boolean
+  price: number
+  slug?: string
+  discount?: number
+  isNew?: boolean
+  original_price?: number
+  stock_quantity?: number
   [key: string]: any
 }
 

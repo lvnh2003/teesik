@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     try {
       setIsLoading(true)
-      const response = await AuthService.register({ ...userData, role: "customer" })
+      const response = await AuthService.register({ ...userData })
 
       AuthService.setAuthToken(response.data.token)
       setUser(response.data.user)

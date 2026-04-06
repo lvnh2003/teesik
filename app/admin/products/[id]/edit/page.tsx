@@ -110,7 +110,7 @@ export default function EditProductPage() {
               }
               // Fallback for potential legacy array format (just in case)
               else if (Array.isArray(variant.attributes)) {
-                (variant.attributes as unknown[]).forEach((attrStr: unknown) => {
+                (variant.attributes as any[]).forEach((attrStr: unknown) => {
                   try {
                     const attr = typeof attrStr === 'string' ? JSON.parse(attrStr) : attrStr
                     if (typeof attr === 'object' && attr !== null && 'name' in attr && 'value' in attr) {
@@ -140,7 +140,7 @@ export default function EditProductPage() {
             const formattedVariants = product.variations.map(
               (variant: ProductVariant) => {
                 // Tạo object attributes
-                let variantAttributes: Record<string, string> = {}
+                const variantAttributes: Record<string, string> = {}
 
                 if (variant.attributes && typeof variant.attributes === 'object' && !Array.isArray(variant.attributes)) {
                   // If it's already a Record, use it (filtering out null/undefined if necessary)
@@ -151,7 +151,7 @@ export default function EditProductPage() {
                   })
                 } else if (Array.isArray(variant.attributes) && variant.attributes.length > 0) {
                   // Legacy array handling
-                  (variant.attributes as unknown[]).forEach((attrStr) => {
+                  (variant.attributes as any[]).forEach((attrStr) => {
                     try {
                       const attr = typeof attrStr === 'string' ? JSON.parse(attrStr) : attrStr
                       if (typeof attr === 'object' && attr !== null && 'name' in attr && 'value' in attr) {
@@ -195,7 +195,7 @@ export default function EditProductPage() {
             setVariants(formattedVariants as any)
           }
         }
-      } catch (err: unknown) {
+      } catch (err: any) {
         const message = err instanceof Error ? err.message : "Failed to load product data"
         setError(message)
       } finally {
@@ -348,7 +348,7 @@ export default function EditProductPage() {
         throw new Error("Failed to update product")
       }
 
-    } catch (err: unknown) {
+    } catch (err: any) {
       const message = err instanceof Error ? err.message : "Failed to update product"
       setError(message)
       toast({

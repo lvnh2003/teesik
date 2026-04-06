@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronRight, Minus, Plus, Heart, Share2, ShoppingBag, Truck, RotateCcw, Shield, Check } from "lucide-react"
+import { ChevronRight, Minus, Plus, Heart, ShoppingBag } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -25,12 +25,11 @@ export default function ProductPage() {
   const { addToCart } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAddingToCart, setIsAddingToCart] = useState(false)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({})
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const params = useParams();
   const id = params.id as string
 
@@ -179,7 +178,6 @@ export default function ProductPage() {
     })
 
     if (matchingVariant) {
-      console.log("Selected variant:", matchingVariant)
       setSelectedVariant(matchingVariant)
     }
   }
@@ -197,18 +195,26 @@ export default function ProductPage() {
   const currentPrice = selectedVariant?.price || product.price
   const currentOriginalPrice = selectedVariant?.original_price || product.original_price
   const currentStock = selectedVariant?.stock_quantity || product.stock_quantity || 0
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const discountPercentage =
-    currentOriginalPrice && currentOriginalPrice > currentPrice
-      ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100)
-      : null
 
   const handleAddToCart = async () => {
     if (!product) return
 
     try {
-      setLoading(true)
-      await addToCart(product.id, quantity, selectedVariant?.id)
+      setIsAddingToCart(true)
+      const itemToAdd = {
+        product_id: product.id,
+        variant_id: selectedVariant?.id,
+        name: product.name,
+        price: selectedVariant ? selectedVariant.price : product.price,
+        quantity: quantity,
+        image: selectedVariant && selectedVariant.images && selectedVariant.images.length > 0
+          ? (typeof selectedVariant.images[0] === 'string' ? selectedVariant.images[0] : selectedVariant.images[0].image_path)
+          : (product.images && product.images.length > 0 ? product.images[0].image_path : ""),
+        attributes: selectedAttributes,
+        slug: product.slug || ""
+      }
+      
+      await addToCart(itemToAdd)
 
       toast({
         title: t("cart.added"),
@@ -223,7 +229,7 @@ export default function ProductPage() {
         variant: "destructive"
       })
     } finally {
-      setLoading(false)
+      setIsAddingToCart(false)
     }
   }
 
@@ -347,12 +353,14 @@ export default function ProductPage() {
               <div className="flex gap-4 pt-4">
                 <Button
                   size="lg"
-                  className="flex-1 rounded-none bg-black hover:bg-gray-800 text-white h-16 text-sm font-bold tracking-widest uppercase"
-                  disabled={currentStock === 0}
+                  className="flex-1 rounded-none bg-black hover:bg-gray-800 text-white h-16 text-sm font-bold tracking-widest uppercase transition-all"
+                  disabled={currentStock === 0 || isAddingToCart}
                   onClick={handleAddToCart}
                 >
-                  <ShoppingBag className="mr-3 h-4 w-4" />
-                  {currentStock > 0 ? t("product.addToCollection") : t("product.soldOut")}
+                  <ShoppingBag className={`mr-3 h-4 w-4 ${isAddingToCart ? 'animate-bounce' : ''}`} />
+                  {isAddingToCart 
+                    ? "ĐANG THÊM..." 
+                    : (currentStock > 0 ? t("product.addToCollection") : t("product.soldOut"))}
                 </Button>
                 <Button
                   size="lg"

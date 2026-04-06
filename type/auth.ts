@@ -11,7 +11,6 @@ export interface LoginRequest {
     phone?: string
     password: string
     password_confirmation: string
-    role?: string
   }
   
   export interface AuthResponse {
