@@ -45,8 +45,8 @@ export const AuthService = {
     return localFetch<{ success: boolean }>(`/admin/users/${id}`, { method: "DELETE" });
   },
 
-  getDashboardStats: async (): Promise<{ data: any }> => {
-    return localFetch<{ data: any }>("/admin/dashboard");
+  getDashboardStats: async (): Promise<{ data: { total_products?: number; total_users?: number; total_orders?: number; recent_orders?: unknown[]; revenue?: { daily?: number; weekly?: number; monthly?: number } } }> => {
+    return localFetch<{ data: { total_products?: number; total_users?: number; total_orders?: number; recent_orders?: unknown[]; revenue?: { daily?: number; weekly?: number; monthly?: number } } }>("/admin/dashboard");
   },
 
   // Token management

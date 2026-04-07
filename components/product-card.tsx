@@ -15,6 +15,13 @@ interface ProductCardProps {
   isSmall?: boolean
 }
 
+function getProductImageUrl(product: Product): string {
+  const firstVariationImage = product.variations?.[0]?.images?.[0]?.image_path
+  const image = product.main_image?.image_path ?? product.images?.[0]?.image_path ?? firstVariationImage
+  if (!image) return ""
+  return image.startsWith('http') ? image : getImageUrl(image)
+}
+
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem, removeItem, isInWishlist } = useWishlist()
   const { toast } = useToast()
@@ -31,6 +38,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation()
 
     try {
+      const imageUrl = getProductImageUrl(product) || "/default-image.jpg"
       await addToCart({
         product_id: product.id,
         variant_id: undefined,
@@ -38,7 +46,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         price: product.price,
         quantity: 1,
         slug: product.slug || "",
-        image: product.main_image?.image_path || (product.images?.[0] && typeof product.images[0] !== 'string' ? product.images[0].image_path : (typeof product.images?.[0] === 'string' ? product.images[0] : "/placeholder.svg")),
+        image: imageUrl,
       })
       toast({
         title: "Added to Cart",
@@ -54,7 +62,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   }
 
-  // Format price
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -62,9 +69,14 @@ export default function ProductCard({ product }: ProductCardProps) {
     }).format(price)
   }
 
+  const hasImage = getProductImageUrl(product) !== ""
+
+  const originalPrice = product.original_price && product.original_price > product.price
+
   return (
-    <div className="group relative flex flex-col h-full">
-      <Link href={`/products/${product.id}`} className="block relative aspect-[3/4] overflow-hidden bg-[#F0F0F0] mb-4">
+    <Link href={`/products/${product.id}`} className="group flex flex-col bg-white hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden border border-gray-100 h-full">
+      {/* Image area - fixed aspect ratio for uniform cards */}
+      <div className="relative overflow-hidden bg-[#F0F0F0] aspect-[3/4]">
         {product.isNew && (
           <Badge className="absolute top-3 left-3 z-10 bg-black text-white hover:bg-black rounded-none uppercase tracking-wider text-[10px] px-2 py-1">
             New Arrival
@@ -76,56 +88,85 @@ export default function ProductCard({ product }: ProductCardProps) {
           </Badge>
         )}
 
-        <Image
-          src={
-            product.main_image
-              ? (product.main_image.image_path.startsWith('http') ? product.main_image.image_path : getImageUrl(product.main_image.image_path))
-              : "/placeholder.svg"
-          }
-          alt={product.name}
-          fill
-          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-        />
+        {hasImage && (
+          <Image
+            src={getProductImageUrl(product)}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
+        )}
 
-        {/* Overlay Actions */}
+        {/* Default icon when no image */}
+        {!hasImage && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-gray-200/80 flex items-center justify-center">
+              <ShoppingBag className="h-8 w-8 text-gray-300" />
+            </div>
+          </div>
+        )}
+
+        {/* Hover overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
 
-        {/* Quick Add Button - Slides up */}
-        <div className="absolute bottom-4 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20">
+        {/* Quick Add Button */}
+        <div className="absolute bottom-3 left-3 right-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20">
           <Button
-            className="w-full bg-white text-black hover:bg-black hover:text-white uppercase font-bold tracking-widest text-xs h-10 shadow-lg"
-            onClick={handleQuickAdd}
+            className="w-full bg-white text-black hover:bg-black hover:text-white uppercase font-bold tracking-widest text-xs h-9 shadow-lg rounded-none"
+            onClick={(e) => {
+              e.preventDefault()
+              handleQuickAdd(e)
+            }}
           >
             <ShoppingBag className="mr-2 h-3 w-3" /> Quick Add
           </Button>
         </div>
 
-        {/* Wishlist Button - Absolute top right (hidden initially) */}
+        {/* Wishlist Button */}
         <button
           onClick={handleWishlist}
           className={`absolute top-3 right-3 z-20 p-2 rounded-full bg-white/80 backdrop-blur-sm transition-all duration-300 ${isInWishlist(product.id) ? 'opacity-100 text-red-500' : 'opacity-0 group-hover:opacity-100 text-black hover:bg-black hover:text-white'}`}
         >
           <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
         </button>
-      </Link>
+      </div>
 
-      {/* Info */}
-      <div className="flex flex-col flex-grow">
-        <div className="flex justify-between items-start gap-4">
-          <div>
-            <Link href={`/products/${product.id}`} className="group-hover:underline decoration-1 underline-offset-4">
-              <h3 className="font-bold text-base uppercase tracking-tight leading-none mb-1">{product.name}</h3>
-            </Link>
-            <p className="text-xs text-gray-500 uppercase tracking-wider">{product.category?.name || 'Collection'}</p>
-          </div>
-          <div className="text-right">
-            <span className="font-mono text-sm font-medium block">{formatPrice(product.price)}</span>
-            {product.originalPrice && (
-              <span className="text-xs text-gray-400 line-through block">{formatPrice(product.originalPrice)}</span>
+      {/* Product Info - flex-col with push to bottom for alignment */}
+      <div className="flex flex-col p-4 flex-grow min-h-0">
+        {/* Category - fixed height slot */}
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5 min-h-[14px] truncate">
+          {product.category?.name || 'Collection'}
+        </p>
+
+        {/* Name - line clamp for consistent height */}
+        <div className="min-h-[2.5rem] mb-auto">
+          <h3 className="font-semibold text-[15px] leading-tight line-clamp-2 group-hover:underline decoration-1 underline-offset-4">
+            {product.name}
+          </h3>
+        </div>
+
+        {/* Price - always at bottom, consistent height */}
+        <div className="pt-3 border-t border-gray-100 mt-auto">
+          <div className="flex items-center justify-between gap-2 min-h-[28px]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-[15px] leading-none">
+                {formatPrice(product.price)}
+              </span>
+              {originalPrice && (
+                <span className="text-xs text-muted-foreground line-through leading-none">
+                  {formatPrice(product.original_price ?? 0)}
+                </span>
+              )}
+            </div>
+            {product.stock_quantity === 0 && (
+              <Badge variant="secondary" className="text-[10px] uppercase shrink-0">
+                Hết hàng
+              </Badge>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }

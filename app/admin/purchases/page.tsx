@@ -98,7 +98,7 @@ export default function AdminPurchasesPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 {purchase.created_at || purchase.inserted_at
-                                                    ? format(new Date(purchase.created_at || purchase.inserted_at), "dd/MM/yyyy HH:mm")
+                                                    ? format(new Date(purchase.created_at ?? purchase.inserted_at ?? ""), "dd/MM/yyyy HH:mm")
                                                     : "N/A"}
                                             </td>
                                         </tr>

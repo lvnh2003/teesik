@@ -109,7 +109,7 @@ export default function AdminCustomersPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 {customer.created_at || customer.inserted_at
-                                                    ? format(new Date(customer.created_at || customer.inserted_at), "dd/MM/yyyy")
+                                                    ? format(new Date(customer.created_at ?? customer.inserted_at ?? ""), "dd/MM/yyyy")
                                                     : "N/A"}
                                             </td>
                                         </tr>

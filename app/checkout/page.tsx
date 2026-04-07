@@ -73,11 +73,10 @@ export default function CheckoutPage() {
         customer_phone: phone,
         payment_method: paymentMethod,
         items: cartItems.map(item => ({
-            product_id: item.product_id,
-            variation_id: item.variant_id,
+            product_id: String(item.product_id),
+            variation_id: item.variant_id ? String(item.variant_id) : undefined,
             quantity: item.quantity,
-            price: item.price,
-            name: item.name
+            price: item.price
         }))
       })
 

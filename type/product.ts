@@ -10,6 +10,7 @@ export interface Product {
   updated_at?: string
   variations?: ProductVariant[]
   main_image?: ProductImage
+  variants?: ProductVariant[]
   custom_id?: string
   tags?: string[]
   note?: string
@@ -17,11 +18,13 @@ export interface Product {
   hide_config_product?: boolean
   price: number
   slug?: string
+  sku?: string
+  is_new?: boolean
   discount?: number
   isNew?: boolean
   original_price?: number
   stock_quantity?: number
-  [key: string]: any
+  extras?: Record<string, unknown>
 }
 
 export interface ProductVariant {
@@ -33,10 +36,14 @@ export interface ProductVariant {
   attributes: Record<string, string>
   weight?: number
   images?: ProductImage[]
-  image: File | null
-  imagePreviewUrl: string
   product_id: string
   isDelete: boolean
+  extras?: Record<string, unknown>
+}
+
+export interface ProductVariantFormData extends ProductVariant {
+  image: File | null
+  imagePreviewUrl: string
 }
 
 export interface ProductImage {

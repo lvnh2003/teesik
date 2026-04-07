@@ -98,7 +98,7 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
                 </>
               )}
 
-              {product.is_new && <Badge className="absolute top-2 left-2 bg-blue-500">Mới</Badge>}
+              {product.isNew && <Badge className="absolute top-2 left-2 bg-blue-500">Mới</Badge>}
 
               {discountPercentage && (
                 <Badge className="absolute top-2 right-2 bg-red-500">-{discountPercentage}%</Badge>

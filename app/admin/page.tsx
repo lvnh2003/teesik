@@ -39,7 +39,7 @@ export default function AdminDashboardPage() {
         // Try to get real data first, then fallback to fake data
         try {
           const response = await AuthService.getDashboardStats()
-          setStats(response.data)
+          setStats(response.data as DashboardStats | null)
         } catch (err) {
           try {
              const [productsRes, ordersRes] = await Promise.all([

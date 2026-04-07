@@ -1,7 +1,5 @@
 import { localFetch } from "./core";
-import { User } from "@/type";
-
-type PaginatedResponse<T> = { data: T[]; meta?: any };
+import { User, type PaginatedResponse } from "@/type";
 
 function buildQuery(params: { page?: number; limit?: number; search?: string }) {
   const query = new URLSearchParams();
@@ -16,11 +14,11 @@ export const UsersService = {
     return localFetch<PaginatedResponse<User>>(`/admin/users?${buildQuery(params)}`);
   },
 
-  createUser: async (data: any) => {
+  createUser: async (data: { name: string; email: string; password?: string; role?: string }) => {
     return localFetch<{ data: User }>('/admin/users', { method: 'POST', body: JSON.stringify(data) });
   },
 
-  updateUser: async (id: string | number, data: any) => {
+  updateUser: async (id: string | number, data: Partial<User>) => {
     return localFetch<{ data: User }>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
 

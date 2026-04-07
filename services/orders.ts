@@ -1,5 +1,5 @@
 import { localFetch } from "./core";
-import { Order } from "@/type";
+import { Order, type PaginatedResponse } from "@/type";
 
 export const OrderService = {
   getOrders: async (params: { page?: number; limit?: number; status?: string; search?: string } = {}) => {
@@ -9,7 +9,7 @@ export const OrderService = {
     if (params.status) query.append('status', params.status);
     if (params.search) query.append('search', params.search);
 
-    return localFetch<{ data: Order[]; meta?: any }>(`/admin/orders?${query.toString()}`);
+    return localFetch<PaginatedResponse<Order>>(`/admin/orders?${query.toString()}`);
   },
 
   getUserOrders: async (params: { page?: number; limit?: number; status?: string; search?: string } = {}) => {
@@ -19,7 +19,7 @@ export const OrderService = {
     if (params.status) query.append('status', params.status);
     if (params.search) query.append('search', params.search);
 
-    return localFetch<{ data: Order[], meta?: any }>(`/orders/user?${query.toString()}`).catch(() => ({ data: [], meta: null }));
+    return localFetch<PaginatedResponse<Order>>(`/orders/user?${query.toString()}`).catch(() => ({ data: [], meta: { current_page: 1, last_page: 0, per_page: 0, total: 0 } }));
   },
 
   getOrder: async (id: number) => {

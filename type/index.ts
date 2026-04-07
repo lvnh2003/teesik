@@ -1,3 +1,23 @@
+export interface PaginationMeta {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+  from?: number | null
+  to?: number | null
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  meta?: PaginationMeta
+}
+
+export interface ApiResponse<T> {
+  success: boolean
+  data: T
+  message?: string
+}
+
 export interface User {
   id: number
   email: string
@@ -82,29 +102,38 @@ export interface Cart {
 export interface Customer {
   id: string | number;
   name?: string;
+  phone?: string;
   phone_number?: string;
   email?: string;
   address?: string;
+  inserted_at?: string;
   created_at?: string;
-  [key: string]: any;
+  updated_at?: string;
+  extras?: Record<string, unknown>;
 }
 
 export interface Transaction {
   id: string | number;
   amount: number;
+  price?: number;
   status: string;
   payment_method?: string;
+  inserted_at?: string;
   created_at?: string;
-  [key: string]: any;
+  updated_at?: string;
+  extras?: Record<string, unknown>;
 }
 
 export interface Purchase {
   id: string | number;
   total_amount: number;
+  amount?: number;
   supplier_name?: string;
   status?: string;
+  inserted_at?: string;
   created_at?: string;
-  [key: string]: any;
+  updated_at?: string;
+  extras?: Record<string, unknown>;
 }
 
 export interface Promotion {
@@ -113,7 +142,8 @@ export interface Promotion {
   status?: string;
   start_date?: string;
   end_date?: string;
-  [key: string]: any;
+  description?: string;
+  extras?: Record<string, unknown>;
 }
 
 export interface Voucher {
@@ -121,7 +151,9 @@ export interface Voucher {
   code: string;
   discount_amount?: number;
   status?: string;
-  [key: string]: any;
+  description?: string;
+  expired_at?: string;
+  extras?: Record<string, unknown>;
 }
 
 export interface Combo {
@@ -129,5 +161,6 @@ export interface Combo {
   name: string;
   price?: number;
   status?: string;
-  [key: string]: any;
+  description?: string;
+  extras?: Record<string, unknown>;
 }

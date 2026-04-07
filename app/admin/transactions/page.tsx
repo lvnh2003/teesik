@@ -93,7 +93,7 @@ export default function AdminTransactionsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 {transaction.created_at || transaction.inserted_at
-                                                    ? format(new Date(transaction.created_at || transaction.inserted_at), "dd/MM/yyyy HH:mm")
+                                                    ? format(new Date(transaction.created_at ?? transaction.inserted_at ?? ""), "dd/MM/yyyy HH:mm")
                                                     : "N/A"}
                                             </td>
                                         </tr>

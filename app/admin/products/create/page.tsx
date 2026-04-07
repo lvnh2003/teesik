@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { AuthService } from "@/services/auth"
 import { Category } from "@/type/product"
 import { useProductAttributes } from "@/hooks/use-product-attributes"
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+
 export default function CreateProductPage() {
   const { checkAuth } = useAdminAuth()
   const router = useRouter()
@@ -188,7 +188,7 @@ export default function CreateProductPage() {
       const token = AuthService.getAuthToken()
       if (!token) throw new Error("Authentication required")
 
-      const response = await fetch(`${API_BASE_URL}/admin/products`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/products`, {
         method: "POST",
         headers: {
           Accept: "application/json",
