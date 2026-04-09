@@ -25,7 +25,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "20"
           cache: "npm"
 
       - name: Setup Pages
@@ -33,6 +33,14 @@ jobs:
         with:
           static_site_generator: next
           
+      - name: Debug Node / package.json
+        run: |
+          echo "node: $(node -v)"
+          echo "npm:  $(npm -v)"
+          echo "package.json version:"
+          node -e "console.log(require('./package.json').version)"
+        shell: bash
+
       - name: Install dependencies
         run: npm install
 
