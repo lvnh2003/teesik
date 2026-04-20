@@ -75,7 +75,7 @@ export default function Home() {
             <span className="text-transparent bg-clip-text bg-gradient-to-b from-black to-transparent">Objects</span>
           </h1>
           <p className="mt-8 text-xl md:text-2xl font-serif italic max-w-xl">
-            "Defining the future of essentials through radical minimalism."
+            {t("home.heroSlogan")}
           </p>
         </motion.div>
 
@@ -185,7 +185,7 @@ export default function Home() {
               <Link key={cat.id} href={`/products`} className={`relative group overflow-hidden ${size} block`}>
                 <div className={`relative w-full ${size.includes('aspect') ? 'aspect-[2/1]' : 'aspect-square'} bg-gray-200`}>
                   <div className="absolute inset-0 bg-neutral-900 flex items-center justify-center">
-                     <span className="text-white opacity-20 text-xs">Image</span>
+                     <span className="text-white opacity-20 text-xs">{t("home.imagePlaceholder")}</span>
                   </div>
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500" />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -204,25 +204,61 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Newsletter - Minimal */}
-        <section className="container mx-auto px-6 pt-20 border-t border-black/10">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter mb-8">
-              {t("home.joinMovement")}
+        {/* Fullwidth Video Section */}
+        <section className="relative w-full h-[60vh] md:h-[80vh] overflow-hidden mb-0">
+          <div className="absolute inset-0 bg-black/20 z-10"></div>
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            className="w-full h-full object-cover"
+          >
+            <source src="/bag-video.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white p-6">
+            <h2 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-center mix-blend-overlay">
+              {t("home.videoText")}
             </h2>
-            <p className="text-xl text-gray-600 mb-12 font-serif italic">
-              {t("home.newsletterDesc")}
+          </div>
+        </section>
+
+
+
+        {/* Manifesto / Typography Spacer */}
+        <section className="container mx-auto px-6 py-32 md:py-48 flex flex-col items-center justify-center text-center">
+          <div className="w-px h-16 bg-black/20 mb-12"></div>
+          <h3 className="text-3xl md:text-5xl lg:text-6xl font-serif italic max-w-4xl leading-[1.3] text-black">
+            {t("home.manifestoQuote")}
+          </h3>
+          <p className="mt-12 text-xs font-bold uppercase tracking-[0.4em] text-black/40">
+            {t("home.manifestoAuthor")}
+          </p>
+          <div className="w-px h-16 bg-black/20 mt-12"></div>
+        </section>
+
+        {/* Cinematic Finale */}
+        <section className="relative w-full h-[85vh] overflow-hidden flex items-center justify-center bg-black">
+          <div className="absolute inset-0 z-0">
+             <Image
+               src="/images/hero-bag-3.jpg"
+               alt="Cinematic Background"
+               fill
+               className="object-cover opacity-60 mix-blend-luminosity scale-105 hover:scale-100 transition-transform duration-[10s]"
+             />
+             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+          </div>
+          <div className="relative z-10 container mx-auto px-6 text-white text-center flex flex-col items-center">
+            <p className="text-[10px] md:text-xs uppercase tracking-[0.4em] md:tracking-[0.8em] text-white/70 mb-8 font-bold">
+              {t("home.cinematicSubtitle")}
             </p>
-            <form className="flex flex-col md:flex-row gap-4 border-b border-black pb-4 focus-within:border-gray-500 transition-colors">
-              <input
-                type="email"
-                placeholder={t("home.emailPlaceholder")}
-                className="flex-grow bg-transparent border-none outline-none text-xl placeholder:text-gray-300 uppercase tracking-widest font-bold"
-              />
-              <button type="button" className="text-xl font-black uppercase tracking-tighter hover:text-gray-600 transition-colors">
-                {t("home.subscribe")}
-              </button>
-            </form>
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-serif italic mb-12 max-w-6xl leading-[1.1] text-white drop-shadow-2xl">
+              {t("home.cinematicTitle")}
+            </h2>
+            <div className="w-px h-16 md:h-24 bg-white/40 mb-12"></div>
+            <Link href="/products" className="inline-block border border-white/40 px-10 py-5 uppercase tracking-[0.2em] text-xs font-bold hover:bg-white hover:text-black hover:border-white transition-all duration-500 backdrop-blur-sm">
+              {t("home.cinematicExplore")}
+            </Link>
           </div>
         </section>
       </div>
