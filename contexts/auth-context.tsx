@@ -17,6 +17,7 @@ interface AuthContextType {
     password: string
     password_confirmation: string
   }) => Promise<void>
+  updateProfile: (data: { name: string; phone?: string }) => Promise<void>
   logout: () => void
 }
 
@@ -62,16 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const register = async (userData: {
-    name: string
-    email: string
-    phone?: string
-    password: string
-    password_confirmation: string
-  }) => {
+  const register = async (userData: any) => {
     try {
       setIsLoading(true)
-      const response = await AuthService.register({ ...userData })
+      const response = await AuthService.register(userData)
 
       AuthService.setAuthToken(response.data.token)
       setUser(response.data.user)
@@ -80,6 +75,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const updateProfile = async (data: { name: string; phone?: string }) => {
+    try {
+      const response = await AuthService.updateProfile(data)
+      setUser(response.data)
+    } catch (error) {
+      throw error
     }
   }
 
@@ -97,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoggedIn,
         login,
         register,
+        updateProfile,
         logout,
       }}
     >

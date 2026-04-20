@@ -8,9 +8,10 @@ export const CartService = {
     customer_phone?: string;
     address?: string;
     payment_method?: string;
+    voucher_code?: string; // Tích hợp voucher
     items?: Array<{ product_id: string | number; variation_id?: string | number | undefined; quantity: number; price: number }>;
   }) => {
-    return localFetch<{ success: boolean; order?: Order; message?: string; }>('/checkout', {
+    return localFetch<{ success: boolean; data?: Order; message?: string; }>('/checkout', {
       method: 'POST',
       body: JSON.stringify(data),
     });

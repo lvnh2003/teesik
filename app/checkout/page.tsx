@@ -17,40 +17,127 @@ import { getImageUrl } from "@/services/core";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useCart } from "@/contexts/cart-context";
-import { CartItem } from "@/type";
-import { Order } from "@/type";
+import { CartItem, Order } from "@/type";
+import { AddressService, UserAddress } from "@/services/address";
+import { ShippingService, Province, District, Ward } from "@/services/shipping";
 
 export default function CheckoutPage() {
   const { t } = useLanguage()
   const router = useRouter()
   const { isLoggedIn: authLoggedIn, user } = useAuth()
+  
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("qr")
   const [guestEmail, setGuestEmail] = useState("")
   const [customerName, setCustomerName] = useState("")
-  const [address, setAddress] = useState("")
   const [phone, setPhone] = useState("")
-  const [city, setCity] = useState("")
-  const [district, setDistrict] = useState("")
   const [orderStep, setOrderStep] = useState("checkout") // checkout, payment, success
-  const { items: cartItems, isLoading, refreshCart } = useCart()
+  const { items: cartItems, isLoading, refreshCart, voucherCode, discountAmount } = useCart()
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const shipping = subtotal > 0 && subtotal < 500000 ? 30000 : 0
-  const total = subtotal + shipping
   const [orderId, setOrderId] = useState<string | number | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
+  
+  // Shipping & Addresses
+  const [shippingFee, setShippingFee] = useState(0)
+  const total = Math.max(0, subtotal + shippingFee - discountAmount)
 
-  // Detect login and auto-fill
+  const [addresses, setAddresses] = useState<UserAddress[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<number | 0>(0)
+  
+  const [provinces, setProvinces] = useState<Province[]>([])
+  const [districts, setDistricts] = useState<District[]>([])
+  const [wards, setWards] = useState<Ward[]>([])
+  
+  const [guestAddress, setGuestAddress] = useState({
+    province_id: 0, province: '',
+    district_id: 0, district: '',
+    ward_code: '', ward: '',
+    specific_address: ''
+  })
+
+  // Detect login and fetch data
   useEffect(() => {
     if (authLoggedIn && user) {
       setIsLoggedIn(true)
       if (!customerName && user.name) setCustomerName(user.name)
       if (!guestEmail && user.email) setGuestEmail(user.email)
       if (!phone && user.phone) setPhone(user.phone)
+      
+      AddressService.getAddresses().then(res => {
+        if (res.success && res.data.length > 0) {
+            setAddresses(res.data)
+            const defaultAddr = res.data.find(a => a.is_default) || res.data[0]
+            setSelectedAddressId(defaultAddr.id)
+            if (!customerName) setCustomerName(defaultAddr.receiver_name)
+            if (!phone) setPhone(defaultAddr.phone)
+        }
+      }).catch(console.error)
+    } else {
+      ShippingService.getProvinces().then(res => {
+        if (res.success) setProvinces(res.data)
+      }).catch(console.error)
     }
   }, [authLoggedIn, user])
 
-  // No need to fetch cart from API anymore, useCart context handles LocalStorage
+  // Shipping Fee live calculation
+  useEffect(() => {
+    if (subtotal === 0) {
+      setShippingFee(0)
+      return
+    }
+    // Free ship
+    if (subtotal > 1000000) {
+      setShippingFee(0)
+      return
+    }
+
+    let pDistId = 0
+    let pWardCode = ''
+
+    if (isLoggedIn && selectedAddressId) {
+      const addr = addresses.find(a => a.id === selectedAddressId)
+      if (addr) {
+        pDistId = addr.district_id
+        pWardCode = addr.ward_code
+      }
+    } else if (!isLoggedIn && guestAddress.district_id && guestAddress.ward_code) {
+      pDistId = guestAddress.district_id
+      pWardCode = guestAddress.ward_code
+    }
+
+    if (pDistId && pWardCode) {
+      ShippingService.calculateFee(pDistId, pWardCode, subtotal, 300)
+        .then(res => setShippingFee(res.data.fee))
+        .catch(() => setShippingFee(30000))
+    } else {
+      setShippingFee(0)
+    }
+  }, [isLoggedIn, selectedAddressId, addresses, guestAddress.district_id, guestAddress.ward_code, subtotal])
+
+  // Guest Address Handling
+  const handleGuestProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const provId = parseInt(e.target.value)
+    const provName = e.target.options[e.target.selectedIndex].text
+    setGuestAddress(p => ({ ...p, province_id: provId, province: provName, district_id: 0, district: '', ward_code: '', ward: '' }))
+    setDistricts([]); setWards([]);
+    if (provId) {
+      const res = await ShippingService.getDistricts(provId)
+      if (res.success) setDistricts(res.data)
+    }
+  }
+
+  const handleGuestDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const distId = parseInt(e.target.value)
+    const distName = e.target.options[e.target.selectedIndex].text
+    setGuestAddress(p => ({ ...p, district_id: distId, district: distName, ward_code: '', ward: '' }))
+    setWards([]);
+    if (distId) {
+      const res = await ShippingService.getWards(distId)
+      if (res.success) setWards(res.data)
+    }
+  }
+
+  // Redirect if empty
   useEffect(() => {
     if (!isLoading && (!cartItems || cartItems.length === 0)) {
       router.push('/cart')
@@ -59,19 +146,30 @@ export default function CheckoutPage() {
 
   // Handle checkout flow
   const handleProceedToPayment = () => {
-    if (customerName && phone && address) {
-      setOrderStep("payment")
+    if (isLoggedIn) {
+      if (selectedAddressId && customerName && phone) setOrderStep("payment")
+    } else {
+      if (customerName && phone && guestAddress.specific_address && guestAddress.ward_code) setOrderStep("payment")
     }
   }
 
   const handlePayment = async () => {
     try {
+      let finalAddress = ''
+      if (isLoggedIn && selectedAddressId) {
+        const addr = addresses.find(a => a.id === selectedAddressId)
+        finalAddress = addr ? `${addr.specific_address}, ${addr.ward}, ${addr.district}, ${addr.province}` : ''
+      } else {
+        finalAddress = `${guestAddress.specific_address}, ${guestAddress.ward}, ${guestAddress.district}, ${guestAddress.province}`
+      }
+
       const result = await CartService.checkout({
         customer_name: customerName,
         customer_email: guestEmail,
-        address: `${address}, ${district}, ${city}`,
+        address: finalAddress,
         customer_phone: phone,
         payment_method: paymentMethod,
+        voucher_code: voucherCode || undefined,
         items: cartItems.map(item => ({
             product_id: String(item.product_id),
             variation_id: item.variant_id ? String(item.variant_id) : undefined,
@@ -80,15 +178,13 @@ export default function CheckoutPage() {
         }))
       })
 
-      if (result.success && result.order) {
-        setOrderId(result.order.id)
-        
-        // Clear local storage cart
+      if (result.success && result.data) {
+        setOrderId(result.data.id)
         localStorage.removeItem("teesik_cart")
         refreshCart()
 
         if (paymentMethod !== 'cod') {
-          await OrderService.processPayment(result.order.id, paymentMethod)
+          await OrderService.processPayment(result.data.id, paymentMethod)
         }
         setOrderStep("success")
       } else {
@@ -100,44 +196,27 @@ export default function CheckoutPage() {
     }
   }
 
-  // Load order history when entering success state
+  // Load order history
   useEffect(() => {
     if (orderStep === "success") {
-      const fetchOrderHistory = async () => {
-        try {
-          const response = await OrderService.getUserOrders()
-          if (response.data && Array.isArray(response.data)) {
-            setOrders(response.data)
-          }
-        } catch (error) {
-          console.error("Failed to fetch order history:", error)
-        }
-      }
-      fetchOrderHistory()
+      OrderService.getUserOrders().then(res => {
+        if (res.data && Array.isArray(res.data)) setOrders(res.data)
+      }).catch(console.error)
     }
   }, [orderStep])
 
-  // Format price helper
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-      minimumFractionDigits: 0,
-    }).format(price)
+    return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", minimumFractionDigits: 0 }).format(price)
   }
 
-  // Success Page
   if (orderStep === "success") {
     return (
       <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white border border-black p-12 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
           <CheckCircle className="h-16 w-16 text-black mx-auto mb-6" />
           <h1 className="text-3xl font-black tracking-tighter mb-4 text-black uppercase leading-none">{t("checkout.orderConfirmed")}</h1>
-          <p className="text-gray-600 mb-8 font-medium">
-            {t("checkout.thankYou")}
-          </p>
+          <p className="text-gray-600 mb-8 font-medium">{t("checkout.thankYou")}</p>
 
-          {/* Payment method info */}
           {paymentMethod === "card" && (
             <div className="mb-8">
               <CreditCard className="h-10 w-10 mx-2" />
@@ -145,17 +224,14 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          {/* Order History */}
           {orders.length > 0 && (
             <div className="mt-8">
               <h2 className="text-2xl font-semibold mb-6">{t("checkout.orderHistory")}</h2>
               <ul className="space-y-4">
-                {orders.map((order, index) => (
-                  <li key={index} className="border border-gray-200 p-4 rounded">
+                {orders.slice(0,1).map((order, index) => (
+                  <li key={index} className="border border-gray-200 p-4 rounded text-left">
                     <div className="flex items-center justify-between">
-                      <strong className="text-sm font-semibold">
-                        {t("checkout.orderId")} #{order.id}
-                      </strong>
+                      <strong className="text-sm font-semibold">{t("checkout.orderId")} #{order.id}</strong>
                     </div>
                     <div className="text-sm text-gray-600 mt-1">
                       <span>{new Date(order.created_at).toLocaleDateString()}</span>
@@ -182,7 +258,6 @@ export default function CheckoutPage() {
     )
   }
 
-  // ... rest of component remains unchanged ...
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-black pb-20">
       <header className="pt-24 pb-12 px-4 md:px-8 border-b border-black/10">
@@ -199,7 +274,6 @@ export default function CheckoutPage() {
 
       <div className="container px-4 md:px-8 mx-auto py-12">
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-24">
-          {/* LEFT COLUMN — checkout steps */}
           <div className="lg:col-span-7">
             {orderStep === "checkout" && (
               <div className="space-y-12">
@@ -241,10 +315,11 @@ export default function CheckoutPage() {
                       </TabsContent>
                     </Tabs>
                   ) : (
-                    <div className="p-4 bg-gray-100 border-l-4 border-black">
+                    <div className="p-4 bg-gray-100 border-l-4 border-black flex justify-between items-center">
                       <p className="font-mono text-sm">
                         Logged in as: <span className="font-bold">{user?.email || "user@example.com"}</span>
                       </p>
+                      <Link href="/dashboard/addresses" className="text-xs font-bold uppercase tracking-widest underline hover:text-gray-600">Quản lý sổ địa chỉ</Link>
                     </div>
                   )}
                 </section>
@@ -254,58 +329,106 @@ export default function CheckoutPage() {
                     <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.shipping")}</h2>
                   </div>
 
-                  <div className="grid gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase tracking-widest">Full Name</Label>
-                      <Input
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                      />
+                  {isLoggedIn && addresses.length > 0 ? (
+                    <div className="space-y-4 mb-6">
+                      <Label className="text-xs font-bold uppercase tracking-widest">Chọn địa chỉ nhận hàng</Label>
+                      <RadioGroup value={String(selectedAddressId)} onValueChange={v => {
+                        const sId = parseInt(v)
+                        setSelectedAddressId(sId)
+                        const addr = addresses.find(a => a.id === sId)
+                        if (addr) {
+                            setCustomerName(addr.receiver_name)
+                            setPhone(addr.phone)
+                        }
+                      }}>
+                        {addresses.map(addr => (
+                          <Label key={addr.id} htmlFor={`addr-${addr.id}`} className={`flex items-start space-x-4 p-4 border transition-all cursor-pointer ${selectedAddressId === addr.id ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
+                            <RadioGroupItem value={String(addr.id)} id={`addr-${addr.id}`} className="mt-1" />
+                            <div className="flex-1">
+                              <p className="font-bold">{addr.receiver_name} - {addr.phone}</p>
+                              <p className="text-sm text-gray-600 mt-1">{addr.specific_address}, {addr.ward}, {addr.district}, {addr.province}</p>
+                            </div>
+                          </Label>
+                        ))}
+                      </RadioGroup>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase tracking-widest">Phone Number</Label>
-                        <Input
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                        />
+                  ) : (
+                    <div className="grid gap-6">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold uppercase tracking-widest">Họ và tên</Label>
+                          <Input
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold uppercase tracking-widest">Phone Number</Label>
+                          <Input
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase tracking-widest">City</Label>
-                        <Input
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                        />
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold uppercase tracking-widest">Tỉnh / Thành</Label>
+                          <select 
+                            value={guestAddress.province_id} 
+                            onChange={handleGuestProvinceChange}
+                            className="w-full h-12 border border-black bg-transparent px-3 text-sm focus:outline-none focus:border-2"
+                          >
+                            <option value="">-- Chọn Quận/Huyện --</option>
+                            {provinces.map(p => <option key={p.province_id} value={p.province_id}>{p.province_name}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold uppercase tracking-widest">Quận / Huyện</Label>
+                          <select 
+                            value={guestAddress.district_id} 
+                            onChange={handleGuestDistrictChange}
+                            disabled={!guestAddress.province_id}
+                            className="w-full h-12 border border-black bg-transparent px-3 text-sm focus:outline-none focus:border-2"
+                          >
+                            <option value="">-- Chọn Quận/Huyện --</option>
+                            {districts.map(d => <option key={d.district_id} value={d.district_id}>{d.district_name}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold uppercase tracking-widest">Phường / Xã</Label>
+                          <select 
+                            value={guestAddress.ward_code} 
+                            onChange={e => setGuestAddress(p => ({...p, ward_code: e.target.value, ward: e.target.options[e.target.selectedIndex].text}))}
+                            disabled={!guestAddress.district_id}
+                            className="w-full h-12 border border-black bg-transparent px-3 text-sm focus:outline-none focus:border-2"
+                          >
+                            <option value="">-- Chọn Phường/Xã --</option>
+                            {wards.map(w => <option key={w.ward_code} value={w.ward_code}>{w.ward_name}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-bold uppercase tracking-widest">Ghi chú địa chỉ</Label>
+                          <Input
+                            value={guestAddress.specific_address}
+                            onChange={(e) => setGuestAddress(p => ({...p, specific_address: e.target.value}))}
+                            placeholder="Số nhà, Tên đường..."
+                            className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                          />
+                        </div>
                       </div>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase tracking-widest">District</Label>
-                        <Input
-                          value={district}
-                          onChange={(e) => setDistrict(e.target.value)}
-                          className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase tracking-widest">Address</Label>
-                        <Input
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="mt-8">
                     <Button
                       onClick={handleProceedToPayment}
                       className="w-full bg-black hover:bg-neutral-800 text-white h-14 rounded-none uppercase font-bold tracking-widest text-sm"
-                      disabled={!customerName || !phone || !address}
+                      disabled={isLoggedIn ? (!selectedAddressId || !customerName || !phone) : (!customerName || !phone || !guestAddress.specific_address || !guestAddress.ward_code)}
                     >
                       {t("checkout.verifyAndContinue")}
                     </Button>
@@ -318,6 +441,7 @@ export default function CheckoutPage() {
               <section>
                 <div className="flex items-center justify-between mb-8 border-b border-black pb-4">
                   <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.payment")}</h2>
+                  <Button variant="link" onClick={() => setOrderStep('checkout')} className="uppercase font-bold tracking-widest text-xs">Sửa địa chỉ</Button>
                 </div>
 
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
@@ -389,7 +513,6 @@ export default function CheckoutPage() {
             )}
           </div>
 
-          {/* RIGHT COLUMN — Order Summary (always visible) */}
           <div className="lg:col-span-5">
             <div className="bg-white border border-black/10 p-8 sticky top-32">
               <h3 className="text-xl font-black tracking-tighter uppercase mb-6">{t("checkout.orderSummary")}</h3>
@@ -422,8 +545,14 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500 uppercase tracking-wider text-xs font-sans font-bold">{t("cart.shipping")}</span>
-                  <span>{shipping === 0 ? t("cart.free") : formatPrice(shipping)}</span>
+                  <span className={shippingFee === 0 ? "text-green-600 font-bold" : ""}>{shippingFee === 0 ? (subtotal > 1000000 ? "Miễn phí" : "Chờ tính Phí") : formatPrice(shippingFee)}</span>
                 </div>
+                {voucherCode && (
+                  <div className="flex justify-between text-green-600">
+                    <span className="uppercase tracking-wider text-xs font-sans font-bold">Voucher: {voucherCode}</span>
+                    <span>-{formatPrice(discountAmount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between pt-4 border-t border-black items-end">
                   <span className="text-black uppercase tracking-wider text-sm font-sans font-black">{t("cart.total")}</span>
                   <span className="text-2xl font-bold">{formatPrice(total)}</span>

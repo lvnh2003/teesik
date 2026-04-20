@@ -609,7 +609,7 @@ export default function OrderHistoryPage() {
                 <Button variant="outline" onClick={() => setSelectedOrder(null)}>
                   Đóng
                 </Button>
-                {selectedOrder.payment_status === "unpaid" && (
+                {selectedOrder.payment_status === "unpaid" && selectedOrder.payment_method !== "cod" && (
                   <Button className="bg-black hover:bg-gray-800 text-white">Thanh toán ngay</Button>
                 )}
               </div>

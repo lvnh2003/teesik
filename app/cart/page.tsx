@@ -2,16 +2,19 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Trash2, ShoppingBag, ArrowRight, Minus, Plus } from "lucide-react"
+import { Trash2, ShoppingBag, ArrowRight, Minus, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getImageUrl } from "@/services/core"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
+import { useState } from "react"
+import { toast } from "sonner"
+import { VoucherService } from "@/services/voucher"
 
 import { useCart } from "@/contexts/cart-context"
 
 export default function CartPage() {
-  const { items: cartItems, isLoading, updateQuantity, removeFromCart } = useCart()
+  const { items: cartItems, isLoading, updateQuantity, removeFromCart, voucherCode, discountAmount, applyVoucher, removeVoucher } = useCart()
   const { t } = useLanguage()
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0)
@@ -25,8 +28,30 @@ export default function CartPage() {
     removeFromCart(productId, variantId)
   }
 
+  const [inputCode, setInputCode] = useState("")
+  const [validatingVoucher, setValidatingVoucher] = useState(false)
+
+  const handleApplyVoucher = async () => {
+    if (!inputCode.trim()) return
+    setValidatingVoucher(true)
+    try {
+      const res = await VoucherService.validate(inputCode, subtotal)
+      if (res.success && res.data) {
+        applyVoucher(res.data.code, res.data.discount)
+        toast.success(res.message || "Áp dụng mã giảm giá thành công")
+        setInputCode("")
+      } else {
+        toast.error(res.message || "Mã giảm giá không hợp lệ")
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Lỗi áp dụng mã giảm giá")
+    } finally {
+      setValidatingVoucher(false)
+    }
+  }
+
   const shipping = subtotal > 1000000 ? 0 : 50000
-  const total = subtotal + shipping
+  const total = Math.max(0, subtotal + shipping - discountAmount)
 
   if (isLoading && cartItems.length === 0) {
     return <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">{t("cart.loading")}</div>
@@ -153,6 +178,41 @@ export default function CartPage() {
                 {shipping > 0 && (
                   <p className="text-xs text-gray-400 normal-case tracking-normal">{t("cart.shippingNote")}</p>
                 )}
+                
+                {/* Voucher Section */}
+                <div className="pt-4 border-t border-black/10">
+                  {voucherCode ? (
+                    <div className="flex justify-between items-center bg-gray-50 p-3 border border-dashed border-gray-300">
+                      <div>
+                        <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-widest">Mã áp dụng</span>
+                        <span className="font-bold uppercase">{voucherCode}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-green-600 font-mono">- {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(discountAmount)}</span>
+                        <button onClick={removeVoucher} className="text-red-500 hover:text-red-700 transition-colors">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="Mã giảm giá..." 
+                        value={inputCode}
+                        onChange={(e) => setInputCode(e.target.value)}
+                        className="flex-1 border border-black/20 px-3 py-2 text-sm focus:outline-none focus:border-black uppercase bg-transparent"
+                      />
+                      <Button 
+                        onClick={handleApplyVoucher} 
+                        disabled={validatingVoucher || !inputCode.trim()}
+                        className="bg-black text-white hover:bg-gray-800 rounded-none px-6 uppercase tracking-widest text-xs font-bold"
+                      >
+                        {validatingVoucher ? '...' : 'Apply'}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="border-t border-black mb-8 pt-6">

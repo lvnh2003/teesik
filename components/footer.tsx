@@ -1,9 +1,9 @@
-import Link from "next/link"
-import { Facebook, Instagram, Twitter, Youtube } from "lucide-react"
-import { useLanguage } from "@/contexts/language-context"
+import Link from "next/link";
+import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function Footer() {
-  const { t } = useLanguage()
+  const { t } = useLanguage();
   return (
     <footer className="bg-black text-white">
       <div className="container px-4 mx-auto py-12 md:py-16">
@@ -12,9 +12,7 @@ export default function Footer() {
             <Link href="/" className="inline-block mb-6">
               <span className="text-xl font-bold tracking-wider">TEESIK</span>
             </Link>
-            <p className="text-gray-400 mb-6">
-              {t("footer.description")}
-            </p>
+            <p className="text-gray-400 mb-6">{t("footer.description")}</p>
             <div className="flex space-x-4">
               <Link href="#" className="text-gray-400 hover:text-white">
                 <Facebook className="h-5 w-5" />
@@ -36,38 +34,9 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="font-bold text-sm tracking-wider mb-6">{t("footer.shop")}</h3>
-            <ul className="space-y-4">
-              <li>
-                <Link href="/collections/new-arrivals" className="text-gray-400 hover:text-white">
-                  {t("footer.newArrivals")}
-                </Link>
-              </li>
-              <li>
-                <Link href="/collections/best-sellers" className="text-gray-400 hover:text-white">
-                  {t("footer.bestSellers")}
-                </Link>
-              </li>
-              <li>
-                <Link href="/collections/tote-bags" className="text-gray-400 hover:text-white">
-                  {t("footer.toteBags")}
-                </Link>
-              </li>
-              <li>
-                <Link href="/collections/crossbody" className="text-gray-400 hover:text-white">
-                  {t("footer.crossbody")}
-                </Link>
-              </li>
-              <li>
-                <Link href="/collections/backpacks" className="text-gray-400 hover:text-white">
-                  {t("footer.backpacks")}
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-sm tracking-wider mb-6">{t("footer.information")}</h3>
+            <h3 className="font-bold text-sm tracking-wider mb-6">
+              {t("footer.information")}
+            </h3>
             <ul className="space-y-4">
               <li>
                 <Link href="/about" className="text-gray-400 hover:text-white">
@@ -75,22 +44,34 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/dropshipping" className="text-gray-400 hover:text-white">
+                <Link
+                  href="/dropshipping"
+                  className="text-gray-400 hover:text-white"
+                >
                   {t("footer.dropshipping")}
                 </Link>
               </li>
               <li>
-                <Link href="/shipping" className="text-gray-400 hover:text-white">
+                <Link
+                  href="/shipping"
+                  className="text-gray-400 hover:text-white"
+                >
                   {t("footer.shipping")}
                 </Link>
               </li>
               <li>
-                <Link href="/privacy-policy" className="text-gray-400 hover:text-white">
+                <Link
+                  href="/privacy-policy"
+                  className="text-gray-400 hover:text-white"
+                >
                   {t("footer.privacyPolicy")}
                 </Link>
               </li>
               <li>
-                <Link href="/terms-of-service" className="text-gray-400 hover:text-white">
+                <Link
+                  href="/terms-of-service"
+                  className="text-gray-400 hover:text-white"
+                >
                   {t("footer.terms")}
                 </Link>
               </li>
@@ -98,7 +79,9 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="font-bold text-sm tracking-wider mb-6">{t("footer.contact")}</h3>
+            <h3 className="font-bold text-sm tracking-wider mb-6">
+              {t("footer.contact")}
+            </h3>
             <ul className="space-y-4 text-gray-400">
               <li>{t("footer.email")}</li>
               <li>{t("footer.phone")}</li>
@@ -111,14 +94,30 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">{t("footer.copyright")}</p>
             <div className="flex space-x-4 mt-4 md:mt-0">
-              <img src="/placeholder.svg?height=30&width=50" alt="Visa" className="h-8" />
-              <img src="/placeholder.svg?height=30&width=50" alt="Mastercard" className="h-8" />
-              <img src="/placeholder.svg?height=30&width=50" alt="PayPal" className="h-8" />
-              <img src="/placeholder.svg?height=30&width=50" alt="Apple Pay" className="h-8" />
+              <img
+                src="/placeholder.svg?height=30&width=50"
+                alt="Visa"
+                className="h-8"
+              />
+              <img
+                src="/placeholder.svg?height=30&width=50"
+                alt="Mastercard"
+                className="h-8"
+              />
+              <img
+                src="/placeholder.svg?height=30&width=50"
+                alt="PayPal"
+                className="h-8"
+              />
+              <img
+                src="/placeholder.svg?height=30&width=50"
+                alt="Apple Pay"
+                className="h-8"
+              />
             </div>
           </div>
         </div>
       </div>
     </footer>
-  )
+  );
 }

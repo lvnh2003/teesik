@@ -83,7 +83,9 @@ export default function ProductSlider({ products: initialProducts, category_id }
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <div key={product.id} className="min-w-[260px] max-w-[260px] md:min-w-[320px] md:max-w-[320px] shrink-0">
+            <ProductCard product={product} />
+          </div>
         ))}
       </div>
 

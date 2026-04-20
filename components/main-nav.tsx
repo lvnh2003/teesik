@@ -1,42 +1,42 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Menu, X, Search, ShoppingBag, User, ChevronDown } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useLanguage } from "@/contexts/language-context"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Input } from "@/components/ui/input"
-import LanguageSwitcher from "@/components/language-switcher"
-import { useAuth } from "@/contexts/auth-context"
-import { Category } from "@/type/product"
-import { ProductService } from "@/services/products"
-import { motion, useScroll, useMotionValueEvent } from "framer-motion"
-import { useWishlist } from "@/contexts/wishlist-context"
-import { useCart } from "@/contexts/cart-context"
-import { Heart } from "lucide-react"
+import type React from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Menu, X, Search, ShoppingBag, User, ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/language-context";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import LanguageSwitcher from "@/components/language-switcher";
+import { useAuth } from "@/contexts/auth-context";
+import { Category } from "@/type/product";
+import { ProductService } from "@/services/products";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { useWishlist } from "@/contexts/wishlist-context";
+import { useCart } from "@/contexts/cart-context";
+import { Heart } from "lucide-react";
 
 export default function MainNav() {
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [searchValue, setSearchValue] = useState("")
-  const router = useRouter()
-  const { t } = useLanguage()
-  const { user, isLoggedIn, logout } = useAuth()
-  const [categories, setCategories] = useState<Category[]>([])
-  const [isScrolled, setIsScrolled] = useState(false)
-  const { scrollY } = useScroll()
-  const { items } = useWishlist()
-  const { cartCount } = useCart()
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const router = useRouter();
+  const { t } = useLanguage();
+  const { user, isLoggedIn, logout } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const { scrollY } = useScroll();
+  const { items } = useWishlist();
+  const { cartCount } = useCart();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (latest > 50) {
-      setIsScrolled(true)
+      setIsScrolled(true);
     } else {
-      setIsScrolled(false)
+      setIsScrolled(false);
     }
-  })
+  });
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
@@ -48,9 +48,9 @@ export default function MainNav() {
       } catch (error) {
         console.log(error);
       }
-    }
-    fetchData()
-  }, [])
+    };
+    fetchData();
+  }, []);
 
   const mainNavItems = [
     { label: t("nav.new"), href: "/new" },
@@ -58,25 +58,27 @@ export default function MainNav() {
       label: t("nav.products"),
       href: "/products",
       hasDropdown: true,
-      dropdownItems: categories
+      dropdownItems: categories,
     },
-    { label: t("nav.collections"), href: "/collections" },
     { label: t("nav.about"), href: "/about" },
-  ]
+  ];
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchValue(e.target.value)
-  }
+    setSearchValue(e.target.value);
+  };
 
   const closeSearch = () => {
-    setIsSearchOpen(false)
-    setSearchValue("")
-  }
+    setIsSearchOpen(false);
+    setSearchValue("");
+  };
 
   return (
     <motion.header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200" : "bg-transparent"
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200"
+          : "bg-transparent"
+      }`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3 }}
@@ -86,12 +88,19 @@ export default function MainNav() {
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden text-black hover:bg-black/5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden text-black hover:bg-black/5"
+              >
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[350px] bg-white border-gray-200">
+            <SheetContent
+              side="left"
+              className="w-[300px] sm:w-[350px] bg-white border-gray-200"
+            >
               <nav className="flex flex-col gap-8 mt-10">
                 {mainNavItems.map((item) => (
                   <div key={item.href}>
@@ -122,7 +131,9 @@ export default function MainNav() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className="text-2xl md:text-3xl font-black tracking-tighter text-black uppercase">TEESIK</span>
+            <span className="text-2xl md:text-3xl font-black tracking-tighter text-black uppercase">
+              TEESIK
+            </span>
           </Link>
 
           {/* Desktop Nav */}
@@ -177,15 +188,22 @@ export default function MainNav() {
                     value={searchValue}
                     onChange={handleSearchChange}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        router.push(`/search?q=${encodeURIComponent(searchValue)}`);
+                      if (e.key === "Enter") {
+                        router.push(
+                          `/search?q=${encodeURIComponent(searchValue)}`,
+                        );
                         setIsSearchOpen(false);
                       }
                     }}
                     className="flex-1 border-0 bg-transparent text-black text-xl font-medium focus-visible:ring-0 placeholder:text-gray-400"
                     autoFocus
                   />
-                  <Button variant="ghost" size="icon" onClick={closeSearch} className="text-black">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={closeSearch}
+                    className="text-black"
+                  >
                     <X className="h-6 w-6" />
                     <span className="sr-only">Close search</span>
                   </Button>
@@ -204,7 +222,11 @@ export default function MainNav() {
             )}
             {isLoggedIn && user ? (
               <div className="relative group">
-                <Button variant="ghost" size="icon" className="text-black hover:bg-black/5 hover:scale-110 transition-transform">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-black hover:bg-black/5 hover:scale-110 transition-transform"
+                >
                   <User className="h-6 w-6" />
                   <span className="sr-only">Account</span>
                 </Button>
@@ -212,18 +234,25 @@ export default function MainNav() {
                 {/* User Dropdown */}
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
                   <div className="p-4 border-b border-gray-200">
-                    <p className="font-medium text-sm">
-                      {user.name}
-                    </p>
+                    <p className="font-medium text-sm">{user.name}</p>
                     <p className="text-xs text-gray-600">{user.email}</p>
                   </div>
-                  <Link href="/dashboard" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                  <Link
+                    href="/dashboard"
+                    className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
                     Dashboard
                   </Link>
-                  <Link href="/orders" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                  <Link
+                    href="/account/orders"
+                    className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
                     Đơn hàng
                   </Link>
-                  <Link href="/profile" className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50">
+                  <Link
+                    href="/account"
+                    className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                  >
                     Thông tin cá nhân
                   </Link>
                   <button
@@ -236,14 +265,22 @@ export default function MainNav() {
               </div>
             ) : (
               <Link href="/account">
-                <Button variant="ghost" size="icon" className="text-black hover:bg-black/5 hover:scale-110 transition-transform">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-black hover:bg-black/5 hover:scale-110 transition-transform"
+                >
                   <User className="h-6 w-6" />
                   <span className="sr-only">Account</span>
                 </Button>
               </Link>
             )}
             <Link href="/wishlist">
-              <Button variant="ghost" size="icon" className="relative text-black hover:bg-black/5 hover:scale-110 transition-transform">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-black hover:bg-black/5 hover:scale-110 transition-transform"
+              >
                 <Heart className="h-6 w-6" />
                 {items.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -255,7 +292,11 @@ export default function MainNav() {
             </Link>
 
             <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative text-black hover:bg-black/5 hover:scale-110 transition-transform">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-black hover:bg-black/5 hover:scale-110 transition-transform"
+              >
                 <ShoppingBag className="h-6 w-6" />
                 {cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -269,5 +310,5 @@ export default function MainNav() {
         </div>
       </div>
     </motion.header>
-  )
+  );
 }

@@ -18,11 +18,13 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion"
 import { useLanguage } from "@/contexts/language-context"
 import { useCart } from "@/contexts/cart-context"
+import { useWishlist } from "@/contexts/wishlist-context"
 
 export default function ProductPage() {
   const { t } = useLanguage()
   const { toast } = useToast()
   const { addToCart } = useCart()
+  const { toggleWishlist, isInWishlist } = useWishlist()
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
@@ -365,12 +367,12 @@ export default function ProductPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-16 rounded-none border-black hover:bg-black hover:text-white h-16 bg-transparent"
-                  onClick={() => {
-                    // Wishlist logic
-                  }}
+                  className={`w-16 rounded-none border-black hover:bg-black hover:text-white h-16 ${
+                    isInWishlist(product.id) ? "bg-black text-white" : "bg-transparent"
+                  }`}
+                  onClick={() => toggleWishlist(product)}
                 >
-                  <Heart className="h-5 w-5" />
+                  <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? "fill-current" : ""}`} />
                 </Button>
               </div>
 

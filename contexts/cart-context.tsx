@@ -21,6 +21,12 @@ interface CartContextType {
     removeFromCart: (productId: string | number, variantId?: string | number) => Promise<void>
     updateQuantity: (productId: string | number, variantId: string | number | undefined, quantity: number) => Promise<void>
     refreshCart: () => Promise<void>
+
+    // Voucher
+    voucherCode: string | null
+    discountAmount: number
+    applyVoucher: (code: string, discount: number) => void
+    removeVoucher: () => void
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -30,6 +36,10 @@ const CART_STORAGE_KEY = "teesik_cart"
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
+
+    // Voucher state
+    const [voucherCode, setVoucherCode] = useState<string | null>(null)
+    const [discountAmount, setDiscountAmount] = useState<number>(0)
 
     // Sync from LocalStorage on mount
     useEffect(() => {
@@ -90,10 +100,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }))
     }
 
-    const cartCount = items.reduce((total, item) => total + item.quantity, 0)
+    const cartCount = items.length
+
+    const applyVoucher = (code: string, discount: number) => {
+        setVoucherCode(code)
+        setDiscountAmount(discount)
+    }
+
+    const removeVoucher = () => {
+        setVoucherCode(null)
+        setDiscountAmount(0)
+    }
 
     return (
-        <CartContext.Provider value={{ items, cartCount, isLoading, addToCart, removeFromCart, updateQuantity, refreshCart }}>
+        <CartContext.Provider value={{ 
+            items, cartCount, isLoading, 
+            addToCart, removeFromCart, updateQuantity, refreshCart,
+            voucherCode, discountAmount, applyVoucher, removeVoucher
+        }}>
             {children}
         </CartContext.Provider>
     )

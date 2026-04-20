@@ -18,6 +18,13 @@ export const AuthService = {
     });
   },
 
+  updateProfile: async (data: { name: string; phone?: string }) => {
+    return localFetch<{ success: boolean; data: User; message: string }>('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   getCurrentUser: async (): Promise<{ success: boolean; data: { user: User } }> => {
     const token = getAuthToken();
     if (!token) {
