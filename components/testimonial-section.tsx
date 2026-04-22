@@ -86,7 +86,7 @@ export default function TestimonialSection() {
                           />
                         ))}
                       </div>
-                      <p className="text-gray-700 mb-8 text-lg leading-relaxed italic">"{testimonial.content}"</p>
+                      <p className="text-gray-700 mb-8 text-lg leading-relaxed italic">&quot;{testimonial.content}&quot;</p>
                       <div className="flex items-center">
                         <Image
                           src={testimonial.avatar || "/placeholder.svg"}

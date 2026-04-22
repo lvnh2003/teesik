@@ -39,13 +39,13 @@ export const ProductService = {
     const response = await localFetch<ProductsApiResponse>(url);
 
     if (response.data && Array.isArray(response.data)) {
-      const meta: PaginationMeta = response.meta || {
-        current_page: response.current_page ?? 1,
-        from: response.from ?? null,
-        last_page: response.last_page ?? 1,
-        per_page: response.per_page ?? 15,
-        to: response.to ?? null,
-        total: response.total ?? 0,
+      const meta: PaginationMeta = {
+        current_page: response.meta?.current_page ?? response.current_page ?? 1,
+        from: response.meta?.from ?? response.from ?? null,
+        last_page: response.meta?.last_page ?? response.last_page ?? 1,
+        per_page: response.meta?.per_page ?? response.per_page ?? 15,
+        to: response.meta?.to ?? response.to ?? null,
+        total: response.meta?.total ?? response.total ?? 0,
       };
       return { data: response.data as Product[], meta };
     }

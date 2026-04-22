@@ -30,7 +30,7 @@ export default function WishlistPage() {
                         <span className="text-gray-300">Wishlist</span>
                     </h1>
                     <p className="text-lg md:text-xl text-gray-500 font-serif italic mb-12 tracking-wide">
-                        "Design is the silent ambassador of your brand."
+                        &quot;Design is the silent ambassador of your brand.&quot;
                     </p>
                     <Link href="/products">
                         <Button className="group relative overflow-hidden bg-black text-white px-12 py-8 rounded-none transition-all duration-300 hover:bg-black">

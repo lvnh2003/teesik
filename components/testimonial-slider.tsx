@@ -84,7 +84,7 @@ export default function TestimonialSlider() {
                         />
                       ))}
                     </div>
-                    <p className="text-gray-700 mb-6 italic">"{testimonial.content}"</p>
+                    <p className="text-gray-700 mb-6 italic">&quot;{testimonial.content}&quot;</p>
                     <h4 className="font-bold">{testimonial.name}</h4>
                     <p className="text-gray-500">{testimonial.role}</p>
                   </div>

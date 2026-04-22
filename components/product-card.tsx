@@ -30,7 +30,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    isInWishlist(product.id) ? removeItem(product.id) : addItem(product)
+    if (isInWishlist(product.id)) {
+      removeItem(product.id)
+    } else {
+      addItem(product)
+    }
   }
 
   const handleQuickAdd = async (e: React.MouseEvent) => {

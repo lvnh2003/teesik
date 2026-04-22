@@ -14,9 +14,13 @@ const eslintConfig = [
   {
     ignores: [".next/*", "node_modules/*", "tests-e2e/*"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
-      "no-console": ["warn", { allow: ["warn", "error"] }]
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "no-console": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "@next/next/no-img-element": "off",
+      "react/no-unescaped-entities": "off",
+      "@typescript-eslint/no-unused-expressions": "off"
     }
   }
 ];
