@@ -10,6 +10,7 @@ import { ProductService } from "@/services/products"
 import { Product, Category } from "@/type/product"
 import { motion, useScroll, useTransform } from "framer-motion"
 import PhotoSlider from "@/components/photo-slider"
+import { assetPath } from "@/lib/asset-path"
 
 export default function Home() {
   const { t } = useLanguage()
@@ -214,7 +215,7 @@ export default function Home() {
             playsInline 
             className="w-full h-full object-cover"
           >
-            <source src="/bag-video.mp4" type="video/mp4" />
+            <source src={assetPath("/bag-video.mp4")} type="video/mp4" />
           </video>
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white p-6">
             <h2 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-center mix-blend-overlay">
@@ -241,7 +242,7 @@ export default function Home() {
         <section className="relative w-full h-[85vh] overflow-hidden flex items-center justify-center bg-black">
           <div className="absolute inset-0 z-0">
              <Image
-               src="/images/hero-bag-3.jpg"
+               src={assetPath("/images/hero-bag-3.jpg")}
                alt="Cinematic Background"
                fill
                className="object-cover opacity-60 mix-blend-luminosity scale-105 hover:scale-100 transition-transform duration-[10s]"

@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
+import { assetPath } from "@/lib/asset-path"
 
 export default function CollectionBanner() {
   return (
@@ -31,7 +32,7 @@ export default function CollectionBanner() {
 
           <div className="relative">
             <div className="aspect-[4/5] relative overflow-hidden">
-              <Image src="/images/collection-summer.jpg" alt="Summer Collection" fill className="object-cover" />
+              <Image src={assetPath("/images/collection-summer.jpg")} alt="Summer Collection" fill className="object-cover" />
             </div>
 
             {/* Floating Stats */}

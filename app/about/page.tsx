@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { useLanguage } from "@/contexts/language-context"
+import { assetPath } from "@/lib/asset-path"
 
 export default function AboutPage() {
   const { t } = useLanguage()
@@ -89,7 +90,7 @@ export default function AboutPage() {
       {/* Image Parallax / Large Image */}
       <section className="w-full h-[60vh] md:h-[80vh] relative overflow-hidden">
         <Image
-          src="/images/collection-business.jpg"
+          src={assetPath("/images/collection-business.jpg")}
           alt="About Teesik Factory"
           fill
           className="object-cover grayscale hover:grayscale-0 transition-all duration-1000 ease-out"

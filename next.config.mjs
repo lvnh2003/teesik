@@ -1,12 +1,16 @@
 /** @type {import('next').NextConfig} */
 
 const isGithubPages = process.env.GITHUB_PAGES === "true";
-const repoName = "teesik"; // must match GitHub repository name
+const repoName = "teesik";
+const basePath = isGithubPages ? `/${repoName}` : "";
 
 const nextConfig = {
   output: "export",
-  basePath: isGithubPages ? `/${repoName}` : "",
+  basePath,
   assetPrefix: isGithubPages ? `/${repoName}/` : "",
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
+  },
   eslint: {
     ignoreDuringBuilds: false,
   },

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLanguage } from "@/contexts/language-context"
+import { assetPath } from "@/lib/asset-path"
 
 export default function PhotoSlider() {
   const { t } = useLanguage()
@@ -11,17 +12,17 @@ export default function PhotoSlider() {
 
   const slides = [
     {
-      image: "/images/hero-bag-1.jpg",
+      image: assetPath("/images/hero-bag-1.jpg"),
       title: t("slides.genesis.title"),
       subtitle: t("slides.genesis.subtitle")
     },
     {
-      image: "/images/hero-bag-2.jpg",
+      image: assetPath("/images/hero-bag-2.jpg"),
       title: t("slides.urban.title"),
       subtitle: t("slides.urban.subtitle")
     },
     {
-      image: "/images/hero-bag-3.jpg",
+      image: assetPath("/images/hero-bag-3.jpg"),
       title: t("slides.silent.title"),
       subtitle: t("slides.silent.subtitle")
     },
