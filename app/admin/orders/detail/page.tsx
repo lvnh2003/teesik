@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Suspense } from "react"
 import { OrderService } from "@/services/orders"
 import { Order } from "@/type"
 import { format } from "date-fns"
@@ -10,8 +11,9 @@ import Link from "next/link"
 import React from 'react'
 import { toast } from "sonner"
 
-export default function AdminOrderDetailPage() {
-    const params = useParams()
+function AdminOrderDetailPageContent() {
+    const searchParams = useSearchParams()
+    const id = searchParams.get("id")
     const router = useRouter()
     const [order, setOrder] = useState<Order | null>(null)
     const [loading, setLoading] = useState(true)
@@ -21,9 +23,9 @@ export default function AdminOrderDetailPage() {
 
     useEffect(() => {
         const fetchOrder = async () => {
-            if (!params.id) return
+            if (!id) return
             try {
-                const response = await OrderService.getOrder(Number(params.id))
+                const response = await OrderService.getOrder(Number(id))
                 setOrder(response.data)
                 setStatus(response.data.status)
                 setPaymentStatus(response.data.payment_status)
@@ -36,7 +38,7 @@ export default function AdminOrderDetailPage() {
             }
         }
         fetchOrder()
-    }, [params.id, router])
+    }, [id, router])
 
     const handleSave = async () => {
         if (!order) return
@@ -196,5 +198,17 @@ export default function AdminOrderDetailPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function AdminOrderDetailPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+        }>
+            <AdminOrderDetailPageContent />
+        </Suspense>
     )
 }

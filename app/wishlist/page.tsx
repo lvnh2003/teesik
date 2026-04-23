@@ -90,7 +90,7 @@ export default function WishlistPage() {
                             >
                                 {/* Image Container */}
                                 <div className="relative aspect-[3/4] overflow-hidden bg-[#F0F0F0] mb-8">
-                                    <Link href={`/products/${product.id}`} className="block w-full h-full">
+                                    <Link href={`/products/detail?id=${product.id}`} className="block w-full h-full">
                                         <Image
                                             src={getImageUrl(product.main_image?.image_path || "") || "/placeholder.svg"}
                                             alt={product.name}
@@ -113,7 +113,7 @@ export default function WishlistPage() {
 
                                     {/* Add to Bag Overlay Button */}
                                     <div className="absolute bottom-0 left-0 right-0 p-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out">
-                                        <Link href={`/products/${product.id}`} className="block">
+                                        <Link href={`/products/detail?id=${product.id}`} className="block">
                                             <Button className="w-full bg-black text-white hover:bg-neutral-800 border-none rounded-none h-14 uppercase tracking-widest font-bold text-xs flex items-center justify-center gap-2">
                                                 <ShoppingBag className="h-4 w-4" /> View Details
                                             </Button>
@@ -125,7 +125,7 @@ export default function WishlistPage() {
                                 <div className="flex flex-col items-start gap-1">
                                     <div className="w-full flex justify-between items-baseline border-b border-black/10 pb-4 mb-4">
                                         <h3 className="text-2xl font-serif italic truncate pr-4 text-black group-hover:text-gray-600 transition-colors">
-                                            <Link href={`/products/${product.id}`}>{product.name}</Link>
+                                            <Link href={`/products/detail?id=${product.id}`}>{product.name}</Link>
                                         </h3>
                                         <span className="font-mono text-sm tracking-tight text-black">
                                             {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.price)}

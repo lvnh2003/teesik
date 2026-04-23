@@ -64,7 +64,7 @@ export default function FeaturedProducts() {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
       {products.map((product) => (
         <div key={product.id} className="group">
-          <Link href={`/products/${product.slug}`}>
+          <Link href={`/products/detail?id=${product.slug}`}>
             <div className="relative aspect-[3/4] mb-4 overflow-hidden bg-gray-100 rounded-2xl shadow-lg group-hover:shadow-2xl transition-all duration-500">
               {product.isNew && (
                 <Badge className="absolute top-3 left-3 z-10 bg-gray-900 text-white hover:bg-gray-800 shadow-lg">

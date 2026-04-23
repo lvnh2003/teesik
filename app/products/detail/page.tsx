@@ -14,13 +14,14 @@ import { getImageUrl } from "@/services/core"
 import type { Product, ProductImage, ProductVariant } from "@/type/product"
 import Loading from "@/app/loading"
 import { useToast } from "@/components/ui/use-toast"
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { motion } from "framer-motion"
 import { useLanguage } from "@/contexts/language-context"
 import { useCart } from "@/contexts/cart-context"
 import { useWishlist } from "@/contexts/wishlist-context"
 
-export default function ProductPage() {
+function ProductPageContent() {
   const { t } = useLanguage()
   const { toast } = useToast()
   const { addToCart } = useCart()
@@ -32,8 +33,8 @@ export default function ProductPage() {
   const [selectedAttributes, setSelectedAttributes] = useState<{ [key: string]: string }>({})
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
-  const params = useParams();
-  const id = params.id as string
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") as string;
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -415,5 +416,13 @@ export default function ProductPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ProductPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ProductPageContent />
+    </Suspense>
   )
 }

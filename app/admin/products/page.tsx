@@ -499,7 +499,7 @@ export default function ProductsPage() {
                           >
                             <Eye className="h-4 w-4 text-muted-foreground" />
                           </Button>
-                          <Link href={`/admin/products/${product.id}/edit`}>
+                          <Link href={`/admin/products/edit?id=${product.id}`}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <Edit className="h-4 w-4 text-muted-foreground" />
                             </Button>

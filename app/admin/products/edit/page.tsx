@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 import { useAdminAuth } from "@/services/auth"
 import { ProductService } from "@/services/products"
 import { getImageUrl } from "@/services/core"
@@ -22,12 +23,12 @@ import Image from "next/image"
 import { Category, Product, ProductVariant } from "@/type/product"
 import { useProductAttributes } from "@/hooks/use-product-attributes"
 
-export default function EditProductPage() {
+function EditProductPageContent() {
   const { checkAuth } = useAdminAuth()
   const router = useRouter()
-  const params = useParams()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
-  const productId = params.id as string
+  const productId = searchParams.get("id") as string
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -879,5 +880,18 @@ export default function EditProductPage() {
         </Button>
       </div>
     </div>
+  )
+}
+
+export default function EditProductPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center h-[70vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <p className="text-muted-foreground">Đang tải...</p>
+      </div>
+    }>
+      <EditProductPageContent />
+    </Suspense>
   )
 }

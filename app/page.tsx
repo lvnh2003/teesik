@@ -147,7 +147,7 @@ export default function Home() {
 
           <div className="flex overflow-x-auto pb-12 px-6 gap-8 snap-x snap-mandatory scrollbar-hide">
             {newArrivals.map((product) => (
-              <Link key={product.id} href={`/products/${product.id}`} className="min-w-[80vw] md:min-w-[400px] snap-center group">
+              <Link key={product.id} href={`/products/detail?id=${product.id}`} className="min-w-[80vw] md:min-w-[400px] snap-center group">
                 <div className="relative aspect-[3/4] bg-[#F0F0F0] overflow-hidden mb-6">
                   <Image
                     src={product.main_image?.image_path ?

@@ -78,7 +78,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const originalPrice = product.original_price && product.original_price > product.price
 
   return (
-    <Link href={`/products/${product.id}`} className="group flex flex-col bg-white hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden border border-gray-100 h-full">
+    <Link href={`/products/detail?id=${product.id}`} className="group flex flex-col bg-white hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden border border-gray-100 h-full">
       {/* Image area - fixed aspect ratio for uniform cards */}
       <div className="relative overflow-hidden bg-[#F0F0F0] aspect-[3/4]">
         {product.isNew && (

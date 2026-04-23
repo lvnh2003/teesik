@@ -104,7 +104,7 @@ export default function CartPage() {
                 key={`${item.product_id}-${item.variant_id}`}
                 className="flex gap-6 md:gap-12 items-start group"
               >
-                <Link href={`/products/${item.product_id}`} className="relative w-32 md:w-48 aspect-[3/4] flex-shrink-0 bg-gray-100 overflow-hidden block">
+                <Link href={`/products/detail?id=${item.product_id}`} className="relative w-32 md:w-48 aspect-[3/4] flex-shrink-0 bg-gray-100 overflow-hidden block">
                   <Image
                     src={getImageUrl(item.image)}
                     alt={item.name}
@@ -115,7 +115,7 @@ export default function CartPage() {
 
                 <div className="flex-1 flex flex-col min-h-[10rem]">
                   <div className="flex justify-between items-start mb-2">
-                    <Link href={`/products/${item.product_id}`}>
+                    <Link href={`/products/detail?id=${item.product_id}`}>
                       <h3 className="font-bold text-xl md:text-3xl uppercase tracking-tighter leading-none hover:underline decoration-1 underline-offset-4">{item.name}</h3>
                     </Link>
                     <button
