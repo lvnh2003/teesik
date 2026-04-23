@@ -1,86 +1,159 @@
-name: Deploy Next.js site to Pages
+name: CI/CD Pipeline
 
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
+# ─── Global env ───────────────────────────────────────────────────────────────
+env:
+  NODE_VERSION: "25.x"
+
+# Required for GitHub Pages OIDC token
 permissions:
   contents: read
   pages: write
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "ci-${{ github.ref }}"
+  cancel-in-progress: true
 
+# ══════════════════════════════════════════════════════════════════════════════
 jobs:
-  test:
+# ──────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: 🔍 Lint
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Use Node.js 25.x
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 25.x
+          node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
-
-      - run: npm install
-      - run: npm run lint
-
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 25.x
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          static_site_generator: next
-
-      - name: Debug Node / package.json
-        run: |
-          echo "node: $(node -v)"
-          echo "npm:  $(npm -v)"
-          echo "package.json version:"
-          node -e "console.log(require('./package.json').version)"
-        shell: bash
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Build Next.js
+      - name: Run ESLint
+        run: npm run lint
+
+# ──────────────────────────────────────────────────────────────────────────────
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js (static export)
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      # Upload ./out as a reusable artifact for deploy jobs
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: nextjs-out
           path: ./out
+          retention-days: 1
 
-  deploy:
+# ──────────────────────────────────────────────────────────────────────────────
+  deploy-github-pages:
+    name: 🚀 Deploy → GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    # Only deploy on push to main (not on PRs)
+    if: github.event_name != 'pull_request'
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    runs-on: ubuntu-latest
-    needs: build
-
     steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nextjs-out
+          path: ./out
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact for Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+# ──────────────────────────────────────────────────────────────────────────────
+# AWS DEPLOYMENT (S3 + CloudFront)
+# ─────────────────────────────────
+# Uncomment this job when ready to deploy to AWS.
+# Required GitHub Secrets:
+#   AWS_ACCESS_KEY_ID        — IAM user access key
+#   AWS_SECRET_ACCESS_KEY    — IAM user secret key
+#   AWS_REGION               — e.g. ap-southeast-1
+#   S3_BUCKET                — e.g. teesik-frontend
+#   CLOUDFRONT_DISTRIBUTION_ID — e.g. E1ABCDEF123456
+# ──────────────────────────────────────────────────────────────────────────────
+
+  # deploy-aws:
+  #   name: 🚀 Deploy → AWS (S3 + CloudFront)
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: github.event_name != 'pull_request'
+  #
+  #   environment:
+  #     name: production
+  #     url: https://${{ secrets.CLOUDFRONT_DOMAIN }}
+  #
+  #   steps:
+  #     - name: Download build artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: nextjs-out
+  #         path: ./out
+  #
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ secrets.AWS_REGION }}
+  #
+  #     - name: Sync to S3 bucket
+  #       run: |
+  #         aws s3 sync ./out s3://${{ secrets.S3_BUCKET }} \
+  #           --delete \
+  #           --cache-control "public, max-age=31536000, immutable" \
+  #           --exclude "*.html"
+  #         aws s3 sync ./out s3://${{ secrets.S3_BUCKET }} \
+  #           --delete \
+  #           --cache-control "public, no-cache" \
+  #           --include "*.html"
+  #
+  #     - name: Invalidate CloudFront cache
+  #       run: |
+  #         aws cloudfront create-invalidation \
+  #           --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+  #           --paths "/*"
