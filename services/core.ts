@@ -1,10 +1,6 @@
 import { getCookie } from "cookies-next";
 
-const LOCAL_API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-if (!LOCAL_API_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL environment variable is required. Create a .env.local file with NEXT_PUBLIC_API_URL=http://localhost:8000/api");
-}
+const LOCAL_API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export class ApiError extends Error {
   constructor(
