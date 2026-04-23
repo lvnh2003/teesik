@@ -22,10 +22,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 22.x
+      - name: Use Node.js 25.x
         uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          node-version: 25.x
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
 
@@ -42,7 +42,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          node-version: 25.x
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
 
