@@ -5,6 +5,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
+import { assetPath } from "@/lib/asset-path"
 import HydrationWrapper from "@/components/hydration-wrapper"
 
 export default function HeroSlider() {
@@ -14,21 +15,21 @@ export default function HeroSlider() {
   // Static slides for SSR
   const staticSlides = [
     {
-      image: "/images/hero-bag-1.jpg",
+      image: assetPath("/images/hero-bag-1.jpg"),
       title: "SUMMER COLLECTION 2024",
       subtitle: "Túi xách cao cấp cho phong cách toàn cầu",
       buttonText: "Khám Phá Ngay",
       buttonLink: "/collections/summer",
     },
     {
-      image: "/images/hero-bag-2.jpg",
+      image: assetPath("/images/hero-bag-2.jpg"),
       title: "NEW ARRIVALS",
       subtitle: "Khám phá những mẫu túi mới nhất của chúng tôi",
       buttonText: "Xem Bộ Sưu Tập",
       buttonLink: "/collections/new-arrivals",
     },
     {
-      image: "/images/hero-bag-3.jpg",
+      image: assetPath("/images/hero-bag-3.jpg"),
       title: "DROPSHIPPING PROGRAM",
       subtitle: "Bắt đầu kinh doanh túi xách thời trang mà không cần tồn kho",
       buttonText: "Tham Gia Ngay",
@@ -39,21 +40,21 @@ export default function HeroSlider() {
   // Dynamic slides for client
   const dynamicSlides = [
     {
-      image: "/images/hero-bag-1.jpg",
+      image: assetPath("/images/hero-bag-1.jpg"),
       title: t("hero.title1"),
       subtitle: t("hero.subtitle1"),
       buttonText: t("hero.button1"),
       buttonLink: "/collections/summer",
     },
     {
-      image: "/images/hero-bag-2.jpg",
+      image: assetPath("/images/hero-bag-2.jpg"),
       title: t("hero.title2"),
       subtitle: t("hero.subtitle2"),
       buttonText: t("hero.button2"),
       buttonLink: "/collections/new-arrivals",
     },
     {
-      image: "/images/hero-bag-3.jpg",
+      image: assetPath("/images/hero-bag-3.jpg"),
       title: t("hero.title3"),
       subtitle: t("hero.subtitle3"),
       buttonText: t("hero.button3"),

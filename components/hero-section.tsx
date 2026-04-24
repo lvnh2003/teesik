@@ -7,12 +7,17 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { motion } from "framer-motion"
+import { assetPath } from "@/lib/asset-path"
 
 export default function HeroSection() {
   const { t } = useLanguage()
   const [currentImage, setCurrentImage] = useState(0)
 
-  const heroImages = ["/images/hero-bag-1.jpg", "/images/hero-bag-2.jpg", "/images/hero-bag-3.jpg"]
+  const heroImages = [
+    assetPath("/images/hero-bag-1.jpg"),
+    assetPath("/images/hero-bag-2.jpg"),
+    assetPath("/images/hero-bag-3.jpg"),
+  ]
 
   useEffect(() => {
     const interval = setInterval(() => {

@@ -1,42 +1,43 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Instagram, Heart } from "lucide-react"
+import { assetPath } from "@/lib/asset-path"
 
 export default function InstagramFeed() {
   const instagramPosts = [
     {
       id: 1,
-      image: "/images/tote-bag-1.jpg",
+      image: assetPath("/images/tote-bag-1.jpg"),
       link: "https://instagram.com",
       likes: 1234,
     },
     {
       id: 2,
-      image: "/images/crossbody-bag-1.jpg",
+      image: assetPath("/images/crossbody-bag-1.jpg"),
       link: "https://instagram.com",
       likes: 987,
     },
     {
       id: 3,
-      image: "/images/backpack-1.jpg",
+      image: assetPath("/images/backpack-1.jpg"),
       link: "https://instagram.com",
       likes: 2156,
     },
     {
       id: 4,
-      image: "/images/clutch-bag-1.jpg",
+      image: assetPath("/images/clutch-bag-1.jpg"),
       link: "https://instagram.com",
       likes: 876,
     },
     {
       id: 5,
-      image: "/images/shoulder-bag-1.jpg",
+      image: assetPath("/images/shoulder-bag-1.jpg"),
       link: "https://instagram.com",
       likes: 1543,
     },
     {
       id: 6,
-      image: "/images/messenger-bag-1.jpg",
+      image: assetPath("/images/messenger-bag-1.jpg"),
       link: "https://instagram.com",
       likes: 1098,
     },

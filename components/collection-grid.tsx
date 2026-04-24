@@ -1,33 +1,34 @@
 import Link from "next/link"
 import Image from "next/image"
+import { assetPath } from "@/lib/asset-path"
 
 export default function CollectionGrid() {
   const collections = [
     {
       id: 1,
       name: "TOTE BAGS",
-      image: "/images/collection-summer.jpg",
+      image: assetPath("/images/collection-summer.jpg"),
       slug: "tote-bags",
       description: "Túi xách tay thanh lịch",
     },
     {
       id: 2,
       name: "CROSSBODY",
-      image: "/images/collection-business.jpg",
+      image: assetPath("/images/collection-business.jpg"),
       slug: "crossbody",
       description: "Túi đeo chéo tiện dụng",
     },
     {
       id: 3,
       name: "BACKPACKS",
-      image: "/images/collection-travel.jpg",
+      image: assetPath("/images/collection-travel.jpg"),
       slug: "backpacks",
       description: "Balo thời trang hiện đại",
     },
     {
       id: 4,
       name: "CLUTCHES",
-      image: "/images/collection-summer.jpg",
+      image: assetPath("/images/collection-summer.jpg"),
       slug: "clutches",
       description: "Túi clutch sang trọng",
     },

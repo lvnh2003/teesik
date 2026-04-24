@@ -5,6 +5,7 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ShoppingBag, Heart } from "lucide-react"
+import { assetPath } from "@/lib/asset-path"
 import { useLanguage } from "@/contexts/language-context"
 
 export default function FeaturedProducts() {
@@ -15,7 +16,7 @@ export default function FeaturedProducts() {
       id: 1,
       name: "MILANO TOTE",
       price: 1290000,
-      image: "/images/tote-bag-1.jpg",
+      image: assetPath("/images/tote-bag-1.jpg"),
       category: "Tote Bags",
       isNew: true,
       slug: "milano-tote",
@@ -25,7 +26,7 @@ export default function FeaturedProducts() {
       name: "PARIS CROSSBODY",
       price: 890000,
       originalPrice: 1190000,
-      image: "/images/crossbody-bag-1.jpg",
+      image: assetPath("/images/crossbody-bag-1.jpg"),
       category: "Crossbody",
       isNew: false,
       slug: "paris-crossbody",
@@ -34,7 +35,7 @@ export default function FeaturedProducts() {
       id: 3,
       name: "TOKYO BACKPACK",
       price: 1490000,
-      image: "/images/backpack-1.jpg",
+      image: assetPath("/images/backpack-1.jpg"),
       category: "Backpacks",
       isNew: true,
       slug: "tokyo-backpack",
@@ -44,7 +45,7 @@ export default function FeaturedProducts() {
       name: "NEW YORK CLUTCH",
       price: 690000,
       originalPrice: 990000,
-      image: "/images/clutch-bag-1.jpg",
+      image: assetPath("/images/clutch-bag-1.jpg"),
       category: "Clutches",
       isNew: false,
       slug: "new-york-clutch",
