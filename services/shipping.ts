@@ -34,10 +34,11 @@ export const ShippingService = {
     });
   },
 
-  calculateFee: async (districtId: number, wardCode: string, totalValue: number = 0, weight: number = 300) => {
+  calculateFee: async (districtId: number, wardCode: string, totalValue: number = 0, weight: number = 300, signal?: AbortSignal) => {
     return localFetch<{ success: boolean; data: { fee: number }; message?: string }>('/shipping/calculate', {
       method: 'POST',
       body: JSON.stringify({ district_id: districtId, ward_code: wardCode, total_value: totalValue, weight }),
+      signal
     });
   }
 };

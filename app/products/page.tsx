@@ -1,87 +1,117 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Filter, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import ProductCard from "@/components/product-card"
-import { ProductService } from "@/services/products"
-import { Category, Product } from "@/type/product"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useEffect } from "react";
+import { Filter, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import ProductCard from "@/components/product-card";
+import { ProductService } from "@/services/products";
+import { Category, Product } from "@/type/product";
+import { motion, AnimatePresence } from "framer-motion";
 
-import { useLanguage } from "@/contexts/language-context"
+import { useLanguage } from "@/contexts/language-context";
 
 export default function ProductsPage() {
-  const { t } = useLanguage()
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [sortBy, setSortBy] = useState("featured")
-  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null)
-
-  const formatCategoryName = (name: string) => {
-    const lower = name.toLowerCase();
-    if (lower === 'quần ảos') return 'QUẦN ÁO';
-    if (lower === 'túi sách') return 'TÚI XÁCH';
-    return name;
-  }
+  const { t } = useLanguage();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [sortBy, setSortBy] = useState("featured");
+  const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const [productsResponse, categoriesResponse] = await Promise.all([
           ProductService.getProducts({ page: currentPage, per_page: 12 }),
           ProductService.getCategories(),
-        ])
+        ]);
 
-        setProducts(productsResponse.data)
-        setTotalPages(productsResponse.meta?.last_page || 1)
-        setCategories(categoriesResponse.data)
+        setProducts(productsResponse.data);
+        setTotalPages(productsResponse.meta?.last_page || 1);
+        setCategories(categoriesResponse.data);
       } catch (error) {
-        console.error("Error fetching data:", error)
-        setProducts([])
-        setCategories([])
+        console.error("Error fetching data:", error);
+        setProducts([]);
+        setCategories([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [currentPage])
+    fetchData();
+  }, [currentPage]);
 
   const filteredProducts = products.filter((product) => {
-    if (selectedCategory && product.category?.id !== selectedCategory) return false;
-    
+    if (selectedCategory && product.category?.id !== selectedCategory)
+      return false;
+
     if (selectedPriceRange) {
       const price = product.variants?.[0]?.price || product.price || 0;
       if (selectedPriceRange === "Under 500k" && price >= 500000) return false;
-      if (selectedPriceRange === "500k - 1m" && (price < 500000 || price >= 1000000)) return false;
-      if (selectedPriceRange === "1m - 1.5m" && (price < 1000000 || price >= 1500000)) return false;
+      if (
+        selectedPriceRange === "500k - 1m" &&
+        (price < 500000 || price >= 1000000)
+      )
+        return false;
+      if (
+        selectedPriceRange === "1m - 1.5m" &&
+        (price < 1000000 || price >= 1500000)
+      )
+        return false;
       if (selectedPriceRange === "Over 1.5m" && price < 1500000) return false;
     }
-    
+
     return true;
-  })
+  });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortBy) {
       case "price-low":
-        return (a.variants?.[0]?.price || a.price) - (b.variants?.[0]?.price || b.price)
+        return (
+          (a.variants?.[0]?.price || a.price) -
+          (b.variants?.[0]?.price || b.price)
+        );
       case "price-high":
-        return (b.variants?.[0]?.price || b.price) - (a.variants?.[0]?.price || a.price)
+        return (
+          (b.variants?.[0]?.price || b.price) -
+          (a.variants?.[0]?.price || a.price)
+        );
       case "newest":
-        return new Date(b.id).getTime() - new Date(a.id).getTime()
+        return (
+          new Date(b.created_at || 0).getTime() -
+          new Date(a.created_at || 0).getTime()
+        );
       default:
-        return 0
+        return 0;
     }
-  })
+  });
 
   // Filter Component Content
   const FilterContent = () => (
@@ -119,7 +149,7 @@ export default function ProductsPage() {
                     htmlFor={`category-${category.id}`}
                     className="text-sm font-medium uppercase cursor-pointer text-gray-600 hover:text-black transition-colors"
                   >
-                    {formatCategoryName(category.name)}
+                    {category.name}
                   </label>
                 </div>
               ))}
@@ -137,13 +167,22 @@ export default function ProductsPage() {
                 { label: t("filter.under500k"), value: "Under 500k" },
                 { label: t("filter.500k1m"), value: "500k - 1m" },
                 { label: t("filter.1m15m"), value: "1m - 1.5m" },
-                { label: t("filter.over15m"), value: "Over 1.5m" }
+                { label: t("filter.over15m"), value: "Over 1.5m" },
               ].map((priceItem) => (
-                <div key={priceItem.value} className="flex items-center space-x-3">
+                <div
+                  key={priceItem.value}
+                  className="flex items-center space-x-3"
+                >
                   <Checkbox
                     id={priceItem.value.toLowerCase().replace(/\s/g, "-")}
                     checked={selectedPriceRange === priceItem.value}
-                    onCheckedChange={() => setSelectedPriceRange(selectedPriceRange === priceItem.value ? null : priceItem.value)}
+                    onCheckedChange={() =>
+                      setSelectedPriceRange(
+                        selectedPriceRange === priceItem.value
+                          ? null
+                          : priceItem.value,
+                      )
+                    }
                     className="rounded-none border-gray-400 data-[state=checked]:bg-black data-[state=checked]:border-black"
                   />
                   <label
@@ -159,7 +198,7 @@ export default function ProductsPage() {
         </AccordionItem>
       </Accordion>
     </div>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -187,13 +226,21 @@ export default function ProductsPage() {
         <div className="max-w-[1920px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" className="uppercase font-bold tracking-widest text-xs hover:bg-transparent hover:text-gray-600 pl-0">
+              <Button
+                variant="ghost"
+                className="uppercase font-bold tracking-widest text-xs hover:bg-transparent hover:text-gray-600 pl-0"
+              >
                 <Filter className="mr-2 h-4 w-4" /> {t("products.filterSort")}
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px] border-r border-black/10 pt-16">
+            <SheetContent
+              side="left"
+              className="w-[300px] sm:w-[400px] border-r border-black/10 pt-16"
+            >
               <SheetHeader className="text-left mb-6">
-                <SheetTitle className="text-2xl font-black uppercase tracking-tighter">{t("products.refineSelection")}</SheetTitle>
+                <SheetTitle className="text-2xl font-black uppercase tracking-tighter">
+                  {t("products.refineSelection")}
+                </SheetTitle>
               </SheetHeader>
               <FilterContent />
             </SheetContent>
@@ -204,11 +251,34 @@ export default function ProductsPage() {
               <SelectTrigger className="w-[180px] border-none bg-transparent font-bold text-xs uppercase tracking-widest focus:ring-0 shadow-none text-right">
                 <SelectValue placeholder={t("products.sortBy")} />
               </SelectTrigger>
-              <SelectContent align="end" className="rounded-none border-black/10">
-                <SelectItem value="featured" className="uppercase text-xs font-medium tracking-wider">{t("sort.featured")}</SelectItem>
-                <SelectItem value="newest" className="uppercase text-xs font-medium tracking-wider">{t("sort.newest")}</SelectItem>
-                <SelectItem value="price-low" className="uppercase text-xs font-medium tracking-wider">{t("sort.priceLowHigh")}</SelectItem>
-                <SelectItem value="price-high" className="uppercase text-xs font-medium tracking-wider">{t("sort.priceHighLow")}</SelectItem>
+              <SelectContent
+                align="end"
+                className="rounded-none border-black/10"
+              >
+                <SelectItem
+                  value="featured"
+                  className="uppercase text-xs font-medium tracking-wider"
+                >
+                  {t("sort.featured")}
+                </SelectItem>
+                <SelectItem
+                  value="newest"
+                  className="uppercase text-xs font-medium tracking-wider"
+                >
+                  {t("sort.newest")}
+                </SelectItem>
+                <SelectItem
+                  value="price-low"
+                  className="uppercase text-xs font-medium tracking-wider"
+                >
+                  {t("sort.priceLowHigh")}
+                </SelectItem>
+                <SelectItem
+                  value="price-high"
+                  className="uppercase text-xs font-medium tracking-wider"
+                >
+                  {t("sort.priceHighLow")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -242,7 +312,11 @@ export default function ProductsPage() {
                   {t("products.noProductsFound")}
                 </h2>
                 <Button
-                  onClick={() => { setSelectedCategory(null); setSelectedPriceRange(null); setSortBy("featured"); }}
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSelectedPriceRange(null);
+                    setSortBy("featured");
+                  }}
                   className="bg-black text-white hover:bg-gray-800 uppercase font-bold tracking-widest px-8 rounded-none"
                 >
                   {t("products.clearFilters")}
@@ -275,7 +349,9 @@ export default function ProductsPage() {
               <div className="flex justify-center mt-24 gap-4">
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                   className="rounded-none border-black hover:bg-black hover:text-white uppercase text-xs font-bold tracking-widest px-8"
                 >
@@ -284,27 +360,31 @@ export default function ProductsPage() {
 
                 <div className="flex items-center gap-2">
                   {[...Array(Math.min(5, totalPages))].map((_, index) => {
-                    const pageNum = currentPage <= 3 ? index + 1 : currentPage - 2 + index
-                    if (pageNum > totalPages) return null
+                    const pageNum =
+                      currentPage <= 3 ? index + 1 : currentPage - 2 + index;
+                    if (pageNum > totalPages) return null;
 
                     return (
                       <button
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
-                        className={`w-8 h-8 flex items-center justify-center text-xs font-bold font-mono transition-colors ${currentPage === pageNum
-                          ? "bg-black text-white"
-                          : "text-gray-400 hover:text-black"
-                          }`}
+                        className={`w-8 h-8 flex items-center justify-center text-xs font-bold font-mono transition-colors ${
+                          currentPage === pageNum
+                            ? "bg-black text-white"
+                            : "text-gray-400 hover:text-black"
+                        }`}
                       >
                         {pageNum}
                       </button>
-                    )
+                    );
                   })}
                 </div>
 
                 <Button
                   variant="outline"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                   disabled={currentPage === totalPages}
                   className="rounded-none border-black hover:bg-black hover:text-white uppercase text-xs font-bold tracking-widest px-8"
                 >
@@ -316,5 +396,5 @@ export default function ProductsPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

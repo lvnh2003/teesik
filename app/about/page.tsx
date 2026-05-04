@@ -39,19 +39,19 @@ export default function AboutPage() {
     {
       name: "SARAH JOHNSON",
       role: "FOUNDER & CEO",
-      image: "/placeholder.svg?height=600&width=400",
+      image: assetPath("/images/team-sarah.png"),
       bio: "With 15 years in fashion design, Sarah founded Teesik to create premium objects for the modern woman.",
     },
     {
       name: "MICHAEL CHEN",
       role: "HEAD OF DESIGN",
-      image: "/placeholder.svg?height=600&width=400",
+      image: assetPath("/images/team-michael.png"),
       bio: "Michael brings innovative design concepts and sustainable practices to every collection we create.",
     },
     {
       name: "EMMA WILLIAMS",
       role: "OPERATIONS DIRECTOR",
-      image: "/placeholder.svg?height=600&width=400",
+      image: assetPath("/images/team-emma.png"),
       bio: "Emma ensures our global operations run smoothly, from production to customer delivery worldwide.",
     },
   ]

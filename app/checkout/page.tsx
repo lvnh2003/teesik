@@ -1,10 +1,12 @@
 "use client"
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, CreditCard, Shield, CheckCircle, Smartphone as SmartphoneIcon } from "lucide-react";
+import { ArrowLeft, CreditCard, Shield, CheckCircle, Smartphone as SmartphoneIcon, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +20,12 @@ import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { useCart } from "@/contexts/cart-context";
 import { CartItem, Order } from "@/type";
+import { formatAttributeValue } from "@/lib/utils"
 import { AddressService, UserAddress } from "@/services/address";
 import { ShippingService, Province, District, Ward } from "@/services/shipping";
 
 export default function CheckoutPage() {
+  const [hasMounted, setHasMounted] = useState(false)
   const { t } = useLanguage()
   const router = useRouter()
   const { isLoggedIn: authLoggedIn, user } = useAuth()
@@ -40,6 +44,7 @@ export default function CheckoutPage() {
   // Shipping & Addresses
   const [shippingFee, setShippingFee] = useState(0)
   const total = Math.max(0, subtotal + shippingFee - discountAmount)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [addresses, setAddresses] = useState<UserAddress[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<number | 0>(0)
@@ -54,45 +59,57 @@ export default function CheckoutPage() {
     ward_code: '', ward: '',
     specific_address: ''
   })
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false)
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   // Detect login and fetch data
   useEffect(() => {
+    // Always fetch provinces once
+    if (provinces.length === 0) {
+      ShippingService.getProvinces().then(res => {
+        if (res.success) setProvinces(res.data)
+      }).catch(console.error)
+    }
+
     if (authLoggedIn && user) {
       setIsLoggedIn(true)
       if (!customerName && user.name) setCustomerName(user.name)
       if (!guestEmail && user.email) setGuestEmail(user.email)
       if (!phone && user.phone) setPhone(user.phone)
       
-      AddressService.getAddresses().then(res => {
-        if (res.success && res.data.length > 0) {
-            setAddresses(res.data)
-            const defaultAddr = res.data.find(a => a.is_default) || res.data[0]
-            setSelectedAddressId(defaultAddr.id)
-            if (!customerName) setCustomerName(defaultAddr.receiver_name)
-            if (!phone) setPhone(defaultAddr.phone)
-        }
-      }).catch(console.error)
-    } else {
-      ShippingService.getProvinces().then(res => {
-        if (res.success) setProvinces(res.data)
-      }).catch(console.error)
+      // Only fetch addresses if not already loaded or empty
+      if (addresses.length === 0) {
+        AddressService.getAddresses().then(res => {
+          if (res.success && res.data.length > 0) {
+              setAddresses(res.data)
+              const defaultAddr = res.data.find(a => a.is_default) || res.data[0]
+              setSelectedAddressId(prev => prev === 0 ? defaultAddr.id : prev)
+          }
+        }).catch(console.error)
+      }
     }
-  }, [authLoggedIn, user])
+  }, [authLoggedIn, user?.id]) // Use user.id for better stability
 
   // Shipping Fee live calculation
   useEffect(() => {
     if (subtotal === 0) {
       setShippingFee(0)
+      setIsCalculatingShipping(false)
       return
     }
-    // Free ship
+
+    // Free ship for orders over 1,000,000 VND
     if (subtotal > 1000000) {
       setShippingFee(0)
+      setIsCalculatingShipping(false)
       return
     }
 
     let pDistId = 0
-    let pWardCode = ''
+    let pWardCode = ""
 
     if (isLoggedIn && selectedAddressId) {
       const addr = addresses.find(a => a.id === selectedAddressId)
@@ -100,23 +117,58 @@ export default function CheckoutPage() {
         pDistId = addr.district_id
         pWardCode = addr.ward_code
       }
-    } else if (!isLoggedIn && guestAddress.district_id && guestAddress.ward_code) {
+    } else if (!isLoggedIn) {
       pDistId = guestAddress.district_id
       pWardCode = guestAddress.ward_code
     }
 
-    if (pDistId && pWardCode) {
-      ShippingService.calculateFee(pDistId, pWardCode, subtotal, 300)
-        .then(res => setShippingFee(res.data.fee))
-        .catch(() => setShippingFee(30000))
-    } else {
+    if (!pDistId || !pWardCode) {
       setShippingFee(0)
+      setIsCalculatingShipping(false)
+      return
     }
-  }, [isLoggedIn, selectedAddressId, addresses, guestAddress.district_id, guestAddress.ward_code, subtotal])
+
+    const abortController = new AbortController();
+    
+    const timer = setTimeout(() => {
+      setIsCalculatingShipping(true)
+      console.log(`[Shipping] Starting calculation for District: ${pDistId}, Ward: ${pWardCode}`);
+      
+      ShippingService.calculateFee(pDistId, pWardCode, subtotal, 300, abortController.signal)
+        .then(res => {
+          if (res.data && typeof res.data.fee === 'number') {
+            console.log(`[Shipping] Success: ${res.data.fee} VND`);
+            setShippingFee(res.data.fee)
+          } else {
+            console.warn(`[Shipping] Unexpected response, falling back to 30k`, res);
+            setShippingFee(30000)
+          }
+        })
+        .catch((err) => {
+          if (err.name === 'AbortError' || err.message?.includes('cancelled')) {
+            console.log(`[Shipping] Request aborted`);
+            return;
+          }
+          console.error(`[Shipping] Error calculating fee, falling back to 30k`, err);
+          setShippingFee(30000)
+        })
+        .finally(() => {
+          // Only set to false if this request wasn't aborted
+          if (!abortController.signal.aborted) {
+            setIsCalculatingShipping(false)
+          }
+        })
+    }, 500) // 500ms debounce
+
+    return () => {
+      clearTimeout(timer)
+      abortController.abort()
+    }
+  }, [isLoggedIn, selectedAddressId, guestAddress.district_id, guestAddress.ward_code, subtotal])
 
   // Guest Address Handling
   const handleGuestProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const provId = parseInt(e.target.value)
+    const provId = parseInt(e.target.value) || 0
     const provName = e.target.options[e.target.selectedIndex].text
     setGuestAddress(p => ({ ...p, province_id: provId, province: provName, district_id: 0, district: '', ward_code: '', ward: '' }))
     setDistricts([]); setWards([]);
@@ -127,7 +179,7 @@ export default function CheckoutPage() {
   }
 
   const handleGuestDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const distId = parseInt(e.target.value)
+    const distId = parseInt(e.target.value) || 0
     const distName = e.target.options[e.target.selectedIndex].text
     setGuestAddress(p => ({ ...p, district_id: distId, district: distName, ward_code: '', ward: '' }))
     setWards([]);
@@ -139,18 +191,23 @@ export default function CheckoutPage() {
 
   // Redirect if empty
   useEffect(() => {
-    if (!isLoading && (!cartItems || cartItems.length === 0)) {
+    if (!isLoading && orderStep !== "success" && (!cartItems || cartItems.length === 0)) {
       router.push('/cart')
     }
-  }, [isLoading, cartItems, router])
+  }, [isLoading, cartItems, orderStep, router])
 
   // Handle checkout flow
   const handleProceedToPayment = () => {
-    if (isLoggedIn) {
-      if (selectedAddressId && customerName && phone) setOrderStep("payment")
-    } else {
-      if (customerName && phone && guestAddress.specific_address && guestAddress.ward_code) setOrderStep("payment")
-    }
+    setIsSubmitting(true)
+    // Small delay for visual feedback
+    setTimeout(() => {
+      if (isLoggedIn) {
+        if (selectedAddressId && customerName && phone) setOrderStep("payment")
+      } else {
+        if (customerName && phone && guestAddress.specific_address && guestAddress.ward_code) setOrderStep("payment")
+      }
+      setIsSubmitting(false)
+    }, 500)
   }
 
   const handlePayment = async () => {
@@ -163,6 +220,7 @@ export default function CheckoutPage() {
         finalAddress = `${guestAddress.specific_address}, ${guestAddress.ward}, ${guestAddress.district}, ${guestAddress.province}`
       }
 
+      setIsSubmitting(true)
       const result = await CartService.checkout({
         customer_name: customerName,
         customer_email: guestEmail,
@@ -188,11 +246,13 @@ export default function CheckoutPage() {
         }
         setOrderStep("success")
       } else {
-        alert("Dữ liệu trả về không hợp lệ")
+        alert(t("checkout.invalidData"))
       }
     } catch (e: any) {
       console.error(e)
-      alert("Có lỗi xảy ra khi thanh toán: " + (e.message || "Lỗi không xác định"))
+      alert(t("checkout.error") + ": " + (e.message || t("checkout.unknownError")))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -208,6 +268,8 @@ export default function CheckoutPage() {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", minimumFractionDigits: 0 }).format(price)
   }
+
+  if (!hasMounted) return null;
 
   if (orderStep === "success") {
     return (
@@ -317,9 +379,9 @@ export default function CheckoutPage() {
                   ) : (
                     <div className="p-4 bg-gray-100 border-l-4 border-black flex justify-between items-center">
                       <p className="font-mono text-sm">
-                        Logged in as: <span className="font-bold">{user?.email || "user@example.com"}</span>
+                        {t("checkout.loggedInAs")}: <span className="font-bold">{user?.email || "user@example.com"}</span>
                       </p>
-                      <Link href="/dashboard/addresses" className="text-xs font-bold uppercase tracking-widest underline hover:text-gray-600">Quản lý sổ địa chỉ</Link>
+                      <Link href="/dashboard/addresses" className="text-xs font-bold uppercase tracking-widest underline hover:text-gray-600">{t("checkout.manageAddresses")}</Link>
                     </div>
                   )}
                 </section>
@@ -331,7 +393,7 @@ export default function CheckoutPage() {
 
                   {isLoggedIn && addresses.length > 0 ? (
                     <div className="space-y-4 mb-6">
-                      <Label className="text-xs font-bold uppercase tracking-widest">Chọn địa chỉ nhận hàng</Label>
+                      <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.selectAddress")}</Label>
                       <RadioGroup value={String(selectedAddressId)} onValueChange={v => {
                         const sId = parseInt(v)
                         setSelectedAddressId(sId)
@@ -356,7 +418,7 @@ export default function CheckoutPage() {
                     <div className="grid gap-6">
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-widest">Họ và tên</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.fullName")}</Label>
                           <Input
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
@@ -364,7 +426,7 @@ export default function CheckoutPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-widest">Phone Number</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.phoneNumber")}</Label>
                           <Input
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
@@ -375,48 +437,48 @@ export default function CheckoutPage() {
 
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-widest">Tỉnh / Thành</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.province")}</Label>
                           <select 
                             value={guestAddress.province_id} 
                             onChange={handleGuestProvinceChange}
                             className="w-full h-12 border border-black bg-transparent px-3 text-sm focus:outline-none focus:border-2"
                           >
-                            <option value="">-- Chọn Quận/Huyện --</option>
+                            <option value="">-- {t("checkout.selectProvince")} --</option>
                             {provinces.map(p => <option key={p.province_id} value={p.province_id}>{p.province_name}</option>)}
                           </select>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-widest">Quận / Huyện</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.district")}</Label>
                           <select 
                             value={guestAddress.district_id} 
                             onChange={handleGuestDistrictChange}
                             disabled={!guestAddress.province_id}
                             className="w-full h-12 border border-black bg-transparent px-3 text-sm focus:outline-none focus:border-2"
                           >
-                            <option value="">-- Chọn Quận/Huyện --</option>
+                            <option value="">-- {t("checkout.selectDistrict")} --</option>
                             {districts.map(d => <option key={d.district_id} value={d.district_id}>{d.district_name}</option>)}
                           </select>
                         </div>
                       </div>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-widest">Phường / Xã</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.ward")}</Label>
                           <select 
                             value={guestAddress.ward_code} 
                             onChange={e => setGuestAddress(p => ({...p, ward_code: e.target.value, ward: e.target.options[e.target.selectedIndex].text}))}
                             disabled={!guestAddress.district_id}
                             className="w-full h-12 border border-black bg-transparent px-3 text-sm focus:outline-none focus:border-2"
                           >
-                            <option value="">-- Chọn Phường/Xã --</option>
+                            <option value="">-- {t("checkout.selectWard")} --</option>
                             {wards.map(w => <option key={w.ward_code} value={w.ward_code}>{w.ward_name}</option>)}
                           </select>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-xs font-bold uppercase tracking-widest">Ghi chú địa chỉ</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.addressNote")}</Label>
                           <Input
                             value={guestAddress.specific_address}
                             onChange={(e) => setGuestAddress(p => ({...p, specific_address: e.target.value}))}
-                            placeholder="Số nhà, Tên đường..."
+                            placeholder={t("checkout.addressPlaceholder")}
                             className="rounded-none border-black h-12 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
                           />
                         </div>
@@ -428,9 +490,16 @@ export default function CheckoutPage() {
                     <Button
                       onClick={handleProceedToPayment}
                       className="w-full bg-black hover:bg-neutral-800 text-white h-14 rounded-none uppercase font-bold tracking-widest text-sm"
-                      disabled={isLoggedIn ? (!selectedAddressId || !customerName || !phone) : (!customerName || !phone || !guestAddress.specific_address || !guestAddress.ward_code)}
+                      disabled={isSubmitting || (isLoggedIn ? (!selectedAddressId || !customerName || !phone) : (!customerName || !phone || !guestAddress.specific_address || !guestAddress.ward_code))}
                     >
-                      {t("checkout.verifyAndContinue")}
+                      {isSubmitting ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>{t("checkout.processing")}</span>
+                        </div>
+                      ) : (
+                        t("checkout.verifyAndContinue")
+                      )}
                     </Button>
                   </div>
                 </section>
@@ -441,7 +510,7 @@ export default function CheckoutPage() {
               <section>
                 <div className="flex items-center justify-between mb-8 border-b border-black pb-4">
                   <h2 className="text-2xl font-black tracking-tighter uppercase">{t("checkout.payment")}</h2>
-                  <Button variant="link" onClick={() => setOrderStep('checkout')} className="uppercase font-bold tracking-widest text-xs">Sửa địa chỉ</Button>
+                  <Button variant="link" onClick={() => setOrderStep('checkout')} className="uppercase font-bold tracking-widest text-xs">{t("checkout.editAddress")}</Button>
                 </div>
 
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
@@ -497,6 +566,20 @@ export default function CheckoutPage() {
                       )}
                     </div>
                   </Label>
+
+                  <Label
+                    htmlFor="cod"
+                    className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'cod' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
+                  >
+                    <RadioGroupItem value="cod" id="cod" className="mt-1 border-white" />
+                    <div className="flex-1">
+                      <div className="flex items-center mb-1">
+                        <ShoppingBag className="h-5 w-5 mr-2" />
+                        <span className="font-bold uppercase tracking-wider">{t("checkout.cod")}</span>
+                      </div>
+                      <p className={`text-sm ${paymentMethod === 'cod' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.codDesc")}</p>
+                    </div>
+                  </Label>
                 </RadioGroup>
 
                 <div className="mt-8 flex items-center justify-center gap-2 text-gray-400 text-xs uppercase tracking-widest mb-8">
@@ -505,9 +588,17 @@ export default function CheckoutPage() {
 
                 <Button
                   onClick={handlePayment}
+                  disabled={isSubmitting}
                   className="w-full bg-black hover:bg-neutral-800 text-white h-16 text-lg font-bold tracking-widest uppercase rounded-none shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                 >
-                  {t("checkout.completeOrder")}
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>{t("checkout.processing")}</span>
+                    </div>
+                  ) : (
+                    t("checkout.completeOrder")
+                  )}
                 </Button>
               </section>
             )}
@@ -529,7 +620,7 @@ export default function CheckoutPage() {
                       <h4 className="font-bold text-sm uppercase truncate mb-1">{item.name}</h4>
                       {item.attributes && Object.keys(item.attributes).length > 0 && (
                         <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                          {Object.values(item.attributes).join(" • ")}
+                          {Object.values(item.attributes).map(val => formatAttributeValue(val)).join(" • ")}
                         </p>
                       )}
                       <p className="font-mono text-sm font-medium">{formatPrice(item.price)}</p>
@@ -545,7 +636,16 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500 uppercase tracking-wider text-xs font-sans font-bold">{t("cart.shipping")}</span>
-                  <span className={shippingFee === 0 ? "text-green-600 font-bold" : ""}>{shippingFee === 0 ? (subtotal > 1000000 ? "Miễn phí" : "Chờ tính Phí") : formatPrice(shippingFee)}</span>
+                  <span className={(shippingFee === 0 && subtotal <= 1000000) ? "text-gray-500 text-xs italic" : "text-green-600 font-bold"}>
+                    {subtotal > 1000000 
+                      ? t("checkout.free") 
+                      : isCalculatingShipping 
+                        ? t("checkout.calculating") 
+                        : shippingFee > 0 
+                          ? formatPrice(shippingFee)
+                          : t("checkout.selectAddressPrompt")
+                    }
+                  </span>
                 </div>
                 {voucherCode && (
                   <div className="flex justify-between text-green-600">

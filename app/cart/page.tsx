@@ -6,6 +6,7 @@ import { Trash2, ShoppingBag, ArrowRight, Minus, Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getImageUrl } from "@/services/core"
 import { useLanguage } from "@/contexts/language-context"
+import { formatAttributeValue } from "@/lib/utils"
 import { motion } from "framer-motion"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -132,7 +133,7 @@ export default function CartPage() {
                     </p>
                     {item.attributes && Object.keys(item.attributes).length > 0 && (
                       <p className="text-xs uppercase tracking-widest text-gray-500">
-                        {Object.values(item.attributes).join(" / ")}
+                      {Object.values(item.attributes).map(val => formatAttributeValue(val)).join(" / ")}
                       </p>
                     )}
                   </div>

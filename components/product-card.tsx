@@ -9,6 +9,7 @@ import { getImageUrl } from "@/services/core"
 import { useWishlist } from "@/contexts/wishlist-context"
 import { useToast } from "@/components/ui/use-toast"
 import { useCart } from "@/contexts/cart-context"
+import { useLanguage } from "@/contexts/language-context"
 
 interface ProductCardProps {
   product: Product
@@ -23,6 +24,7 @@ function getProductImageUrl(product: Product): string {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const { t } = useLanguage()
   const { addItem, removeItem, isInWishlist } = useWishlist()
   const { toast } = useToast()
   const { addToCart } = useCart()
@@ -53,8 +55,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         image: imageUrl,
       })
       toast({
-        title: "Added to Cart",
-        description: `${product.name} added to your cart.`,
+        title: t("cart.added"),
+        description: `${product.name} ${t("cart.addedDesc")}`,
       })
     } catch (error) {
       console.error("Quick add error", error)
@@ -83,7 +85,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="relative overflow-hidden bg-[#F0F0F0] aspect-[3/4]">
         {product.isNew && (
           <Badge className="absolute top-3 left-3 z-10 bg-black text-white hover:bg-black rounded-none uppercase tracking-wider text-[10px] px-2 py-1">
-            New Arrival
+            {t("card.newArrival")}
           </Badge>
         )}
         {product.discount && product.discount > 0 && (
@@ -123,7 +125,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               handleQuickAdd(e)
             }}
           >
-            <ShoppingBag className="mr-2 h-3 w-3" /> Quick Add
+            <ShoppingBag className="mr-2 h-3 w-3" /> {t("card.quickAdd")}
           </Button>
         </div>
 
@@ -140,7 +142,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="flex flex-col p-4 flex-grow min-h-0">
         {/* Category - fixed height slot */}
         <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5 min-h-[14px] truncate">
-          {product.category?.name || 'Collection'}
+          {product.category?.name || t("products.collection")}
         </p>
 
         {/* Name - line clamp for consistent height */}
@@ -165,7 +167,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
             {product.stock_quantity === 0 && (
               <Badge variant="secondary" className="text-[10px] uppercase shrink-0">
-                Hết hàng
+                {t("card.soldOut")}
               </Badge>
             )}
           </div>

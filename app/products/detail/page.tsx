@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { motion } from "framer-motion"
+import { formatAttributeValue } from "@/lib/utils"
 import { useLanguage } from "@/contexts/language-context"
 import { useCart } from "@/contexts/cart-context"
 import { useWishlist } from "@/contexts/wishlist-context"
@@ -67,15 +68,6 @@ function ProductPageContent() {
   useEffect(() => {
     setSelectedImageIndex(0)
   }, [selectedVariant])
-  function formatAttributeValue(raw: string): string {
-    try {
-      const parsed = JSON.parse(raw);
-      return parsed?.value || raw;
-    } catch (e) {
-      // Trường hợp không phải JSON hợp lệ → trả nguyên
-      return raw;
-    }
-  }
 
   if (loading) {
     return (

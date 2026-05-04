@@ -35,44 +35,42 @@ export default function Footer() {
 
           <div>
             <h3 className="font-bold text-sm tracking-wider mb-6">
-              {t("footer.information")}
+              {t("footer.customerService")}
             </h3>
             <ul className="space-y-4">
               <li>
-                <Link href="/about" className="text-gray-400 hover:text-white">
-                  {t("footer.aboutUs")}
+                <Link href="/return-policy" className="text-gray-400 hover:text-white">
+                  {t("footer.returnPolicy")}
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/dropshipping"
-                  className="text-gray-400 hover:text-white"
-                >
-                  {t("footer.dropshipping")}
+                <Link href="/warranty-policy" className="text-gray-400 hover:text-white">
+                  {t("footer.warrantyPolicy")}
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/shipping"
-                  className="text-gray-400 hover:text-white"
-                >
-                  {t("footer.shipping")}
+                <Link href="/privacy-policy" className="text-gray-400 hover:text-white">
+                  {t("footer.privacyPolicyPage")}
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/privacy-policy"
-                  className="text-gray-400 hover:text-white"
-                >
-                  {t("footer.privacyPolicy")}
+                <Link href="/shopping-guide" className="text-gray-400 hover:text-white">
+                  {t("footer.shoppingGuide")}
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/terms-of-service"
-                  className="text-gray-400 hover:text-white"
-                >
-                  {t("footer.terms")}
+                <Link href="/shipping-policy" className="text-gray-400 hover:text-white">
+                  {t("footer.shippingPolicy")}
+                </Link>
+              </li>
+              <li>
+                <Link href="/payment-guide" className="text-gray-400 hover:text-white">
+                  {t("footer.paymentGuide")}
+                </Link>
+              </li>
+              <li>
+                <Link href="/inspection-policy" className="text-gray-400 hover:text-white">
+                  {t("footer.inspectionPolicy")}
                 </Link>
               </li>
             </ul>

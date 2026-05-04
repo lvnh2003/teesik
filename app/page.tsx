@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useEffect, useState, useRef } from "react"
 import { ProductService } from "@/services/products"
 import { Product, Category } from "@/type/product"
+import { getImageUrl } from "@/services/core"
 import { motion, useScroll, useTransform } from "framer-motion"
 import PhotoSlider from "@/components/photo-slider"
 import { assetPath } from "@/lib/asset-path"
@@ -19,11 +20,11 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
 
-  const formatCategoryName = (name: string) => {
+  const getCategoryImage = (name: string) => {
     const lower = name.toLowerCase();
-    if (lower === 'quần ảos') return 'QUẦN ÁO';
-    if (lower === 'túi sách') return 'TÚI XÁCH';
-    return name;
+    if (lower.includes('túi') || lower.includes('bag')) return assetPath('/images/cat-bags.png');
+    if (lower.includes('quần') || lower.includes('áo') || lower.includes('cloth')) return assetPath('/images/cat-clothing.png');
+    return assetPath('/images/cat-accessories.png');
   }
   const containerRef = useRef(null)
 
@@ -151,9 +152,7 @@ export default function Home() {
               <Link key={product.id} href={`/products/detail?id=${product.id}`} className="min-w-[80vw] md:min-w-[400px] snap-center group">
                 <div className="relative aspect-[3/4] bg-[#F0F0F0] overflow-hidden mb-6">
                   <Image
-                    src={product.main_image?.image_path ?
-                      (product.main_image.image_path.startsWith('http') ? product.main_image.image_path : `/storage/${product.main_image.image_path}`)
-                      : "/placeholder.svg"}
+                    src={product.main_image?.image_path ? getImageUrl(product.main_image.image_path) : "/placeholder.svg"}
                     alt={product.name}
                     fill
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
@@ -183,15 +182,18 @@ export default function Home() {
             {categories.slice(0, 3).map((cat, i) => {
               const size = i === 2 ? "md:col-span-2 aspect-[2/1]" : "col-span-1";
               return (
-              <Link key={cat.id} href={`/products`} className={`relative group overflow-hidden ${size} block`}>
-                <div className={`relative w-full ${size.includes('aspect') ? 'aspect-[2/1]' : 'aspect-square'} bg-gray-200`}>
-                  <div className="absolute inset-0 bg-neutral-900 flex items-center justify-center">
-                     <span className="text-white opacity-20 text-xs">{t("home.imagePlaceholder")}</span>
-                  </div>
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-500" />
+              <Link key={cat.id} href={`/products`} className={`relative group overflow-hidden ${size} block bg-neutral-200`}>
+                <div className={`relative w-full ${size.includes('aspect') ? 'aspect-[2/1]' : 'aspect-square'}`}>
+                  <Image
+                    src={getCategoryImage(cat.name)}
+                    alt={cat.name}
+                    fill
+                    className="object-cover transition-transform duration-[2s] group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <h3 className="text-white text-5xl md:text-7xl font-black uppercase tracking-tighter text-center opacity-80 group-hover:opacity-100 transition-opacity duration-300">
-                      {formatCategoryName(cat.name)}
+                    <h3 className="text-white text-5xl md:text-7xl font-black uppercase tracking-tighter text-center opacity-90 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-xl">
+                      {cat.name}
                     </h3>
                     <div className="mt-4 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
                       <span className="bg-white text-black px-6 py-2 uppercase font-bold tracking-widest text-xs">

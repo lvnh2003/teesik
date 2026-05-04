@@ -54,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={`${beVietnamPro.variable} ${playfair.variable}`}>
-      <body>
+      <body suppressHydrationWarning>
         <ClientLayout>
           {children}
         </ClientLayout>

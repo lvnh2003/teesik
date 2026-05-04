@@ -53,7 +53,16 @@ export async function localFetch<T>(endpoint: string, options: RequestInit = {},
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => {
+    console.warn(`Request to ${endpoint} timed out after 10s`);
+    controller.abort();
+  }, 10000);
+
+  // Link provided signal to our controller
+  if (options.signal) {
+    if (options.signal.aborted) controller.abort();
+    options.signal.addEventListener('abort', () => controller.abort());
+  }
 
   let response: Response;
   try {
@@ -68,9 +77,10 @@ export async function localFetch<T>(endpoint: string, options: RequestInit = {},
     });
   } catch (error) {
     clearTimeout(timeoutId);
-    throw new ApiError(0, error instanceof DOMException && error.name === 'AbortError'
-      ? 'Request timed out. Please try again.'
-      : `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new ApiError(0, 'Request was cancelled or timed out.');
+    }
+    throw new ApiError(0, `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 
   clearTimeout(timeoutId);
@@ -108,12 +118,18 @@ export function getImageUrl(imagePath: string): string {
 
   if (imagePath.startsWith("http")) return imagePath
 
+  const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL
+  const baseUrl = (LOCAL_API_URL as string).replace("/api", "") || "http://localhost:8000"
+
   if (imagePath.startsWith("/storage")) {
-    const baseUrl = (LOCAL_API_URL as string).replace("/api", "") || "http://localhost:8000"
-    return `${baseUrl}${imagePath}`
+    return `${storageUrl || baseUrl}${imagePath}`
   }
 
-  const baseUrl = (LOCAL_API_URL as string).replace("/api", "") || "http://localhost:8000"
   const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  
+  if (storageUrl) {
+    return `${storageUrl}/${cleanPath}`
+  }
+  
   return `${baseUrl}/storage/${cleanPath}`
 }
