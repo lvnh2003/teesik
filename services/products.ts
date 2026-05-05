@@ -1,6 +1,13 @@
-import { localFetch } from "./core";
+import { localFetch, getImageUrl } from "./core";
 import { Product, ProductFormData, Category } from "@/type/product";
 import { PaginationMeta, type PaginatedResponse } from "@/type";
+
+export function getProductImageUrl(product: Product): string {
+  const firstVariationImage = product.variations?.[0]?.images?.[0]?.image_path;
+  const image = product.main_image?.image_path ?? product.images?.[0]?.image_path ?? firstVariationImage;
+  if (!image) return "";
+  return image.startsWith('http') ? image : getImageUrl(image);
+}
 
 export type ProductQueryParams = {
   page?: number;

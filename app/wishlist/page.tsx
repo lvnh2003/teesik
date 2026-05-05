@@ -6,6 +6,7 @@ import { X, ArrowRight, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useWishlist } from "@/contexts/wishlist-context"
 import { getImageUrl } from "@/services/core"
+import { getProductImageUrl } from "@/services/products"
 import { useLanguage } from "@/contexts/language-context"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -92,7 +93,7 @@ export default function WishlistPage() {
                                 <div className="relative aspect-[3/4] overflow-hidden bg-[#F0F0F0] mb-8">
                                     <Link href={`/products/detail?id=${product.id}`} className="block w-full h-full">
                                         <Image
-                                            src={getImageUrl(product.main_image?.image_path || "") || "/placeholder.svg"}
+                                            src={getProductImageUrl(product) || "/placeholder.svg"}
                                             alt={product.name}
                                             fill
                                             className="object-cover transition-all duration-700 ease-in-out group-hover:scale-105 group-hover:grayscale-0 grayscale"

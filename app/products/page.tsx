@@ -49,7 +49,11 @@ export default function ProductsPage() {
       try {
         setLoading(true);
         const [productsResponse, categoriesResponse] = await Promise.all([
-          ProductService.getProducts({ page: currentPage, per_page: 12 }),
+          ProductService.getProducts({ 
+            page: currentPage, 
+            per_page: 12,
+            category_id: selectedCategory ?? undefined
+          }),
           ProductService.getCategories(),
         ]);
 
@@ -66,7 +70,7 @@ export default function ProductsPage() {
     };
 
     fetchData();
-  }, [currentPage]);
+  }, [currentPage, selectedCategory]);
 
   const filteredProducts = products.filter((product) => {
     if (selectedCategory && product.category?.id !== selectedCategory)
@@ -127,7 +131,10 @@ export default function ProductsPage() {
                 <Checkbox
                   id="all-categories"
                   checked={selectedCategory === null}
-                  onCheckedChange={() => setSelectedCategory(null)}
+                  onCheckedChange={() => {
+                    setSelectedCategory(null);
+                    setCurrentPage(1);
+                  }}
                   className="rounded-none border-gray-400 data-[state=checked]:bg-black data-[state=checked]:border-black"
                 />
                 <label
@@ -142,7 +149,10 @@ export default function ProductsPage() {
                   <Checkbox
                     id={`category-${category.id}`}
                     checked={selectedCategory === category.id}
-                    onCheckedChange={() => setSelectedCategory(category.id)}
+                    onCheckedChange={() => {
+                      setSelectedCategory(category.id);
+                      setCurrentPage(1);
+                    }}
                     className="rounded-none border-gray-400 data-[state=checked]:bg-black data-[state=checked]:border-black"
                   />
                   <label

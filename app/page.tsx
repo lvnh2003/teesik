@@ -6,9 +6,8 @@ import { ArrowRight, ArrowUpRight, Globe, Calendar, ArrowDown } from "lucide-rea
 import { useLanguage } from "@/contexts/language-context"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState, useRef } from "react"
-import { ProductService } from "@/services/products"
+import { ProductService, getProductImageUrl } from "@/services/products"
 import { Product, Category } from "@/type/product"
-import { getImageUrl } from "@/services/core"
 import { motion, useScroll, useTransform } from "framer-motion"
 import PhotoSlider from "@/components/photo-slider"
 import { assetPath } from "@/lib/asset-path"
@@ -152,7 +151,7 @@ export default function Home() {
               <Link key={product.id} href={`/products/detail?id=${product.id}`} className="min-w-[80vw] md:min-w-[400px] snap-center group">
                 <div className="relative aspect-[3/4] bg-[#F0F0F0] overflow-hidden mb-6">
                   <Image
-                    src={product.main_image?.image_path ? getImageUrl(product.main_image.image_path) : "/placeholder.svg"}
+                    src={getProductImageUrl(product) || "/placeholder.svg"}
                     alt={product.name}
                     fill
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"

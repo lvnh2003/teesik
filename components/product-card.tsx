@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Product } from "@/type/product"
 import { getImageUrl } from "@/services/core"
+import { getProductImageUrl } from "@/services/products"
 import { useWishlist } from "@/contexts/wishlist-context"
 import { useToast } from "@/components/ui/use-toast"
 import { useCart } from "@/contexts/cart-context"
@@ -16,12 +17,7 @@ interface ProductCardProps {
   isSmall?: boolean
 }
 
-function getProductImageUrl(product: Product): string {
-  const firstVariationImage = product.variations?.[0]?.images?.[0]?.image_path
-  const image = product.main_image?.image_path ?? product.images?.[0]?.image_path ?? firstVariationImage
-  if (!image) return ""
-  return image.startsWith('http') ? image : getImageUrl(image)
-}
+
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { t } = useLanguage()
