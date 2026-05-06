@@ -211,18 +211,8 @@ function ProductPageContent() {
       
       await addToCart(itemToAdd)
 
-      toast({
-        title: t("cart.added"),
-        description: `${product.name} ${selectedVariant ? (selectedVariant.attributes?.color + ' / ' + selectedVariant.attributes?.size) : ''}`,
-      })
-
     } catch (error) {
       console.error("Add to cart error", error)
-      toast({
-        title: "Error",
-        description: "Could not add to cart",
-        variant: "destructive"
-      })
     } finally {
       setIsAddingToCart(false)
     }

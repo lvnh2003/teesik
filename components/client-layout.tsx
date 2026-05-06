@@ -8,6 +8,7 @@ import Footer from "@/components/footer"
 import { AuthProvider } from "@/contexts/auth-context"
 import { WishlistProvider } from "@/contexts/wishlist-context"
 import { CartProvider } from "@/contexts/cart-context"
+import { Toaster } from "@/components/ui/sonner"
 
 export default function ClientLayout({
   children,
@@ -25,6 +26,7 @@ export default function ClientLayout({
             {!isAdminRoute && <MainNav />}
             <main>{children}</main>
             {!isAdminRoute && <Footer />}
+            <Toaster position="top-center" expand={true} richColors />
           </CartProvider>
         </WishlistProvider>
       </LanguageProvider>

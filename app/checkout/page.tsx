@@ -23,6 +23,7 @@ import { CartItem, Order } from "@/type";
 import { formatAttributeValue } from "@/lib/utils"
 import { AddressService, UserAddress } from "@/services/address";
 import { ShippingService, Province, District, Ward } from "@/services/shipping";
+import { toast } from "sonner";
 
 export default function CheckoutPage() {
   const [hasMounted, setHasMounted] = useState(false)
@@ -246,11 +247,11 @@ export default function CheckoutPage() {
         }
         setOrderStep("success")
       } else {
-        alert(t("checkout.invalidData"))
+        toast.error(t("checkout.invalidData") || "Please enter all shipping information")
       }
     } catch (e: any) {
       console.error(e)
-      alert(t("checkout.error") + ": " + (e.message || t("checkout.unknownError")))
+      toast.error(`${t("checkout.error")}: ${e.message || t("checkout.unknownError")}`)
     } finally {
       setIsSubmitting(false)
     }

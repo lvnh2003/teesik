@@ -184,7 +184,7 @@ export default function MainNav() {
                 <div className="container mx-auto flex items-center">
                   <Input
                     type="search"
-                    placeholder="Search products..."
+                    placeholder={t("nav.search")}
                     value={searchValue}
                     onChange={handleSearchChange}
                     onKeyDown={(e) => {
@@ -241,25 +241,25 @@ export default function MainNav() {
                     href="/dashboard"
                     className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    Dashboard
+                    {t("nav.dashboard")}
                   </Link>
                   <Link
                     href="/account/orders"
                     className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    Đơn hàng
+                    {t("nav.orders")}
                   </Link>
                   <Link
                     href="/account"
                     className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
                   >
-                    Thông tin cá nhân
+                    {t("nav.profile")}
                   </Link>
                   <button
                     onClick={logout}
                     className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 border-t border-gray-200"
                   >
-                    Đăng xuất
+                    {t("nav.logout")}
                   </button>
                 </div>
               </div>

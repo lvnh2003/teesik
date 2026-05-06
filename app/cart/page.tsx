@@ -39,13 +39,13 @@ export default function CartPage() {
       const res = await VoucherService.validate(inputCode, subtotal)
       if (res.success && res.data) {
         applyVoucher(res.data.code, res.data.discount)
-        toast.success(res.message || "Áp dụng mã giảm giá thành công")
+        toast.success(res.message || t("cart.voucherSuccess"))
         setInputCode("")
       } else {
-        toast.error(res.message || "Mã giảm giá không hợp lệ")
+        toast.error(res.message || t("cart.voucherInvalid"))
       }
     } catch (e: any) {
-      toast.error(e?.message || "Lỗi áp dụng mã giảm giá")
+      toast.error(e?.message || t("cart.voucherError"))
     } finally {
       setValidatingVoucher(false)
     }
@@ -185,7 +185,7 @@ export default function CartPage() {
                   {voucherCode ? (
                     <div className="flex justify-between items-center bg-gray-50 p-3 border border-dashed border-gray-300">
                       <div>
-                        <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-widest">Mã áp dụng</span>
+                        <span className="text-[10px] text-gray-500 font-bold block uppercase tracking-widest">{t("cart.appliedCode")}</span>
                         <span className="font-bold uppercase">{voucherCode}</span>
                       </div>
                       <div className="flex items-center gap-4">
@@ -199,7 +199,7 @@ export default function CartPage() {
                     <div className="flex gap-2">
                       <input 
                         type="text" 
-                        placeholder="Mã giảm giá..." 
+                        placeholder={t("cart.discountCodePlaceholder")} 
                         value={inputCode}
                         onChange={(e) => setInputCode(e.target.value)}
                         className="flex-1 border border-black/20 px-3 py-2 text-sm focus:outline-none focus:border-black uppercase bg-transparent"
@@ -209,7 +209,7 @@ export default function CartPage() {
                         disabled={validatingVoucher || !inputCode.trim()}
                         className="bg-black text-white hover:bg-gray-800 rounded-none px-6 uppercase tracking-widest text-xs font-bold"
                       >
-                        {validatingVoucher ? '...' : 'Apply'}
+                        {validatingVoucher ? '...' : t("cart.apply")}
                       </Button>
                     </div>
                   )}

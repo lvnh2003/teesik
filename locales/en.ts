@@ -11,12 +11,25 @@ export const en = {
     "nav.home": "Home",
     "nav.cart": "Cart",
     "nav.products": "Products",
+    "nav.dashboard": "Dashboard",
+    "nav.orders": "Orders",
+    "nav.profile": "Profile",
+    "nav.logout": "Logout",
 
     // Hero
     "hero.title": "LUXE BAGS",
     "hero.subtitle": "Premium handbags designed for the modern lifestyle. Crafted with precision, built to last.",
     "hero.shopCollection": "Shop Collection",
     "hero.startDropshipping": "Start Dropshipping",
+    "hero.title1": "SUMMER COLLECTION 2024",
+    "hero.subtitle1": "Premium handbags for a global style",
+    "hero.button1": "Explore Now",
+    "hero.title2": "NEW ARRIVALS",
+    "hero.subtitle2": "Discover our latest bag designs",
+    "hero.button2": "View Collection",
+    "hero.title3": "DROPSHIPPING PROGRAM",
+    "hero.subtitle3": "Start your fashion bag business without inventory",
+    "hero.button3": "Join Now",
 
     // Product Grid
     "product.addToCart": "ADD TO CART",
@@ -24,6 +37,8 @@ export const en = {
     "product.sale": "SALE",
     "product.hot": "HOT",
     "product.soldOut": "SOLD OUT",
+    "product.youMayAlsoLike": "You may also like",
+    "product.viewAll": "View all",
 
     // Stats
     "stats.customers": "Happy Customers",
@@ -70,6 +85,9 @@ export const en = {
     "common.itemsFound": "Items Found",
     "common.noItemsFound": "No items found",
     "common.loading": "Loading...",
+    "common.cancel": "Cancel",
+    "common.saveChanges": "Save Changes",
+    "common.saving": "Saving...",
     "common.backToHome": "Back to Home",
 
     // Announcement
@@ -116,6 +134,9 @@ export const en = {
     "footer.phone": "Phone: 1900 1234",
     "footer.address": "Address: 123 District 1, Ho Chi Minh City",
     "footer.copyright": "© 2026 TEESIK. All rights reserved.",
+    "footer.newsletter": "STAY UPDATED",
+    "footer.newsletterDesc": "Subscribe to receive updates, access to exclusive deals, and more.",
+    "footer.emailPlaceholder": "Enter your email",
 
     // Home Page
     "home.est": "Est. 2024",
@@ -178,6 +199,9 @@ export const en = {
     "sort.priceHighLow": "Price: High to Low",
     "pagination.previous": "Previous",
     "pagination.next": "Next",
+    "products.clearFilters": "Clear filters",
+    "products.noProductsFound": "No products found matching your selection",
+    "products.collection": "COLLECTION",
 
     // Collections Page
     "collections.title": "Collections",
@@ -228,8 +252,6 @@ export const en = {
     "product.shippingPolicy": "Free shipping on orders over 1.000.000₫",
     "product.internationalShipping": "International shipping available",
     "product.returnPolicy": "30-day return policy for unworn items",
-    "product.youMayAlsoLike": "YOU MAY ALSO LIKE",
-    "product.viewAll": "VIEW ALL",
 
     // Cart
     "cart.loading": "Loading...",
@@ -243,6 +265,14 @@ export const en = {
     "cart.shippingNote": "Free shipping on orders over 1.000.000₫",
     "cart.total": "TOTAL",
     "cart.proceedToCheckout": "PROCEED TO CHECKOUT",
+    "cart.added": "Added to Cart",
+    "cart.addedDesc": "Product has been successfully added to your cart.",
+    "cart.appliedCode": "Applied Code",
+    "cart.discountCodePlaceholder": "Discount code...",
+    "cart.apply": "Apply",
+    "cart.voucherSuccess": "Discount code applied successfully",
+    "cart.voucherInvalid": "Invalid discount code",
+    "cart.voucherError": "Error applying discount code",
 
     // Checkout
     "checkout.loading": "Loading...",
@@ -300,6 +330,7 @@ export const en = {
     "checkout.orderHistory": "Order history",
     "checkout.calculating": "Calculating...",
     "checkout.free": "Free",
+    "checkout.total": "Total",
 
     // About
     "about.title": "ABOUT US",
@@ -521,5 +552,40 @@ export const en = {
     "inspectionPolicy.section4Item2": "Contact Teesik within 24 hours of receiving goods if any issues are found.",
     "inspectionPolicy.section4Item3": "After 24 hours, Teesik will not be responsible for claims regarding package condition.",
     "inspectionPolicy.section4Item4": "Trying on items before COD payment is not permitted (per carrier policy).",
+    
+    // Cards
+    "card.newArrival": "NEW",
+    "card.quickAdd": "QUICK ADD",
+    "card.soldOut": "SOLD OUT",
+    "common.addToCart": "ADD TO CART",
 
+    // Dashboard
+    "dashboard.title": "DASHBOARD",
+    "dashboard.welcomeBack": "Welcome Back",
+    "dashboard.subtitle": "Manage your account and orders",
+    "dashboard.personalInfo": "Personal Information",
+    "dashboard.joinDate": "Join Date",
+    "dashboard.editInfo": "Edit Information",
+    "dashboard.editProfile": "Edit Profile",
+    "dashboard.editProfileDesc": "Update your personal information below. Email cannot be changed.",
+    "dashboard.namePlaceholder": "Enter full name...",
+    "dashboard.phonePlaceholder": "Enter phone number...",
+    "dashboard.updateError": "Update failed or phone number already exists",
+    "dashboard.orders": "Orders",
+    "dashboard.totalOrders": "Total Orders",
+    "dashboard.viewOrders": "View Orders",
+    "dashboard.wishlist": "Wishlist",
+    "dashboard.wishlistItems": "Wishlist Items",
+    "dashboard.viewWishlist": "View List",
+    "dashboard.recentOrders": "Recent Orders",
+    "dashboard.order": "Order",
+    "dashboard.status": "Status",
+    "dashboard.noActivity": "No activity yet",
+    "dashboard.startShoppingDesc": "Start shopping to see your activity history",
+    "dashboard.view": "View",
+    "common.success": "Success",
+    "common.error": "Error",
+    "wishlist.added": "Added to wishlist",
+    "wishlist.removed": "Removed from wishlist",
+    "auth.updateSuccess": "Profile updated successfully",
 }

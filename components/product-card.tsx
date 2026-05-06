@@ -8,7 +8,7 @@ import { Product } from "@/type/product"
 import { getImageUrl } from "@/services/core"
 import { getProductImageUrl } from "@/services/products"
 import { useWishlist } from "@/contexts/wishlist-context"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useCart } from "@/contexts/cart-context"
 import { useLanguage } from "@/contexts/language-context"
 
@@ -17,12 +17,9 @@ interface ProductCardProps {
   isSmall?: boolean
 }
 
-
-
 export default function ProductCard({ product }: ProductCardProps) {
   const { t } = useLanguage()
   const { addItem, removeItem, isInWishlist } = useWishlist()
-  const { toast } = useToast()
   const { addToCart } = useCart()
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -50,17 +47,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         slug: product.slug || "",
         image: imageUrl,
       })
-      toast({
-        title: t("cart.added"),
-        description: `${product.name} ${t("cart.addedDesc")}`,
-      })
     } catch (error) {
       console.error("Quick add error", error)
-      toast({
-        title: "Error",
-        description: "Failed to add to cart.",
-        variant: "destructive"
-      })
     }
   }
 

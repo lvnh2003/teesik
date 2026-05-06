@@ -2,9 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { Product } from "@/type/product"
-import { toast } from "sonner" // Assuming sonner is installed or stick to console/alert if not.
+import { toast } from "sonner"
 import { useAuth } from "@/contexts/auth-context"
 import { WishlistService } from "@/services/wishlist"
+import { useLanguage } from "@/contexts/language-context"
 
 interface WishlistContextType {
     items: Product[]
@@ -18,6 +19,7 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined)
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
+    const { t } = useLanguage()
     const [items, setItems] = useState<Product[]>([])
     const [isLoaded, setIsLoaded] = useState(false)
 
@@ -60,13 +62,14 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
 
     const addItem = async (product: Product) => {
         if (items.some((i) => i.id === product.id)) {
-            toast.info("Đã có trong danh sách yêu thích")
             return
         }
         
         // Optimistic update
         setItems((prev) => [...prev, product])
-        toast.success("Đã thêm vào danh sách yêu thích")
+        toast.success(t("wishlist.added"), {
+            description: product.name
+        })
         
         if (isLoggedIn) {
             try {
@@ -78,8 +81,11 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     }
 
     const removeItem = async (productId: string | number) => {
+        const itemToRemove = items.find(i => i.id === productId)
         setItems((prev) => prev.filter((i) => i.id !== productId))
-        toast.success("Đã xóa khỏi danh sách yêu thích")
+        toast.info(t("wishlist.removed"), {
+            description: itemToRemove?.name
+        })
         
         if (isLoggedIn) {
             try {

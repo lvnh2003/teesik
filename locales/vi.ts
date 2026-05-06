@@ -8,9 +8,13 @@ export const vi = {
     "nav.newArrivals": "Sản Phẩm Mới",
     "nav.shop": "Cửa Hàng",
     "nav.search": "Tìm kiếm sản phẩm...",
-    "nav.home": "Trang chủ", // Add missing
+    "nav.home": "Trang chủ",
     "nav.cart": "Giỏ hàng",
     "nav.products": "Sản phẩm",
+    "nav.dashboard": "Bảng điều khiển",
+    "nav.orders": "Đơn hàng",
+    "nav.profile": "Thông tin cá nhân",
+    "nav.logout": "Đăng xuất",
 
     // Hero
     "hero.title": "LUXE BAGS",
@@ -18,6 +22,15 @@ export const vi = {
         "Túi xách cao cấp được thiết kế cho phong cách sống hiện đại. Được chế tác tỉ mỉ, bền bỉ theo thời gian.",
     "hero.shopCollection": "Mua Sắm",
     "hero.startDropshipping": "Bắt Đầu Dropshipping",
+    "hero.title1": "BỘ SƯU TẬP MÙA HÈ 2024",
+    "hero.subtitle1": "Túi xách cao cấp cho phong cách toàn cầu",
+    "hero.button1": "Khám Phá Ngay",
+    "hero.title2": "HÀNG MỚI VỀ",
+    "hero.subtitle2": "Khám phá những mẫu túi mới nhất của chúng tôi",
+    "hero.button2": "Xem Bộ Sưu Tập",
+    "hero.title3": "CHƯƠNG TRÌNH DROPSHIPPING",
+    "hero.subtitle3": "Bắt đầu kinh doanh túi xách thời trang mà không cần tồn kho",
+    "hero.button3": "Tham Gia Ngay",
 
     // Product Grid
     "product.addToCart": "THÊM VÀO GIỎ",
@@ -25,6 +38,8 @@ export const vi = {
     "product.sale": "GIẢM GIÁ",
     "product.hot": "HOT",
     "product.soldOut": "HẾT HÀNG",
+    "product.youMayAlsoLike": "Có thể bạn cũng thích",
+    "product.viewAll": "Xem tất cả",
 
 
     // Stats
@@ -68,11 +83,14 @@ export const vi = {
 
     // Common
     "common.viewAll": "Xem Tất Cả",
+    "common.loading": "Đang tải...",
+    "common.cancel": "Hủy",
+    "common.saveChanges": "Lưu thay đổi",
+    "common.saving": "Đang lưu...",
     "common.latestDrops": "Sản Phẩm Mới Nhất",
     "common.discoverNewest": "Khám phá bộ sưu tập túi xách cao cấp mới nhất được thiết kế cho phong cách sống hiện đại",
     "common.itemsFound": "Sản phẩm tìm thấy",
     "common.noItemsFound": "Không tìm thấy sản phẩm nào",
-    "common.loading": "Đang tải...",
     "common.backToHome": "Về Trang Chủ",
 
     // Announcement
@@ -119,6 +137,9 @@ export const vi = {
     "footer.phone": "Điện thoại: 1900 1234",
     "footer.address": "Địa chỉ: 123 Quận 1, TP. Hồ Chí Minh",
     "footer.copyright": "© 2026 TEESIK. Đã đăng ký bản quyền.",
+    "footer.newsletter": "NHẬN BẢN TIN",
+    "footer.newsletterDesc": "Đăng ký để nhận thông tin cập nhật, ưu đãi độc quyền và nhiều hơn thế nữa.",
+    "footer.emailPlaceholder": "Nhập email của bạn",
 
     // Home Page
     "home.est": "Thành lập 2024",
@@ -181,6 +202,9 @@ export const vi = {
     "sort.priceHighLow": "Giá: Cao đến Thấp",
     "pagination.previous": "Trước",
     "pagination.next": "Sau",
+    "products.clearFilters": "Xóa bộ lọc",
+    "products.noProductsFound": "Không tìm thấy sản phẩm nào khớp với lựa chọn của bạn",
+    "products.collection": "BỘ SƯU TẬP",
 
     // Collections Page
     "collections.title": "Bộ Sưu Tập",
@@ -231,8 +255,6 @@ export const vi = {
     "product.shippingPolicy": "Miễn phí vận chuyển cho đơn hàng trên 1.000.000₫",
     "product.internationalShipping": "Giao hàng quốc tế có sẵn",
     "product.returnPolicy": "Chính sách đổi trả trong 30 ngày cho sản phẩm chưa qua sử dụng",
-    "product.youMayAlsoLike": "CÓ THỂ BẠN CŨNG THÍCH",
-    "product.viewAll": "XEM TẤT CẢ",
 
     // Cart
     "cart.loading": "Đang tải...",
@@ -246,6 +268,14 @@ export const vi = {
     "cart.shippingNote": "Miễn phí vận chuyển cho đơn hàng trên 1.000.000₫",
     "cart.total": "TỔNG CỘNG",
     "cart.proceedToCheckout": "THANH TOÁN",
+    "cart.added": "Đã thêm vào giỏ hàng",
+    "cart.addedDesc": "Sản phẩm đã được thêm vào giỏ hàng của bạn thành công.",
+    "cart.appliedCode": "Mã áp dụng",
+    "cart.discountCodePlaceholder": "Mã giảm giá...",
+    "cart.apply": "Áp dụng",
+    "cart.voucherSuccess": "Áp dụng mã giảm giá thành công",
+    "cart.voucherInvalid": "Mã giảm giá không hợp lệ",
+    "cart.voucherError": "Lỗi áp dụng mã giảm giá",
 
     // Checkout
     "checkout.loading": "Đang tải...",
@@ -303,6 +333,7 @@ export const vi = {
     "checkout.orderHistory": "Lịch sử đơn hàng",
     "checkout.calculating": "Đang tính toán...",
     "checkout.free": "Miễn phí",
+    "checkout.total": "Tổng cộng",
 
     // About
     "about.title": "VỀ CHÚNG TÔI",
@@ -524,5 +555,40 @@ export const vi = {
     "inspectionPolicy.section4Item2": "Liên hệ Teesik trong vòng 24 giờ kể từ khi nhận hàng nếu phát hiện vấn đề.",
     "inspectionPolicy.section4Item3": "Sau 24 giờ, Teesik sẽ không chịu trách nhiệm về các khiếu nại liên quan đến tình trạng kiện hàng.",
     "inspectionPolicy.section4Item4": "Không được thử đồ trước khi thanh toán COD (do quy định của đơn vị vận chuyển).",
+    
+    // Cards
+    "card.newArrival": "MỚI",
+    "card.quickAdd": "MUA NHANH",
+    "card.soldOut": "HẾT HÀNG",
+    "common.addToCart": "THÊM VÀO GIỎ",
 
+    // Dashboard
+    "dashboard.title": "BẢNG ĐIỀU KHIỂN",
+    "dashboard.welcomeBack": "Chào mừng trở lại",
+    "dashboard.subtitle": "Quản lý tài khoản và đơn hàng của bạn",
+    "dashboard.personalInfo": "Thông Tin Cá Nhân",
+    "dashboard.joinDate": "Ngày tham gia",
+    "dashboard.editInfo": "Chỉnh sửa thông tin",
+    "dashboard.editProfile": "Chỉnh sửa hồ sơ",
+    "dashboard.editProfileDesc": "Cập nhật thông tin cá nhân của bạn bên dưới. Email không thể thay đổi.",
+    "dashboard.namePlaceholder": "Nhập họ và tên...",
+    "dashboard.phonePlaceholder": "Nhập số điện thoại...",
+    "dashboard.updateError": "Cập nhật thất bại hoặc số điện thoại bị trùng",
+    "dashboard.orders": "Đơn Hàng",
+    "dashboard.totalOrders": "Tổng số đơn hàng",
+    "dashboard.viewOrders": "Xem đơn hàng",
+    "dashboard.wishlist": "Yêu Thích",
+    "dashboard.wishlistItems": "Sản phẩm yêu thích",
+    "dashboard.viewWishlist": "Xem danh sách",
+    "dashboard.recentOrders": "Đơn hàng gần đây",
+    "dashboard.order": "Đơn hàng",
+    "dashboard.status": "Trạng thái",
+    "dashboard.noActivity": "Chưa có hoạt động nào",
+    "dashboard.startShoppingDesc": "Bắt đầu mua sắm để xem lịch sử hoạt động",
+    "dashboard.view": "Xem",
+    "common.success": "Thành công",
+    "common.error": "Lỗi",
+    "wishlist.added": "Đã thêm vào yêu thích",
+    "wishlist.removed": "Đã xóa khỏi yêu thích",
+    "auth.updateSuccess": "Cập nhật hồ sơ thành công",
 }

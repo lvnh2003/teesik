@@ -28,6 +28,7 @@ import ProductCard from "@/components/product-card";
 import { ProductService } from "@/services/products";
 import { Category, Product } from "@/type/product";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 import { useLanguage } from "@/contexts/language-context";
 
@@ -39,10 +40,73 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [sortBy, setSortBy] = useState("featured");
+  const [sortBy, setSortBy] = useState("newest");
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(
     null,
   );
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  
+  const categorySlug = searchParams.get("category");
+  const priceParam = searchParams.get("price");
+  const sortParam = searchParams.get("sort");
+  const pageParam = searchParams.get("page");
+
+  // Function to update URL params
+  const updateUrl = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  // Sync state with URL
+  useEffect(() => {
+    if (categories.length > 0) {
+      if (categorySlug) {
+        const category = categories.find((c) => c.slug === categorySlug);
+        if (category) {
+          setSelectedCategory(category.id);
+        } else {
+          setSelectedCategory(null);
+        }
+      } else {
+        setSelectedCategory(null);
+      }
+    }
+  }, [categorySlug, categories]);
+
+  useEffect(() => {
+    if (priceParam) {
+      const decoded = priceParam.replace(/-/g, " ");
+      setSelectedPriceRange(decoded);
+    } else {
+      setSelectedPriceRange(null);
+    }
+  }, [priceParam]);
+
+  useEffect(() => {
+    if (sortParam) {
+      setSortBy(sortParam);
+    } else {
+      setSortBy("newest");
+    }
+  }, [sortParam]);
+
+  useEffect(() => {
+    if (pageParam) {
+      const p = parseInt(pageParam);
+      if (!isNaN(p)) setCurrentPage(p);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [pageParam]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,8 +115,8 @@ export default function ProductsPage() {
         const [productsResponse, categoriesResponse] = await Promise.all([
           ProductService.getProducts({ 
             page: currentPage, 
-            per_page: 12,
-            category_id: selectedCategory ?? undefined
+            per_page: 8,
+            category_id: selectedCategory !== null ? selectedCategory : undefined
           }),
           ProductService.getCategories(),
         ]);
@@ -73,8 +137,9 @@ export default function ProductsPage() {
   }, [currentPage, selectedCategory]);
 
   const filteredProducts = products.filter((product) => {
-    if (selectedCategory && product.category?.id !== selectedCategory)
-      return false;
+    // Backend already filters by category_id, so we don't need to do it here
+    // unless we want to support multiple categories or edge cases.
+    // Removing the strict category check to avoid mismatch issues.
 
     if (selectedPriceRange) {
       const price = product.variants?.[0]?.price || product.price || 0;
@@ -132,8 +197,7 @@ export default function ProductsPage() {
                   id="all-categories"
                   checked={selectedCategory === null}
                   onCheckedChange={() => {
-                    setSelectedCategory(null);
-                    setCurrentPage(1);
+                    updateUrl({ category: null, page: "1" });
                   }}
                   className="rounded-none border-gray-400 data-[state=checked]:bg-black data-[state=checked]:border-black"
                 />
@@ -149,9 +213,11 @@ export default function ProductsPage() {
                   <Checkbox
                     id={`category-${category.id}`}
                     checked={selectedCategory === category.id}
-                    onCheckedChange={() => {
-                      setSelectedCategory(category.id);
-                      setCurrentPage(1);
+                    onCheckedChange={(checked) => {
+                      updateUrl({ 
+                        category: checked ? category.slug : null, 
+                        page: "1" 
+                      });
                     }}
                     className="rounded-none border-gray-400 data-[state=checked]:bg-black data-[state=checked]:border-black"
                   />
@@ -186,13 +252,13 @@ export default function ProductsPage() {
                   <Checkbox
                     id={priceItem.value.toLowerCase().replace(/\s/g, "-")}
                     checked={selectedPriceRange === priceItem.value}
-                    onCheckedChange={() =>
-                      setSelectedPriceRange(
-                        selectedPriceRange === priceItem.value
-                          ? null
-                          : priceItem.value,
-                      )
-                    }
+                    onCheckedChange={() => {
+                      const newValue = selectedPriceRange === priceItem.value ? null : priceItem.value;
+                      updateUrl({ 
+                        price: newValue ? newValue.replace(/\s/g, "-") : null, 
+                        page: "1" 
+                      });
+                    }}
                     className="rounded-none border-gray-400 data-[state=checked]:bg-black data-[state=checked]:border-black"
                   />
                   <label
@@ -257,7 +323,7 @@ export default function ProductsPage() {
           </Sheet>
 
           <div className="flex items-center gap-4">
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={(val) => updateUrl({ sort: val })}>
               <SelectTrigger className="w-[180px] border-none bg-transparent font-bold text-xs uppercase tracking-widest focus:ring-0 shadow-none text-right">
                 <SelectValue placeholder={t("products.sortBy")} />
               </SelectTrigger>
@@ -323,9 +389,12 @@ export default function ProductsPage() {
                 </h2>
                 <Button
                   onClick={() => {
-                    setSelectedCategory(null);
-                    setSelectedPriceRange(null);
-                    setSortBy("featured");
+                    updateUrl({ 
+                      category: null, 
+                      price: null, 
+                      sort: "featured", 
+                      page: "1" 
+                    });
                   }}
                   className="bg-black text-white hover:bg-gray-800 uppercase font-bold tracking-widest px-8 rounded-none"
                 >
@@ -360,7 +429,7 @@ export default function ProductsPage() {
                 <Button
                   variant="outline"
                   onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    updateUrl({ page: String(Math.max(currentPage - 1, 1)) })
                   }
                   disabled={currentPage === 1}
                   className="rounded-none border-black hover:bg-black hover:text-white uppercase text-xs font-bold tracking-widest px-8"
@@ -377,7 +446,7 @@ export default function ProductsPage() {
                     return (
                       <button
                         key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
+                        onClick={() => updateUrl({ page: String(pageNum) })}
                         className={`w-8 h-8 flex items-center justify-center text-xs font-bold font-mono transition-colors ${
                           currentPage === pageNum
                             ? "bg-black text-white"
@@ -393,7 +462,7 @@ export default function ProductsPage() {
                 <Button
                   variant="outline"
                   onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    updateUrl({ page: String(Math.min(currentPage + 1, totalPages)) })
                   }
                   disabled={currentPage === totalPages}
                   className="rounded-none border-black hover:bg-black hover:text-white uppercase text-xs font-bold tracking-widest px-8"

@@ -35,13 +35,13 @@ type ProductsApiResponse = {
 export const ProductService = {
   getProducts: async (params: ProductQueryParams = {}): Promise<PaginatedResponse<Product>> => {
     const query = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        query.append(key, value.toString());
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== "") {
+        query.append(key, String(value));
       }
-    });
+    }
     const queryString = query.toString();
-    const url = `/products${queryString ? `?${queryString}` : ''}`;
+    const url = `/products${queryString ? `?${queryString}` : ""}`;
 
     const response = await localFetch<ProductsApiResponse>(url);
 

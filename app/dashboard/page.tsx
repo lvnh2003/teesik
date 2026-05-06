@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useWishlist } from "@/contexts/wishlist-context";
 import { OrderService } from "@/services/orders";
+import { useLanguage } from "@/contexts/language-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +27,11 @@ import {
   Heart,
   Settings,
 } from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
+  const { t, language } = useLanguage();
   const { user, isLoggedIn, isLoading, logout, updateProfile } = useAuth();
   const { items: wishlistItems } = useWishlist();
   const router = useRouter();
@@ -61,7 +65,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải...</p>
+          <p className="text-gray-600">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -77,14 +81,12 @@ export default function DashboardPage() {
       <section className="py-20 border-b border-gray-200 bg-white">
         <div className="container px-4 mx-auto text-center">
           <Badge className="mb-6 bg-black text-white hover:bg-gray-800 text-xs tracking-wider">
-            DASHBOARD
+            {t("dashboard.title")}
           </Badge>
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 text-black uppercase">
-            Chào mừng trở lại
+            {t("dashboard.welcomeBack")}
           </h1>
-          <p className="text-xl text-gray-600">
-            Quản lý tài khoản và đơn hàng của bạn
-          </p>
+          <p className="text-xl text-gray-600">{t("dashboard.subtitle")}</p>
         </div>
       </section>
 
@@ -94,7 +96,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-1">
             <div className="bg-white p-6 shadow-lg">
               <h2 className="text-xl font-black tracking-tighter uppercase mb-6">
-                Thông Tin Cá Nhân
+                {t("dashboard.personalInfo")}
               </h2>
 
               <div className="space-y-4">
@@ -102,7 +104,9 @@ export default function DashboardPage() {
                   <User className="h-5 w-5 text-gray-400 mr-3" />
                   <div>
                     <p className="font-medium">{user.name}</p>
-                    <p className="text-sm text-gray-600">Họ và tên</p>
+                    <p className="text-sm text-gray-600">
+                      {t("checkout.fullName")}
+                    </p>
                   </div>
                 </div>
 
@@ -110,7 +114,9 @@ export default function DashboardPage() {
                   <Mail className="h-5 w-5 text-gray-400 mr-3" />
                   <div>
                     <p className="font-medium">{user.email}</p>
-                    <p className="text-sm text-gray-600">Email</p>
+                    <p className="text-sm text-gray-600">
+                      {t("checkout.emailLabel")}
+                    </p>
                   </div>
                 </div>
 
@@ -119,7 +125,9 @@ export default function DashboardPage() {
                     <Phone className="h-5 w-5 text-gray-400 mr-3" />
                     <div>
                       <p className="font-medium">{user.phone}</p>
-                      <p className="text-sm text-gray-600">Số điện thoại</p>
+                      <p className="text-sm text-gray-600">
+                        {t("checkout.phoneNumber")}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -128,9 +136,13 @@ export default function DashboardPage() {
                   <Calendar className="h-5 w-5 text-gray-400 mr-3" />
                   <div>
                     <p className="font-medium">
-                      {new Date(user.created_at).toLocaleDateString("vi-VN")}
+                      {new Date(user.created_at).toLocaleDateString(
+                        language === "vi" ? "vi-VN" : "en-US",
+                      )}
                     </p>
-                    <p className="text-sm text-gray-600">Ngày tham gia</p>
+                    <p className="text-sm text-gray-600">
+                      {t("dashboard.joinDate")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -140,17 +152,16 @@ export default function DashboardPage() {
                   <DialogTrigger asChild>
                     <Button className="w-full bg-black hover:bg-gray-800 text-white">
                       <Settings className="h-4 w-4 mr-2" />
-                      Chỉnh sửa thông tin
+                      {t("dashboard.editInfo")}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                       <DialogTitle className="text-xl font-black uppercase tracking-tighter">
-                        Chỉnh sửa hồ sơ
+                        {t("dashboard.editProfile")}
                       </DialogTitle>
                       <DialogDescription>
-                        Cập nhật thông tin cá nhân của bạn bên dưới. Email không
-                        thể thay đổi.
+                        {t("dashboard.editProfileDesc")}
                       </DialogDescription>
                     </DialogHeader>
                     {updateError && (
@@ -161,7 +172,7 @@ export default function DashboardPage() {
                     <div className="grid gap-4 py-4">
                       <div className="space-y-2">
                         <label className="text-sm font-bold uppercase tracking-wider text-gray-600">
-                          Email
+                          {t("checkout.emailLabel")}
                         </label>
                         <Input
                           disabled
@@ -171,26 +182,26 @@ export default function DashboardPage() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold uppercase tracking-wider text-gray-600">
-                          Họ và tên
+                          {t("checkout.fullName")}
                         </label>
                         <Input
                           value={editData.name}
                           onChange={(e) =>
                             setEditData({ ...editData, name: e.target.value })
                           }
-                          placeholder="Nhập họ và tên..."
+                          placeholder={t("dashboard.namePlaceholder")}
                         />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-bold uppercase tracking-wider text-gray-600">
-                          Số điện thoại
+                          {t("checkout.phoneNumber")}
                         </label>
                         <Input
                           value={editData.phone}
                           onChange={(e) =>
                             setEditData({ ...editData, phone: e.target.value })
                           }
-                          placeholder="Nhập số điện thoại..."
+                          placeholder={t("dashboard.phonePlaceholder")}
                         />
                       </div>
                     </div>
@@ -199,7 +210,7 @@ export default function DashboardPage() {
                         variant="outline"
                         onClick={() => setIsEditOpen(false)}
                       >
-                        Hủy
+                        {t("common.cancel")}
                       </Button>
                       <Button
                         onClick={async () => {
@@ -208,10 +219,10 @@ export default function DashboardPage() {
                             setUpdateError("");
                             await updateProfile(editData);
                             setIsEditOpen(false);
+                            toast.success(t("auth.updateSuccess"));
                           } catch (e: any) {
                             setUpdateError(
-                              e?.message ||
-                                "Cập nhật thất bại hoặc số điện thoại bị trùng",
+                              e?.message || t("dashboard.updateError"),
                             );
                           } finally {
                             setIsUpdating(false);
@@ -220,7 +231,9 @@ export default function DashboardPage() {
                         disabled={isUpdating}
                         className="bg-black hover:bg-gray-800 text-white"
                       >
-                        {isUpdating ? "Đang lưu..." : "Lưu thay đổi"}
+                        {isUpdating
+                          ? t("common.saving")
+                          : t("common.saveChanges")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -231,7 +244,7 @@ export default function DashboardPage() {
                   className="w-full border-black text-black hover:bg-black hover:text-white"
                   onClick={logout}
                 >
-                  Đăng xuất
+                  {t("nav.logout")}
                 </Button>
               </div>
             </div>
@@ -244,40 +257,46 @@ export default function DashboardPage() {
               <div className="bg-white p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-black tracking-tighter uppercase">
-                    Đơn Hàng
+                    {t("dashboard.orders")}
                   </h3>
                   <ShoppingBag className="h-6 w-6 text-gray-400" />
                 </div>
                 <p className="text-3xl font-bold mb-2">
                   {loadingOrders ? "..." : orders.length}
                 </p>
-                <p className="text-sm text-gray-600">Tổng số đơn hàng</p>
-                <Button
-                  variant="outline"
-                  className="w-full mt-4 border-black text-black hover:bg-black hover:text-white"
-                >
-                  Xem đơn hàng
-                </Button>
+                <p className="text-sm text-gray-600">
+                  {t("dashboard.totalOrders")}
+                </p>
+                <Link href="/account/orders" className="block w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4 border-black text-black hover:bg-black hover:text-white"
+                  >
+                    {t("dashboard.viewOrders")}
+                  </Button>
+                </Link>
               </div>
 
               {/* Wishlist */}
               <div className="bg-white p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-black tracking-tighter uppercase">
-                    Yêu Thích
+                    {t("dashboard.wishlist")}
                   </h3>
                   <Heart className="h-6 w-6 text-gray-400" />
                 </div>
                 <p className="text-3xl font-bold mb-2">
                   {wishlistItems.length}
                 </p>
-                <p className="text-sm text-gray-600">Sản phẩm yêu thích</p>
+                <p className="text-sm text-gray-600">
+                  {t("dashboard.wishlistItems")}
+                </p>
                 <Button
                   variant="outline"
                   className="w-full mt-4 border-black text-black hover:bg-black hover:text-white"
                   onClick={() => router.push("/wishlist")}
                 >
-                  Xem danh sách
+                  {t("dashboard.viewWishlist")}
                 </Button>
               </div>
             </div>
@@ -285,25 +304,42 @@ export default function DashboardPage() {
             {/* Recent Activity */}
             <div className="bg-white p-6 shadow-lg">
               <h3 className="text-lg font-black tracking-tighter uppercase mb-6">
-                Đơn hàng gần đây
+                {t("dashboard.recentOrders")}
               </h3>
               <div className="text-center py-12">
                 {orders.length > 0 ? (
                   <div className="text-left space-y-4">
                     {orders.slice(0, 3).map((o) => (
-                      <div key={o.id} className="border-b last:border-0 pb-4">
-                        <p className="font-bold">Đơn hàng #{o.id}</p>
-                        <p className="text-gray-500 text-sm">
-                          Trạng thái: {o.status} • {o.total_amount}
-                        </p>
+                      <div
+                        key={o.id}
+                        className="border-b last:border-0 pb-4 flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="font-bold">
+                            {t("dashboard.order")} #{o.id}
+                          </p>
+                          <p className="text-gray-500 text-sm">
+                            {t("dashboard.status")}: {o.status} •{" "}
+                            {o.total_amount}
+                          </p>
+                        </div>
+                        <Link href="/account/orders">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-black"
+                          >
+                            {t("dashboard.view")}
+                          </Button>
+                        </Link>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <>
-                    <p className="text-gray-600">Chưa có hoạt động nào</p>
+                    <p className="text-gray-600">{t("dashboard.noActivity")}</p>
                     <p className="text-sm text-gray-500 mt-2">
-                      Bắt đầu mua sắm để xem lịch sử hoạt động
+                      {t("dashboard.startShoppingDesc")}
                     </p>
                   </>
                 )}

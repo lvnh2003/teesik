@@ -1,6 +1,6 @@
-"use client"
-
 import React, { createContext, useContext, useEffect, useState } from "react"
+import { toast } from "sonner"
+import { useLanguage } from "@/contexts/language-context"
 
 export interface CartItem {
     product_id: string | number
@@ -34,6 +34,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 const CART_STORAGE_KEY = "teesik_cart"
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+    const { t } = useLanguage()
     const [items, setItems] = useState<CartItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
@@ -85,10 +86,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 return [...prevItems, newItem]
             }
         })
+        toast.success(t("cart.added"), {
+            description: newItem.name
+        })
     }
 
     const removeFromCart = async (productId: string | number, variantId?: string | number) => {
+        const itemToRemove = items.find(i => i.product_id === productId && i.variant_id === variantId)
         setItems(prev => prev.filter(item => !(item.product_id === productId && item.variant_id === variantId)))
+        if (itemToRemove) {
+            toast.info(t("cart.removed"), {
+                description: itemToRemove.name
+            })
+        }
     }
 
     const updateQuantity = async (productId: string | number, variantId: string | number | undefined, quantity: number) => {
@@ -105,6 +115,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const applyVoucher = (code: string, discount: number) => {
         setVoucherCode(code)
         setDiscountAmount(discount)
+        toast.success(t("cart.voucherApplied") || "Voucher applied!")
     }
 
     const removeVoucher = () => {
