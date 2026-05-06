@@ -137,8 +137,10 @@ export const en = {
     "footer.newsletter": "STAY UPDATED",
     "footer.newsletterDesc": "Subscribe to receive updates, access to exclusive deals, and more.",
     "footer.emailPlaceholder": "Enter your email",
+    "footer.securePayments": "SECURE PAYMENTS",
 
-    // Home Page
+    "nav.account": "Account",
+    "nav.wishlist": "Wishlist",
     "home.est": "Est. 2024",
     "home.scrollToExplore": "Scroll to Explore",
     "home.globalShipping": "Global Shipping",

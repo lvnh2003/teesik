@@ -140,8 +140,10 @@ export const vi = {
     "footer.newsletter": "NHẬN BẢN TIN",
     "footer.newsletterDesc": "Đăng ký để nhận thông tin cập nhật, ưu đãi độc quyền và nhiều hơn thế nữa.",
     "footer.emailPlaceholder": "Nhập email của bạn",
+    "footer.securePayments": "THANH TOÁN BẢO MẬT",
 
-    // Home Page
+    "nav.account": "Tài khoản",
+    "nav.wishlist": "Yêu thích",
     "home.est": "Thành lập 2024",
     "home.scrollToExplore": "Cuộn để khám phá",
     "home.globalShipping": "Vận chuyển toàn cầu",

@@ -23,6 +23,19 @@ export default function Footer() {
             <p className="text-gray-400 mb-8 max-w-sm text-sm leading-relaxed">
               {t("footer.description") || "Modern fashion curated for the contemporary lifestyle. Quality, style, and sustainability at the core of everything we do."}
             </p>
+            
+            <div className="space-y-2 mb-8 text-sm text-gray-500">
+              <p className="flex items-center gap-3">
+                <Mail className="h-4 w-4" /> {t("footer.email")}
+              </p>
+              <p className="flex items-center gap-3">
+                <span className="font-bold text-[10px] uppercase tracking-tighter">Tel:</span> {t("footer.phone")}
+              </p>
+              <p className="flex items-center gap-3">
+                <span className="font-bold text-[10px] uppercase tracking-tighter">Add:</span> {t("footer.address")}
+              </p>
+            </div>
+
             <div className="flex space-x-5">
               <Link href="#" className="text-gray-400 hover:text-white transition-colors p-2 border border-white/10 hover:border-white/30 rounded-full">
                 <Facebook className="h-4 w-4" />
@@ -56,6 +69,8 @@ export default function Footer() {
                   { href: "/privacy-policy", label: t("footer.privacyPolicyPage") },
                   { href: "/shopping-guide", label: t("footer.shoppingGuide") },
                   { href: "/shipping-policy", label: t("footer.shippingPolicy") },
+                  { href: "/payment-guide", label: t("footer.paymentGuide") },
+                  { href: "/inspection-policy", label: t("footer.inspectionPolicy") },
                 ].map((link) => (
                   <li key={link.href}>
                     <Link href={link.href} className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
@@ -116,7 +131,7 @@ export default function Footer() {
             {t("footer.copyright") || `© ${new Date().getFullYear()} TEESIK. ALL RIGHTS RESERVED.`}
           </p>
           <div className="flex items-center space-x-6">
-            <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">SECURE PAYMENTS</span>
+            <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">{t("footer.securePayments") || "SECURE PAYMENTS"}</span>
             <div className="flex space-x-4 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500">
                <div className="h-5 w-8 bg-white/20 rounded-sm" title="Visa" />
                <div className="h-5 w-8 bg-white/20 rounded-sm" title="Mastercard" />
