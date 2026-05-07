@@ -83,7 +83,7 @@ export default function AdminCategoriesPage() {
       }
 
       if (result.data) {
-        console.log(`Danh mục đã được ${editingCategory ? "cập nhật" : "thêm mới"} thành công.`)
+
         fetchCategories()
         handleCloseDialog()
       } else {
@@ -105,10 +105,10 @@ export default function AdminCategoriesPage() {
 
     try {
       const result = await ProductService.deleteCategory(categoryToDelete)
-      console.log(result);
+
       
       if (result.success) {
-        console.log("Danh mục đã được xóa thành công.")
+
         fetchCategories() // Tải lại danh sách sau khi thành công
       } else {
         console.error("Lỗi: Không thể xóa danh mục.")

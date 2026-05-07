@@ -21,7 +21,7 @@ export function ProductPreviewModal({ product, isOpen, onClose }: ProductPreview
   const [activeTab, setActiveTab] = useState("details")
 
   if (!product) return null
-  console.log(product);
+
 
 
   const hasVariants = product.variations && product.variations.length > 0

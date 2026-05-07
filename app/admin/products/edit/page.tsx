@@ -326,15 +326,15 @@ function EditProductPageContent() {
             formDataToSend.append(`variations[${index}][image]`, variant.image)
 
             // Debug để kiểm tra
-            console.log(`Adding image for variant ${index}:`, variant.image.name)
+
           }
         })
       }
 
       // Debug để kiểm tra FormData
-      console.log("FormData entries:")
+
       for (const pair of formDataToSend.entries()) {
-        console.log(pair[0], pair[1] instanceof File ? `File: ${(pair[1] as File).name}` : pair[1])
+
       }
 
       const response = await ProductService.updateProduct(productId, formDataToSend)

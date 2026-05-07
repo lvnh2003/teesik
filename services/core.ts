@@ -29,6 +29,7 @@ export async function localFetch<T>(endpoint: string, options: RequestInit = {},
 
   const headers: Record<string, string> = {
     'Accept': 'application/json',
+    'X-Origin-Verify': 'teesik',
   };
 
   if (!(options.body instanceof FormData)) {

@@ -37,9 +37,10 @@ export default function CheckoutPage() {
   const [customerName, setCustomerName] = useState("")
   const [phone, setPhone] = useState("")
   const [orderStep, setOrderStep] = useState("checkout") // checkout, payment, success
-  const { items: cartItems, isLoading, refreshCart, voucherCode, discountAmount } = useCart()
+  const { items: cartItems, isLoading, refreshCart, clearCart, voucherCode, discountAmount } = useCart()
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
   const [orderId, setOrderId] = useState<string | number | null>(null)
+  const [createdOrder, setCreatedOrder] = useState<Order | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   
   // Shipping & Addresses
@@ -77,9 +78,8 @@ export default function CheckoutPage() {
 
     if (authLoggedIn && user) {
       setIsLoggedIn(true)
-      if (!customerName && user.name) setCustomerName(user.name)
-      if (!guestEmail && user.email) setGuestEmail(user.email)
-      if (!phone && user.phone) setPhone(user.phone)
+      if (user.name) setCustomerName(prev => prev || user.name)
+      if (user.email) setGuestEmail(prev => prev || user.email)
       
       // Only fetch addresses if not already loaded or empty
       if (addresses.length === 0) {
@@ -88,6 +88,10 @@ export default function CheckoutPage() {
               setAddresses(res.data)
               const defaultAddr = res.data.find(a => a.is_default) || res.data[0]
               setSelectedAddressId(prev => prev === 0 ? defaultAddr.id : prev)
+              
+              // Also populate customer info from address if empty
+              setCustomerName(prev => prev || defaultAddr.receiver_name)
+              setPhone(prev => prev || defaultAddr.phone)
           }
         }).catch(console.error)
       }
@@ -133,12 +137,12 @@ export default function CheckoutPage() {
     
     const timer = setTimeout(() => {
       setIsCalculatingShipping(true)
-      console.log(`[Shipping] Starting calculation for District: ${pDistId}, Ward: ${pWardCode}`);
+
       
       ShippingService.calculateFee(pDistId, pWardCode, subtotal, 300, abortController.signal)
         .then(res => {
           if (res.data && typeof res.data.fee === 'number') {
-            console.log(`[Shipping] Success: ${res.data.fee} VND`);
+
             setShippingFee(res.data.fee)
           } else {
             console.warn(`[Shipping] Unexpected response, falling back to 30k`, res);
@@ -147,7 +151,7 @@ export default function CheckoutPage() {
         })
         .catch((err) => {
           if (err.name === 'AbortError' || err.message?.includes('cancelled')) {
-            console.log(`[Shipping] Request aborted`);
+
             return;
           }
           console.error(`[Shipping] Error calculating fee, falling back to 30k`, err);
@@ -228,7 +232,10 @@ export default function CheckoutPage() {
         address: finalAddress,
         customer_phone: phone,
         payment_method: paymentMethod,
-        voucher_code: voucherCode || undefined,
+        payment_id: '',
+        shipping_fee: shippingFee,
+        voucher_code: voucherCode || "",
+        discount_amount: discountAmount || 0,
         items: cartItems.map(item => ({
             product_id: String(item.product_id),
             variation_id: item.variant_id ? String(item.variant_id) : undefined,
@@ -239,8 +246,8 @@ export default function CheckoutPage() {
 
       if (result.success && result.data) {
         setOrderId(result.data.id)
-        localStorage.removeItem("teesik_cart")
-        refreshCart()
+        setCreatedOrder(result.data)
+        clearCart()
 
         if (paymentMethod !== 'cod') {
           await OrderService.processPayment(result.data.id, paymentMethod)
@@ -287,11 +294,11 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          {orders.length > 0 && (
+          {(createdOrder || orders.length > 0) && (
             <div className="mt-8">
               <h2 className="text-2xl font-semibold mb-6">{t("checkout.orderHistory")}</h2>
               <ul className="space-y-4">
-                {orders.slice(0,1).map((order, index) => (
+                {[createdOrder || orders[0]].filter(Boolean).map((order, index) => (
                   <li key={index} className="border border-gray-200 p-4 rounded text-left">
                     <div className="flex items-center justify-between">
                       <strong className="text-sm font-semibold">{t("checkout.orderId")} #{order.id}</strong>
@@ -299,9 +306,27 @@ export default function CheckoutPage() {
                     <div className="text-sm text-gray-600 mt-1">
                       <span>{new Date(order.created_at).toLocaleDateString()}</span>
                     </div>
-                    <div className="mt-2 text-sm">
-                      <strong>{t("checkout.total")}:</strong>
-                      <span>{formatPrice(order.total_amount)}</span>
+                    <div className="mt-2 text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>{t("checkout.subtotal") || "Tạm tính"}:</span>
+                        <span>{formatPrice(order.total_amount)}</span>
+                      </div>
+                      {(order.shipping_fee ?? 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span>{t("checkout.shipping") || "Phí vận chuyển"}:</span>
+                          <span>{formatPrice(order.shipping_fee ?? 0)}</span>
+                        </div>
+                      )}
+                      {(order.discount_amount ?? 0) > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>{t("checkout.discount") || "Giảm giá"}:</span>
+                          <span>-{formatPrice(order.discount_amount ?? 0)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold border-t border-black/10 pt-1">
+                        <span>{t("checkout.grand_total") || "Tổng thanh toán"}:</span>
+                        <span>{formatPrice(order.grand_total || order.cod || order.total_amount)}</span>
+                      </div>
                     </div>
                   </li>
                 ))}
@@ -379,9 +404,10 @@ export default function CheckoutPage() {
                     </Tabs>
                   ) : (
                     <div className="p-4 bg-gray-100 border-l-4 border-black flex justify-between items-center">
-                      <p className="font-mono text-sm">
-                        {t("checkout.loggedInAs")}: <span className="font-bold">{user?.email || "user@example.com"}</span>
-                      </p>
+                      <div className="font-mono text-sm space-y-1">
+                        <p>{t("checkout.loggedInAs")}: <span className="font-bold">{user?.email || "user@example.com"}</span></p>
+                        <p>{t("checkout.phoneNumber")}: <span className="font-bold">{user?.phone || t("checkout.noPhone") || "N/A"}</span></p>
+                      </div>
                       <Link href="/dashboard/addresses" className="text-xs font-bold uppercase tracking-widest underline hover:text-gray-600">{t("checkout.manageAddresses")}</Link>
                     </div>
                   )}
@@ -395,7 +421,7 @@ export default function CheckoutPage() {
                   {isLoggedIn && addresses.length > 0 ? (
                     <div className="space-y-4 mb-6">
                       <Label className="text-xs font-bold uppercase tracking-widest">{t("checkout.selectAddress")}</Label>
-                      <RadioGroup value={String(selectedAddressId)} onValueChange={v => {
+                      <RadioGroup value={selectedAddressId ? String(selectedAddressId) : ""} onValueChange={v => {
                         const sId = parseInt(v)
                         setSelectedAddressId(sId)
                         const addr = addresses.find(a => a.id === sId)
@@ -491,7 +517,9 @@ export default function CheckoutPage() {
                     <Button
                       onClick={handleProceedToPayment}
                       className="w-full bg-black hover:bg-neutral-800 text-white h-14 rounded-none uppercase font-bold tracking-widest text-sm"
-                      disabled={isSubmitting || (isLoggedIn ? (!selectedAddressId || !customerName || !phone) : (!customerName || !phone || !guestAddress.specific_address || !guestAddress.ward_code))}
+                      disabled={isSubmitting || (authLoggedIn 
+                        ? ((!selectedAddressId && (!guestAddress.specific_address || !guestAddress.ward_code)) || !customerName || !phone) 
+                        : (!customerName || !phone || !guestAddress.specific_address || !guestAddress.ward_code))}
                     >
                       {isSubmitting ? (
                         <div className="flex items-center gap-2">
@@ -539,6 +567,38 @@ export default function CheckoutPage() {
                             />
                           </div>
                           <p className="font-mono font-bold text-lg">{formatPrice(total)}</p>
+                        </div>
+                      )}
+                    </div>
+                  </Label>
+
+                  <Label
+                    htmlFor="momo"
+                    className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'momo' ? 'border-[#A50064] bg-[#A50064] text-white' : 'border-gray-200 hover:border-[#A50064]'}`}
+                  >
+                    <RadioGroupItem value="momo" id="momo" className="mt-1 border-white" />
+                    <div className="flex-1">
+                      <div className="flex items-center mb-1">
+                        <div className="w-5 h-5 bg-white rounded-sm flex items-center justify-center mr-2">
+                           <div className="w-3 h-3 bg-[#A50064] rounded-full" />
+                        </div>
+                        <span className="font-bold uppercase tracking-wider">{t("checkout.momoPayment")}</span>
+                      </div>
+                      <p className={`text-sm ${paymentMethod === 'momo' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.momoDesc")}</p>
+
+                      {paymentMethod === 'momo' && (
+                        <div className="mt-6 p-4 bg-white max-w-[200px] mx-auto text-black text-center border-2 border-[#A50064]">
+                          <div className="aspect-square bg-gray-50 mb-2 relative flex items-center justify-center">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">MoMo QR Mockup</span>
+                            <Image
+                              src={`https://img.vietqr.io/image/970436-0987654321-qr_only.png?amount=${total}&addInfo=TEESIK_MOMO&accountName=TEESIK%20STORE`}
+                              alt="MoMo QR"
+                              fill
+                              className="object-contain p-2 opacity-50 grayscale"
+                              unoptimized
+                            />
+                          </div>
+                          <p className="font-mono font-bold text-lg text-[#A50064]">{formatPrice(total)}</p>
                         </div>
                       )}
                     </div>

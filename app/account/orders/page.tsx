@@ -345,7 +345,7 @@ export default function OrderHistoryPage() {
                                 className="font-semibold hover:bg-transparent"
                                 onClick={() => handleSort("total_amount")}
                               >
-                                Tổng tiền
+                                Tổng thanh toán
                                 <ArrowUpDown className="ml-2 h-4 w-4" />
                               </Button>
                             </th>
@@ -378,7 +378,7 @@ export default function OrderHistoryPage() {
                                 </div>
                               </td>
                               <td className="p-4 text-right font-medium">
-                                {formatCurrency(order.total_amount)}
+                                {formatCurrency(order.grand_total || order.cod || order.total_amount)}
                               </td>
                               <td className="p-4">
                                 <Badge variant={getStatusBadgeVariant(order.status)}>
@@ -419,7 +419,7 @@ export default function OrderHistoryPage() {
                           <div className="space-y-2 mb-3">
                             <p className="font-medium">{order.customer_name}</p>
                             <p className="text-sm text-gray-600">{order.customer_email}</p>
-                            <p className="text-lg font-bold">{formatCurrency(order.total_amount)}</p>
+                            <p className="text-lg font-bold">{formatCurrency(order.grand_total || order.cod || order.total_amount)}</p>
                           </div>
                           <Button
                             size="sm"
@@ -581,12 +581,36 @@ export default function OrderHistoryPage() {
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="bg-gray-50 font-bold">
-                        <tr>
-                          <td colSpan={3} className="p-3 text-right">
-                            Tổng cộng:
+                      <tfoot className="bg-gray-50">
+                        <tr className="border-t">
+                          <td colSpan={3} className="p-3 text-right text-gray-600">
+                            Tạm tính:
                           </td>
                           <td className="p-3 text-right">{formatCurrency(selectedOrder.total_amount)}</td>
+                        </tr>
+                        {(selectedOrder.shipping_fee ?? 0) > 0 && (
+                          <tr className="">
+                            <td colSpan={3} className="p-3 text-right text-gray-600">
+                              Phí vận chuyển:
+                            </td>
+                            <td className="p-3 text-right">{formatCurrency(selectedOrder.shipping_fee ?? 0)}</td>
+                          </tr>
+                        )}
+                        {(selectedOrder.discount_amount ?? 0) > 0 && (
+                          <tr className="text-green-600">
+                            <td colSpan={3} className="p-3 text-right">
+                              Giảm giá:
+                            </td>
+                            <td className="p-3 text-right">-{formatCurrency(selectedOrder.discount_amount ?? 0)}</td>
+                          </tr>
+                        )}
+                        <tr className="border-t font-bold text-lg">
+                          <td colSpan={3} className="p-3 text-right uppercase tracking-tighter">
+                            Tổng thanh toán:
+                          </td>
+                          <td className="p-3 text-right">
+                            {formatCurrency(selectedOrder.grand_total || selectedOrder.cod || selectedOrder.total_amount)}
+                          </td>
                         </tr>
                       </tfoot>
                     </table>

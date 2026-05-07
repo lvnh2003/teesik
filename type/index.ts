@@ -65,6 +65,9 @@ export interface Order {
   // Pancake specific
   shipping_fee?: number
   cod?: number
+  discount_amount?: number
+  grand_total?: number
+  voucher_code?: string
   partner?: any
   note?: string
 }

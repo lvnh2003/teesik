@@ -120,16 +120,22 @@ function AdminOrderDetailPageContent() {
 
                             <div className="border-t pt-4 space-y-2">
                                 <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Tạm tính</span>
+                                    <span>{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.total_amount)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">Phí vận chuyển</span>
                                     <span>{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.shipping_fee || 0)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">COD</span>
-                                    <span>{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.cod || 0)}</span>
-                                </div>
+                                {(order.discount_amount ?? 0) > 0 && (
+                                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                                        <span>Giảm giá</span>
+                                        <span>-{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.discount_amount ?? 0)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between items-center pt-2 font-bold text-lg border-t mt-2">
-                                    <span>Tổng cộng</span>
-                                    <span>{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.total_amount)}</span>
+                                    <span>Tổng thanh toán</span>
+                                    <span>{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.grand_total || order.cod || order.total_amount)}</span>
                                 </div>
                             </div>
                         </div>

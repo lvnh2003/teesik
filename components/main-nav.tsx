@@ -46,7 +46,7 @@ export default function MainNav() {
           setCategories(response.data);
         }
       } catch (error) {
-        console.log(error);
+
       }
     };
     fetchData();

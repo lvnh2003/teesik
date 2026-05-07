@@ -51,8 +51,7 @@ export default function CartPage() {
     }
   }
 
-  const shipping = subtotal > 1000000 ? 0 : 50000
-  const total = Math.max(0, subtotal + shipping - discountAmount)
+  const total = Math.max(0, subtotal - discountAmount)
 
   if (isLoading && cartItems.length === 0) {
     return <div className="min-h-screen flex items-center justify-center bg-[#FDFBF7]">{t("cart.loading")}</div>
@@ -172,13 +171,7 @@ export default function CartPage() {
                   <span>{t("cart.subtotal")}</span>
                   <span className="text-black font-mono">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>{t("cart.shipping")}</span>
-                  <span className="text-black font-mono">{shipping === 0 ? t("cart.free") : new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(shipping)}</span>
-                </div>
-                {shipping > 0 && (
-                  <p className="text-xs text-gray-400 normal-case tracking-normal">{t("cart.shippingNote")}</p>
-                )}
+
                 
                 {/* Voucher Section */}
                 <div className="pt-4 border-t border-black/10">

@@ -21,6 +21,7 @@ interface CartContextType {
     removeFromCart: (productId: string | number, variantId?: string | number) => Promise<void>
     updateQuantity: (productId: string | number, variantId: string | number | undefined, quantity: number) => Promise<void>
     refreshCart: () => Promise<void>
+    clearCart: () => void
 
     // Voucher
     voucherCode: string | null
@@ -70,6 +71,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 setItems(JSON.parse(storedCart))
             } catch (e) {}
         }
+    }
+
+    const clearCart = () => {
+        setItems([])
+        localStorage.removeItem(CART_STORAGE_KEY)
+        setVoucherCode(null)
+        setDiscountAmount(0)
     }
 
     const addToCart = async (newItem: CartItem) => {
@@ -126,7 +134,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return (
         <CartContext.Provider value={{ 
             items, cartCount, isLoading, 
-            addToCart, removeFromCart, updateQuantity, refreshCart,
+            addToCart, removeFromCart, updateQuantity, refreshCart, clearCart,
             voucherCode, discountAmount, applyVoucher, removeVoucher
         }}>
             {children}

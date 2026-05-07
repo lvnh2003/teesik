@@ -136,6 +136,7 @@ export default function Footer() {
                <div className="h-5 w-8 bg-white/20 rounded-sm" title="Visa" />
                <div className="h-5 w-8 bg-white/20 rounded-sm" title="Mastercard" />
                <div className="h-5 w-8 bg-white/20 rounded-sm" title="Paypal" />
+               <div className="h-5 w-8 bg-[#A50064] rounded-sm flex items-center justify-center text-[8px] font-bold" title="MoMo">M</div>
                <div className="h-5 w-8 bg-white/20 rounded-sm" title="COD" />
             </div>
           </div>
