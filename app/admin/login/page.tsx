@@ -3,17 +3,28 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AuthService } from "@/services/auth"
+
+function getSafeNextPath(searchParams: URLSearchParams) {
+  const next = searchParams.get("next")
+
+  if (!next || !next.startsWith("/admin") || next.startsWith("//")) {
+    return "/admin"
+  }
+
+  return next
+}
 
 export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [loginData, setLoginData] = useState({
     email: "",
@@ -25,7 +36,7 @@ export default function AdminLoginPage() {
       if (AuthService.isAuthenticated()) {
         const isAdmin = await AuthService.checkAdminRole()
         if (isAdmin) {
-          router.push("/admin")
+          router.replace(getSafeNextPath(searchParams))
         }
       }
     }
@@ -40,14 +51,12 @@ export default function AdminLoginPage() {
 
     try {
       const response = await AuthService.login(loginData)
-      AuthService.setAuthToken(response.data.token)
 
-      // Check if user is admin
-      const isAdmin = await AuthService.checkAdminRole()
-
-      if (isAdmin) {
-        router.push("/admin")
+      if (response.data.user.role?.toLowerCase() === "admin") {
+        AuthService.setAuthToken(response.data.token)
+        router.replace(getSafeNextPath(searchParams))
       } else {
+        AuthService.removeAuthToken()
         setError("Bạn không có quyền truy cập vào trang quản trị")
       }
     } catch (error: any) {

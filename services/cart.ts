@@ -7,7 +7,9 @@ export const CartService = {
     customer_email?: string;
     customer_phone?: string;
     address?: string;
-    shipping_fee: number;
+    selected_address_id?: number;
+    district_id?: number;
+    ward_code?: string;
     payment_method: string;
     payment_id?: string | null;
     discount_amount: number;

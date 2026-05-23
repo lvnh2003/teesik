@@ -1,10 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { Building2, Globe, Mail, Phone, Loader2, Save } from "lucide-react"
+import { useEffect } from "react"
+import { Building2, Globe, Mail, Phone, Loader2, Save, Database, RefreshCw, AlertCircle } from "lucide-react"
+import { SyncRun, SyncService, SyncState } from "@/services/sync"
 
 export default function AdminSettingsPage() {
     const [loading, setLoading] = useState(false)
+    const [syncLoading, setSyncLoading] = useState(false)
+    const [syncStates, setSyncStates] = useState<SyncState[]>([])
+    const [syncRuns, setSyncRuns] = useState<SyncRun[]>([])
+    const [syncError, setSyncError] = useState("")
     const [formData, setFormData] = useState({
         storeName: "TEESIK",
         phone: "1900 1234",
@@ -13,6 +19,37 @@ export default function AdminSettingsPage() {
         website: "https://teesik.vn",
         maintenanceMode: false
     })
+
+    const loadSyncStatus = async () => {
+        try {
+            const response = await SyncService.getStatus()
+            setSyncStates(response.data.states)
+            setSyncRuns(response.data.runs)
+            setSyncError("")
+        } catch (error: any) {
+            setSyncError(error?.message || "Không thể tải trạng thái đồng bộ.")
+        }
+    }
+
+    useEffect(() => {
+        loadSyncStatus()
+    }, [])
+
+    const handleSync = async (entity?: "categories" | "products" | "vouchers" | "orders") => {
+        setSyncLoading(true)
+        setSyncError("")
+        try {
+            await SyncService.trigger(entity)
+            await loadSyncStatus()
+        } catch (error: any) {
+            setSyncError(error?.message || "Đồng bộ thất bại.")
+            await loadSyncStatus()
+        } finally {
+            setSyncLoading(false)
+        }
+    }
+
+    const formatDate = (value?: string | null) => value ? new Date(value).toLocaleString("vi-VN") : "Chưa đồng bộ"
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault()
@@ -126,6 +163,79 @@ export default function AdminSettingsPage() {
                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
                         </label>
                     </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <Database className="h-5 w-5 text-gray-500" />
+                            Đồng bộ dữ liệu Pancake
+                        </h2>
+                        <div className="flex flex-wrap gap-2">
+                            <button type="button" disabled={syncLoading} onClick={() => handleSync()} className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-md disabled:opacity-70">
+                                {syncLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                Đồng bộ tất cả
+                            </button>
+                            <button type="button" disabled={syncLoading} onClick={() => handleSync("products")} className="px-4 py-2 border rounded-md disabled:opacity-70">Sản phẩm</button>
+                            <button type="button" disabled={syncLoading} onClick={() => handleSync("categories")} className="px-4 py-2 border rounded-md disabled:opacity-70">Danh mục</button>
+                            <button type="button" disabled={syncLoading} onClick={() => handleSync("vouchers")} className="px-4 py-2 border rounded-md disabled:opacity-70">Voucher</button>
+                            <button type="button" disabled={syncLoading} onClick={() => handleSync("orders")} className="px-4 py-2 border rounded-md disabled:opacity-70">Đơn hàng</button>
+                        </div>
+                    </div>
+
+                    {syncError && (
+                        <div className="mb-4 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            <AlertCircle className="h-4 w-4" />
+                            {syncError}
+                        </div>
+                    )}
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b text-left text-gray-500">
+                                    <th className="py-2 pr-4">Loại dữ liệu</th>
+                                    <th className="py-2 pr-4">Trạng thái</th>
+                                    <th className="py-2 pr-4">Lần đồng bộ cuối</th>
+                                    <th className="py-2 pr-4">Số bản ghi</th>
+                                    <th className="py-2 pr-4">Độ mới</th>
+                                    <th className="py-2">Lỗi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {syncStates.length === 0 ? (
+                                    <tr><td className="py-4 text-gray-500" colSpan={6}>Chưa có dữ liệu đồng bộ.</td></tr>
+                                ) : syncStates.map(state => (
+                                    <tr key={state.entity} className="border-b">
+                                        <td className="py-3 pr-4 font-medium">{state.entity}</td>
+                                        <td className="py-3 pr-4">{state.status}</td>
+                                        <td className="py-3 pr-4">{formatDate(state.last_synced_at)}</td>
+                                        <td className="py-3 pr-4">{state.last_records_synced}</td>
+                                        <td className="py-3 pr-4">{state.freshness}</td>
+                                        <td className="py-3 text-red-600">{state.last_error || "-"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {syncRuns.length > 0 && (
+                        <div className="mt-6">
+                            <h3 className="font-medium mb-3">Log gần đây</h3>
+                            <div className="space-y-2">
+                                {syncRuns.slice(0, 5).map(run => (
+                                    <div key={run.id} className="rounded-md border bg-gray-50 p-3 text-sm">
+                                        <div className="flex flex-wrap justify-between gap-2">
+                                            <span className="font-medium">{run.entity} - {run.status}</span>
+                                            <span className="text-gray-500">{formatDate(run.started_at)}</span>
+                                        </div>
+                                        <div className="mt-1 text-gray-600">Fetched {run.fetched_count}, upserted {run.upserted_count}</div>
+                                        {run.error && <div className="mt-1 text-red-600">{run.error}</div>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Hành động */}
