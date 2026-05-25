@@ -1,4 +1,4 @@
-import { localFetch, getAuthToken } from "./core";
+import { ApiError, localFetch, getAuthToken } from "./core";
 import { setCookie, deleteCookie } from "cookies-next";
 import { useCallback } from "react";
 import { User } from "@/type";
@@ -79,10 +79,14 @@ export const AuthService = {
     if (!token) return false;
 
     try {
-      const response = await localFetch<{ success: boolean; data: { user: User } }>('/admin/check');
-      return response.data.user.role?.toLowerCase() === "admin";
-    } catch {
-      AuthService.removeAuthToken();
+      const response = await localFetch<{ success: boolean; data?: { user?: User } }>('/admin/check');
+      const role = response.data?.user?.role?.toLowerCase();
+
+      return role ? role === "admin" : response.success !== false;
+    } catch (error) {
+      if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
+        AuthService.removeAuthToken();
+      }
       return false;
     }
   }

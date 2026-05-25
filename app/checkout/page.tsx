@@ -247,6 +247,10 @@ export default function CheckoutPage() {
       })
 
       if (result.success && result.data) {
+        if (paymentMethod.toLowerCase() !== "cod") {
+          await OrderService.processPayment(Number(result.data.id), paymentMethod)
+        }
+
         setOrderId(result.data.id)
         setCreatedOrder(result.data)
         clearCart()
