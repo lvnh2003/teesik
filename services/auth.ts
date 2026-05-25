@@ -1,5 +1,6 @@
-import { localFetch, getAuthToken } from "./core";
+import { ApiError, localFetch, getAuthToken } from "./core";
 import { setCookie, deleteCookie } from "cookies-next";
+import { useCallback } from "react";
 import { User } from "@/type";
 import { AuthResponse, LoginRequest, RegisterRequest } from "@/type/auth";
 
@@ -78,21 +79,27 @@ export const AuthService = {
     if (!token) return false;
 
     try {
-      const user = await AuthService.getCurrentUser();
-      return user.data.user.role === "admin";
-    } catch {
+      const response = await localFetch<{ success: boolean; data?: { user?: User } }>('/admin/check');
+      const role = response.data?.user?.role?.toLowerCase();
+
+      return role ? role === "admin" : response.success !== false;
+    } catch (error) {
+      if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
+        AuthService.removeAuthToken();
+      }
       return false;
     }
   }
 };
 
 export function useAdminAuth() {
-  const checkAuth = async () => {
-    const token = getAuthToken();
-    if (!token) {
-      window.location.href = "/admin/login";
+  const checkAuth = useCallback(async () => {
+    const isAdmin = await AuthService.checkAdminRole();
+    if (!isAdmin && typeof window !== "undefined") {
+      AuthService.removeAuthToken();
+      window.location.href = `/admin/login/?next=${encodeURIComponent(window.location.pathname)}`;
     }
-  };
+  }, []);
 
   return { checkAuth };
 }

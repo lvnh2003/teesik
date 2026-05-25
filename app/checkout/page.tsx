@@ -233,7 +233,9 @@ export default function CheckoutPage() {
         customer_phone: phone,
         payment_method: paymentMethod,
         payment_id: '',
-        shipping_fee: shippingFee,
+        selected_address_id: isLoggedIn && selectedAddressId ? selectedAddressId : undefined,
+        district_id: !isLoggedIn ? guestAddress.district_id : undefined,
+        ward_code: !isLoggedIn ? guestAddress.ward_code : undefined,
         voucher_code: voucherCode || "",
         discount_amount: discountAmount || 0,
         items: cartItems.map(item => ({
@@ -245,13 +247,14 @@ export default function CheckoutPage() {
       })
 
       if (result.success && result.data) {
+        if (paymentMethod.toLowerCase() !== "cod") {
+          await OrderService.processPayment(Number(result.data.id), paymentMethod)
+        }
+
         setOrderId(result.data.id)
         setCreatedOrder(result.data)
         clearCart()
 
-        if (paymentMethod !== 'cod') {
-          await OrderService.processPayment(result.data.id, paymentMethod)
-        }
         setOrderStep("success")
       } else {
         toast.error(t("checkout.invalidData") || "Please enter all shipping information")

@@ -187,7 +187,7 @@ export default function Home() {
                     src={getCategoryImage(cat.name)}
                     alt={cat.name}
                     fill
-                    className="object-cover transition-transform duration-[2s] group-hover:scale-110"
+                    className="object-cover transition-transform [transition-duration:2000ms] group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -246,7 +246,7 @@ export default function Home() {
                src={assetPath("/images/hero-bag-3.jpg")}
                alt="Cinematic Background"
                fill
-               className="object-cover opacity-60 mix-blend-luminosity scale-105 hover:scale-100 transition-transform duration-[10s]"
+               className="object-cover opacity-60 mix-blend-luminosity scale-105 hover:scale-100 transition-transform [transition-duration:10000ms]"
              />
              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
           </div>

@@ -26,6 +26,21 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { DashboardStats } from "@/type"
 
+function getOrderTotal(order: any) {
+  const value = order.grand_total ?? order.cod ?? order.total_amount ?? order.total ?? 0
+  const amount = Number(value)
+
+  return Number.isFinite(amount) ? amount : 0
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
 export default function AdminDashboardPage() {
   const { checkAuth } = useAdminAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -279,11 +294,7 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {new Intl.NumberFormat("vi-VN", {
-                style: "currency",
-                currency: "VND",
-                maximumFractionDigits: 0,
-              }).format(stats?.revenue?.monthly || 0)}
+              {formatCurrency(stats?.revenue?.monthly || 0)}
             </div>
             <div className="flex items-center text-xs text-green-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
@@ -307,11 +318,7 @@ export default function AdminDashboardPage() {
                   <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`} />
                   <Tooltip
                     formatter={(value: any) => [
-                      new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                        maximumFractionDigits: 0,
-                      }).format(value),
+                      formatCurrency(Number(value) || 0),
                       "Doanh thu",
                     ]}
                   />
@@ -381,11 +388,7 @@ export default function AdminDashboardPage() {
                     <div className="text-right flex items-center gap-3">
                       <div>
                         <p className="font-medium">
-                          {new Intl.NumberFormat("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                            maximumFractionDigits: 0,
-                          }).format(order.total)}
+                          {formatCurrency(getOrderTotal(order))}
                         </p>
                         <p className="text-sm text-gray-500">
                           {new Date(order.created_at).toLocaleDateString("vi-VN")}
@@ -424,11 +427,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">
-                      {new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                        maximumFractionDigits: 0,
-                      }).format(product.revenue)}
+                      {formatCurrency(product.revenue)}
                     </p>
                   </div>
                 </div>

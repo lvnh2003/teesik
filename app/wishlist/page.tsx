@@ -12,7 +12,6 @@ import { motion, AnimatePresence } from "framer-motion"
 
 export default function WishlistPage() {
     const { items, removeItem } = useWishlist()
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { t } = useLanguage()
 
     // Dramatic Empty State

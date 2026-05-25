@@ -14,25 +14,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null) // State để quản lý submenu đang mở
   const router = useRouter()
   const pathname = usePathname()
+  const normalizedPath = pathname.replace(/\/$/, "") || "/"
+  const isLoginPage = normalizedPath === "/admin/login"
 
   useEffect(() => {
+    let cancelled = false
+
     const verifyAdmin = async () => {
       // Không kiểm tra nếu đang ở trang /admin/login
-      if (pathname === "/admin/login") {
-        setIsAdmin(true)
+      if (isLoginPage) {
+        if (!cancelled) setIsAdmin(null)
         return
       }
 
+      setIsAdmin(null)
       const adminStatus = await AuthService.checkAdminRole()
+      if (cancelled) return
+
       setIsAdmin(adminStatus)
 
       if (!adminStatus) {
-        router.push("/admin/login")
+        router.replace(`/admin/login/?next=${encodeURIComponent(pathname)}`)
       }
     }
 
     verifyAdmin()
-  }, [router, pathname])
+
+    return () => {
+      cancelled = true
+    }
+  }, [router, pathname, isLoginPage])
 
   // Mở submenu nếu đường dẫn hiện tại thuộc về submenu đó
   useEffect(() => {
@@ -85,6 +96,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Thống kê", href: "/admin/statistics", icon: <BarChart className="h-5 w-5" /> },
     { name: "Cài đặt", href: "/admin/settings", icon: <Settings className="h-5 w-5" /> },
   ]
+
+  if (isLoginPage) {
+    return <>{children}</>
+  }
 
   // Loading state
   if (isAdmin === null) {
