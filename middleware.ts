@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
       return redirectToAdminLogin(request)
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
     try {
       const response = await fetch(`${apiUrl}/v1/admin/check`, {
         headers: {

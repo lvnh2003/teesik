@@ -174,7 +174,7 @@ export default function AboutPage() {
           <div className="mb-16 md:flex justify-between items-end">
             <div>
               <span className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4 block">{t("about.theMinds")}</span>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-black uppercase leading-none">
+              <h2 className="text-4xl md:text-6xl font-extrabold tracking-[0.08em] text-black uppercase leading-tight">
                 {t("about.ourTeam")}
               </h2>
             </div>

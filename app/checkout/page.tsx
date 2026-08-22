@@ -3,10 +3,10 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, CreditCard, Shield, CheckCircle, Smartphone as SmartphoneIcon, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Shield, CheckCircle, Smartphone as SmartphoneIcon, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +29,11 @@ export default function CheckoutPage() {
   const [hasMounted, setHasMounted] = useState(false)
   const { t } = useLanguage()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { isLoggedIn: authLoggedIn, user } = useAuth()
   
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState("qr")
+  const [paymentMethod, setPaymentMethod] = useState("momo")
   const [guestEmail, setGuestEmail] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [phone, setPhone] = useState("")
@@ -42,6 +43,20 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState<string | number | null>(null)
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
+  const [momoPayment, setMomoPayment] = useState<{
+    orderId: number;
+    qrCodeUrl?: string | null;
+    deeplink?: string | null;
+    paymentToken: string;
+  } | null>(null)
+  const [qrPayment, setQrPayment] = useState<{
+    orderId: number;
+    qrCodeUrl?: string | null;
+    paymentCode?: string;
+    amount?: number;
+    paymentToken: string;
+  } | null>(null)
+  const [momoReturnHandled, setMomoReturnHandled] = useState(false)
   
   // Shipping & Addresses
   const [shippingFee, setShippingFee] = useState(0)
@@ -196,10 +211,34 @@ export default function CheckoutPage() {
 
   // Redirect if empty
   useEffect(() => {
-    if (!isLoading && orderStep !== "success" && (!cartItems || cartItems.length === 0)) {
+    const isMomoReturn = searchParams.has("partnerCode") && searchParams.has("signature")
+    if (!isMomoReturn && !isLoading && orderStep !== "success" && (!cartItems || cartItems.length === 0)) {
       router.push('/cart')
     }
-  }, [isLoading, cartItems, orderStep, router])
+  }, [isLoading, cartItems, orderStep, router, searchParams])
+
+  useEffect(() => {
+    if (momoReturnHandled || !searchParams.has("partnerCode") || !searchParams.has("signature")) return
+
+    setMomoReturnHandled(true)
+    const params = new URLSearchParams(searchParams.toString())
+    OrderService.verifyMomoReturn(params)
+      .then(res => {
+        if (res.success && res.data?.payment_status === "paid") {
+          setOrderId(res.data.order_id)
+          clearCart()
+          setOrderStep("success")
+          toast.success(t("checkout.momoConfirmed"))
+        } else {
+          setOrderStep("payment")
+          toast.error(res.message || t("checkout.momoIncomplete"))
+        }
+      })
+      .catch((e) => {
+        setOrderStep("payment")
+        toast.error(e.message || t("checkout.momoVerifyError"))
+      })
+  }, [searchParams, clearCart, momoReturnHandled, t])
 
   // Handle checkout flow
   const handleProceedToPayment = () => {
@@ -247,8 +286,64 @@ export default function CheckoutPage() {
       })
 
       if (result.success && result.data) {
+        const paymentToken = result.data.payment_access_token
+        if (!paymentToken) {
+          toast.error(t("checkout.error"))
+          return
+        }
+
+        if (paymentMethod.toLowerCase() === "qr") {
+          const payment = await OrderService.processPayment(Number(result.data.id), "qr", paymentToken)
+          const paymentData = payment.data
+
+          setOrderId(result.data.id)
+          setCreatedOrder(result.data)
+
+          if (paymentData?.qr_code_url) {
+            setQrPayment({
+              orderId: Number(result.data.id),
+              qrCodeUrl: paymentData.qr_code_url,
+              paymentCode: paymentData.payment_code,
+              amount: paymentData.amount,
+              paymentToken,
+            })
+            toast.info(t("checkout.qrAwaiting"))
+            return
+          }
+
+          toast.error(payment.message || t("checkout.qrNoUrl"))
+          return
+        }
+
+        if (paymentMethod.toLowerCase() === "momo") {
+          const payment = await OrderService.processPayment(Number(result.data.id), "momo", paymentToken)
+          const paymentData = payment.data
+
+          setOrderId(result.data.id)
+          setCreatedOrder(result.data)
+
+          if (paymentData?.pay_url) {
+            window.location.href = paymentData.pay_url
+            return
+          }
+
+          if (paymentData?.qr_code_url || paymentData?.deeplink) {
+            setMomoPayment({
+              orderId: Number(result.data.id),
+              qrCodeUrl: paymentData.qr_code_url,
+              deeplink: paymentData.deeplink,
+              paymentToken,
+            })
+            toast.info(t("checkout.momoPending"))
+            return
+          }
+
+          toast.error(payment.message || t("checkout.momoNoUrl"))
+          return
+        }
+
         if (paymentMethod.toLowerCase() !== "cod") {
-          await OrderService.processPayment(Number(result.data.id), paymentMethod)
+          await OrderService.processPayment(Number(result.data.id), paymentMethod, paymentToken)
         }
 
         setOrderId(result.data.id)
@@ -267,14 +362,35 @@ export default function CheckoutPage() {
     }
   }
 
+  const handleCheckQrPayment = async () => {
+    if (!qrPayment?.orderId || !qrPayment.paymentToken) return
+
+    try {
+      setIsSubmitting(true)
+      const res = await OrderService.getPaymentStatus(qrPayment.orderId, qrPayment.paymentToken)
+      if (res.success && res.data?.payment_status === "paid") {
+        setOrderId(res.data.order_id)
+        clearCart()
+        setOrderStep("success")
+        toast.success(t("checkout.qrConfirmed"))
+      } else {
+        toast.info(t("checkout.qrNotConfirmed"))
+      }
+    } catch (e: any) {
+      toast.error(`${t("checkout.error")}: ${e.message || t("checkout.unknownError")}`)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   // Load order history
   useEffect(() => {
-    if (orderStep === "success") {
+    if (orderStep === "success" && authLoggedIn) {
       OrderService.getUserOrders().then(res => {
         if (res.data && Array.isArray(res.data)) setOrders(res.data)
       }).catch(console.error)
     }
-  }, [orderStep])
+  }, [orderStep, authLoggedIn])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", minimumFractionDigits: 0 }).format(price)
@@ -289,13 +405,6 @@ export default function CheckoutPage() {
           <CheckCircle className="h-16 w-16 text-black mx-auto mb-6" />
           <h1 className="text-3xl font-black tracking-tighter mb-4 text-black uppercase leading-none">{t("checkout.orderConfirmed")}</h1>
           <p className="text-gray-600 mb-8 font-medium">{t("checkout.thankYou")}</p>
-
-          {paymentMethod === "card" && (
-            <div className="mb-8">
-              <CreditCard className="h-10 w-10 mx-2" />
-              <p className="text-sm text-gray-500">{t("checkout.cardPayment")}</p>
-            </div>
-          )}
 
           {(createdOrder || orders.length > 0) && (
             <div className="mt-8">
@@ -545,7 +654,11 @@ export default function CheckoutPage() {
                   <Button variant="link" onClick={() => setOrderStep('checkout')} className="uppercase font-bold tracking-widest text-xs">{t("checkout.editAddress")}</Button>
                 </div>
 
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
+                <RadioGroup value={paymentMethod} onValueChange={(value) => {
+                  setPaymentMethod(value)
+                  if (value !== "momo") setMomoPayment(null)
+                  if (value !== "qr") setQrPayment(null)
+                }} className="space-y-4">
                   <Label
                     htmlFor="qr"
                     className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'qr' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
@@ -560,16 +673,38 @@ export default function CheckoutPage() {
 
                       {paymentMethod === 'qr' && (
                         <div className="mt-6 p-4 bg-white max-w-[200px] mx-auto text-black text-center">
-                          <div className="aspect-square bg-gray-100 mb-2 relative">
-                            <Image
-                              src={`https://img.vietqr.io/image/970436-0987654321-qr_only.png?amount=${total}&addInfo=TEESIK&accountName=TEESIK%20STORE`}
-                              alt="QR Code"
-                              fill
-                              className="object-contain p-2"
-                              unoptimized
-                            />
-                          </div>
-                          <p className="font-mono font-bold text-lg">{formatPrice(total)}</p>
+                          {qrPayment?.qrCodeUrl ? (
+                            <div className="aspect-square bg-gray-100 mb-2 relative">
+                              <Image
+                                src={qrPayment.qrCodeUrl}
+                                alt="QR Code"
+                                fill
+                                className="object-contain p-2"
+                                unoptimized
+                              />
+                            </div>
+                          ) : (
+                            <div className="aspect-square bg-gray-100 mb-2 flex items-center justify-center px-3">
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{t("checkout.qrPending")}</span>
+                            </div>
+                          )}
+                          <p className="font-mono font-bold text-lg">{formatPrice(qrPayment?.amount || total)}</p>
+                          {qrPayment?.paymentCode && (
+                            <div className="mt-2 border border-black/10 p-2">
+                              <p className="text-[10px] text-gray-500 uppercase font-bold">{t("checkout.qrPaymentCode")}</p>
+                              <p className="font-mono text-sm font-black break-all">{qrPayment.paymentCode}</p>
+                            </div>
+                          )}
+                          {qrPayment?.orderId && (
+                            <Button
+                              type="button"
+                              onClick={handleCheckQrPayment}
+                              disabled={isSubmitting}
+                              className="mt-3 h-9 w-full rounded-none bg-black text-white text-[10px] uppercase font-bold tracking-widest"
+                            >
+                              {t("checkout.qrRefresh")}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -591,41 +726,27 @@ export default function CheckoutPage() {
 
                       {paymentMethod === 'momo' && (
                         <div className="mt-6 p-4 bg-white max-w-[200px] mx-auto text-black text-center border-2 border-[#A50064]">
-                          <div className="aspect-square bg-gray-50 mb-2 relative flex items-center justify-center">
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">MoMo QR Mockup</span>
-                            <Image
-                              src={`https://img.vietqr.io/image/970436-0987654321-qr_only.png?amount=${total}&addInfo=TEESIK_MOMO&accountName=TEESIK%20STORE`}
-                              alt="MoMo QR"
-                              fill
-                              className="object-contain p-2 opacity-50 grayscale"
-                              unoptimized
-                            />
-                          </div>
+                          {momoPayment?.qrCodeUrl ? (
+                            <div className="aspect-square bg-gray-50 mb-2 relative flex items-center justify-center">
+                              <Image
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(momoPayment.qrCodeUrl)}`}
+                                alt="MoMo QR"
+                                fill
+                                className="object-contain p-2"
+                                unoptimized
+                              />
+                            </div>
+                          ) : (
+                            <div className="aspect-square bg-gray-50 mb-2 flex items-center justify-center px-3">
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{t("checkout.momoQrPending")}</span>
+                            </div>
+                          )}
                           <p className="font-mono font-bold text-lg text-[#A50064]">{formatPrice(total)}</p>
-                        </div>
-                      )}
-                    </div>
-                  </Label>
-
-                  <Label
-                    htmlFor="card"
-                    className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'card' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
-                  >
-                    <RadioGroupItem value="card" id="card" className="mt-1 border-white" />
-                    <div className="flex-1">
-                      <div className="flex items-center mb-1">
-                        <CreditCard className="h-5 w-5 mr-2" />
-                        <span className="font-bold uppercase tracking-wider">{t("checkout.creditCard")}</span>
-                      </div>
-                      <p className={`text-sm ${paymentMethod === 'card' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.cardDesc")}</p>
-
-                      {paymentMethod === 'card' && (
-                        <div className="mt-6 space-y-4">
-                          <Input placeholder={t("checkout.cardNumber")} className="bg-white text-black h-12 rounded-none border-none" />
-                          <div className="grid grid-cols-2 gap-4">
-                            <Input placeholder="MM/YY" className="bg-white text-black h-12 rounded-none border-none" />
-                            <Input placeholder="CVC" className="bg-white text-black h-12 rounded-none border-none" />
-                          </div>
+                          {momoPayment?.deeplink && (
+                            <a href={momoPayment.deeplink} className="mt-3 inline-flex text-xs font-bold uppercase tracking-widest underline text-[#A50064]">
+                              {t("checkout.openMomo")}
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>

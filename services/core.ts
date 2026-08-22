@@ -1,6 +1,6 @@
 import { getCookie } from "cookies-next";
 
-const LOCAL_API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const LOCAL_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
 export class ApiError extends Error {
   constructor(
@@ -120,7 +120,7 @@ export function getImageUrl(imagePath: string): string {
   if (imagePath.startsWith("http")) return imagePath
 
   const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL
-  const baseUrl = (LOCAL_API_URL as string).replace("/api", "") || "http://localhost:8000"
+  const baseUrl = (LOCAL_API_URL as string).replace("/api", "") || "http://localhost:8080"
 
   if (imagePath.startsWith("/storage")) {
     return `${storageUrl || baseUrl}${imagePath}`
