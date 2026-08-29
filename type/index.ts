@@ -58,6 +58,13 @@ export interface Order {
   payment_status: string
   payment_method: string
   transaction_id: string | null
+  provider?: string | null
+  provider_order_id?: string | null
+  provider_request_id?: string | null
+  provider_transaction_id?: string | null
+  provider_result_code?: number | null
+  paid_at?: string | null
+  payment_access_token?: string | null
   created_at: string
   updated_at?: string
   items?: OrderItem[]
@@ -94,6 +101,7 @@ export interface CartItem {
   image: string
   color?: string
   size?: string
+  attributes?: Record<string, any>
 }
 
 export interface Cart {

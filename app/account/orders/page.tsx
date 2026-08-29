@@ -40,9 +40,10 @@ import { vi } from "date-fns/locale"
 import { exportOrdersToCSV, exportOrdersToPDF } from "@/utils/exportUtils"
 import { OrderChart } from "@/components/OrderHistory/OrderChart"
 import { useDebouncedCallback } from "use-debounce"
+import { ApiError } from "@/services/core"
 
 const STATUS_OPTIONS = [
-  { label: "Tất cả", value: "" },
+  { label: "Tất cả", value: "all" },
   { label: "Chờ xử lý", value: "pending" },
   { label: "Đang xử lý", value: "processing" },
   { label: "Đang giao", value: "shipped" },
@@ -61,7 +62,7 @@ export default function OrderHistoryPage() {
   const [loading, setLoading] = useState(true)
   const [meta, setMeta] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [sortBy, setSortBy] = useState<"created_at" | "total_amount" | "status">("created_at")
@@ -84,7 +85,7 @@ export default function OrderHistoryPage() {
       const response = await OrderService.getUserOrders({
         page: currentPage,
         limit: ITEMS_PER_PAGE,
-        status: statusFilter || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
         search: searchQuery || undefined,
       })
       
@@ -120,6 +121,11 @@ export default function OrderHistoryPage() {
       }
     } catch (error) {
       console.error("Failed to fetch orders:", error)
+      if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
+        logout()
+        router.push("/account")
+        return
+      }
       setOrders([])
     } finally {
       if (showLoading) setLoading(false)
@@ -287,7 +293,7 @@ export default function OrderHistoryPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      setStatusFilter("")
+                      setStatusFilter("all")
                       setDateFrom("")
                       setDateTo("")
                       setSearchQuery("")
