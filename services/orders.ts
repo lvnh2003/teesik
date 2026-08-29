@@ -1,5 +1,5 @@
 import { localFetch } from "./core";
-import { Order, type PaginatedResponse } from "@/type";
+import { Order, type PaginatedResponse, type ApiResponse } from "@/type";
 
 export interface PaymentProcessResponse {
   success: boolean;
@@ -19,6 +19,12 @@ export interface PaymentProcessResponse {
 }
 
 export const OrderService = {
+  createOrder: async (data: any) => {
+    return localFetch<ApiResponse<Order>>('/orders/checkout', {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
   getOrders: async (params: { page?: number; limit?: number; status?: string; search?: string } = {}) => {
     const query = new URLSearchParams();
     if (params.page) query.append('page', params.page.toString());

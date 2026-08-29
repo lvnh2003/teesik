@@ -24,6 +24,8 @@ import { formatAttributeValue } from "@/lib/utils"
 import { AddressService, UserAddress } from "@/services/address";
 import { ShippingService, Province, District, Ward } from "@/services/shipping";
 import { toast } from "sonner";
+import { OrderSummary } from "@/components/checkout/OrderSummary";
+import { PaymentMethods } from "@/components/checkout/PaymentMethods";
 
 export default function CheckoutPage() {
   const [hasMounted, setHasMounted] = useState(false)
@@ -265,23 +267,20 @@ export default function CheckoutPage() {
       }
 
       setIsSubmitting(true)
-      const result = await CartService.checkout({
+      const result = await OrderService.createOrder({
         customer_name: customerName,
         customer_email: guestEmail,
-        address: finalAddress,
+        shipping_address: finalAddress,
         customer_phone: phone,
         payment_method: paymentMethod,
-        payment_id: '',
         selected_address_id: isLoggedIn && selectedAddressId ? selectedAddressId : undefined,
         district_id: !isLoggedIn ? guestAddress.district_id : undefined,
         ward_code: !isLoggedIn ? guestAddress.ward_code : undefined,
         voucher_code: voucherCode || "",
-        discount_amount: discountAmount || 0,
         items: cartItems.map(item => ({
             product_id: String(item.product_id),
             variation_id: item.variant_id ? String(item.variant_id) : undefined,
-            quantity: item.quantity,
-            price: item.price
+            quantity: item.quantity
         }))
       })
 
@@ -654,118 +653,19 @@ export default function CheckoutPage() {
                   <Button variant="link" onClick={() => setOrderStep('checkout')} className="uppercase font-bold tracking-widest text-xs">{t("checkout.editAddress")}</Button>
                 </div>
 
-                <RadioGroup value={paymentMethod} onValueChange={(value) => {
-                  setPaymentMethod(value)
-                  if (value !== "momo") setMomoPayment(null)
-                  if (value !== "qr") setQrPayment(null)
-                }} className="space-y-4">
-                  <Label
-                    htmlFor="qr"
-                    className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'qr' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
-                  >
-                    <RadioGroupItem value="qr" id="qr" className="mt-1 border-white" />
-                    <div className="flex-1">
-                      <div className="flex items-center mb-1">
-                        <SmartphoneIcon className="h-5 w-5 mr-2" />
-                        <span className="font-bold uppercase tracking-wider">{t("checkout.qrPayment")}</span>
-                      </div>
-                      <p className={`text-sm ${paymentMethod === 'qr' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.qrDesc")}</p>
-
-                      {paymentMethod === 'qr' && (
-                        <div className="mt-6 p-4 bg-white max-w-[200px] mx-auto text-black text-center">
-                          {qrPayment?.qrCodeUrl ? (
-                            <div className="aspect-square bg-gray-100 mb-2 relative">
-                              <Image
-                                src={qrPayment.qrCodeUrl}
-                                alt="QR Code"
-                                fill
-                                className="object-contain p-2"
-                                unoptimized
-                              />
-                            </div>
-                          ) : (
-                            <div className="aspect-square bg-gray-100 mb-2 flex items-center justify-center px-3">
-                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{t("checkout.qrPending")}</span>
-                            </div>
-                          )}
-                          <p className="font-mono font-bold text-lg">{formatPrice(qrPayment?.amount || total)}</p>
-                          {qrPayment?.paymentCode && (
-                            <div className="mt-2 border border-black/10 p-2">
-                              <p className="text-[10px] text-gray-500 uppercase font-bold">{t("checkout.qrPaymentCode")}</p>
-                              <p className="font-mono text-sm font-black break-all">{qrPayment.paymentCode}</p>
-                            </div>
-                          )}
-                          {qrPayment?.orderId && (
-                            <Button
-                              type="button"
-                              onClick={handleCheckQrPayment}
-                              disabled={isSubmitting}
-                              className="mt-3 h-9 w-full rounded-none bg-black text-white text-[10px] uppercase font-bold tracking-widest"
-                            >
-                              {t("checkout.qrRefresh")}
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Label>
-
-                  <Label
-                    htmlFor="momo"
-                    className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'momo' ? 'border-[#A50064] bg-[#A50064] text-white' : 'border-gray-200 hover:border-[#A50064]'}`}
-                  >
-                    <RadioGroupItem value="momo" id="momo" className="mt-1 border-white" />
-                    <div className="flex-1">
-                      <div className="flex items-center mb-1">
-                        <div className="w-5 h-5 bg-white rounded-sm flex items-center justify-center mr-2">
-                           <div className="w-3 h-3 bg-[#A50064] rounded-full" />
-                        </div>
-                        <span className="font-bold uppercase tracking-wider">{t("checkout.momoPayment")}</span>
-                      </div>
-                      <p className={`text-sm ${paymentMethod === 'momo' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.momoDesc")}</p>
-
-                      {paymentMethod === 'momo' && (
-                        <div className="mt-6 p-4 bg-white max-w-[200px] mx-auto text-black text-center border-2 border-[#A50064]">
-                          {momoPayment?.qrCodeUrl ? (
-                            <div className="aspect-square bg-gray-50 mb-2 relative flex items-center justify-center">
-                              <Image
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(momoPayment.qrCodeUrl)}`}
-                                alt="MoMo QR"
-                                fill
-                                className="object-contain p-2"
-                                unoptimized
-                              />
-                            </div>
-                          ) : (
-                            <div className="aspect-square bg-gray-50 mb-2 flex items-center justify-center px-3">
-                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{t("checkout.momoQrPending")}</span>
-                            </div>
-                          )}
-                          <p className="font-mono font-bold text-lg text-[#A50064]">{formatPrice(total)}</p>
-                          {momoPayment?.deeplink && (
-                            <a href={momoPayment.deeplink} className="mt-3 inline-flex text-xs font-bold uppercase tracking-widest underline text-[#A50064]">
-                              {t("checkout.openMomo")}
-                            </a>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Label>
-
-                  <Label
-                    htmlFor="cod"
-                    className={`flex items-start space-x-4 p-6 border transition-all cursor-pointer ${paymentMethod === 'cod' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
-                  >
-                    <RadioGroupItem value="cod" id="cod" className="mt-1 border-white" />
-                    <div className="flex-1">
-                      <div className="flex items-center mb-1">
-                        <ShoppingBag className="h-5 w-5 mr-2" />
-                        <span className="font-bold uppercase tracking-wider">{t("checkout.cod")}</span>
-                      </div>
-                      <p className={`text-sm ${paymentMethod === 'cod' ? 'text-white/70' : 'text-gray-500'}`}>{t("checkout.codDesc")}</p>
-                    </div>
-                  </Label>
-                </RadioGroup>
+                <PaymentMethods
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  setMomoPayment={setMomoPayment}
+                  setQrPayment={setQrPayment}
+                  qrPayment={qrPayment}
+                  momoPayment={momoPayment}
+                  total={total}
+                  formatPrice={formatPrice}
+                  handleCheckQrPayment={handleCheckQrPayment}
+                  isSubmitting={isSubmitting}
+                  t={t}
+                />
 
                 <div className="mt-8 flex items-center justify-center gap-2 text-gray-400 text-xs uppercase tracking-widest mb-8">
                   <Shield className="h-4 w-4" /> {t("checkout.secureSsl")}
@@ -790,60 +690,16 @@ export default function CheckoutPage() {
           </div>
 
           <div className="lg:col-span-5">
-            <div className="bg-white border border-black/10 p-8 sticky top-32">
-              <h3 className="text-xl font-black tracking-tighter uppercase mb-6">{t("checkout.orderSummary")}</h3>
-              <div className="space-y-6 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                {cartItems.map((item, idx) => (
-                  <div key={idx} className="flex gap-4">
-                    <div className="relative w-20 aspect-[3/4] bg-gray-100 flex-shrink-0">
-                      <Image src={getImageUrl(item.image)} alt={item.name} fill className="object-cover" />
-                      <span className="absolute -top-2 -right-2 bg-black text-white w-5 h-5 flex items-center justify-center text-[10px] font-bold">
-                        {item.quantity}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm uppercase truncate mb-1">{item.name}</h4>
-                      {item.attributes && Object.keys(item.attributes).length > 0 && (
-                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
-                          {Object.values(item.attributes).map(val => formatAttributeValue(val)).join(" • ")}
-                        </p>
-                      )}
-                      <p className="font-mono text-sm font-medium">{formatPrice(item.price)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-dashed border-gray-300 pt-6 space-y-3 font-mono text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500 uppercase tracking-wider text-xs font-sans font-bold">{t("cart.subtotal")}</span>
-                  <span>{formatPrice(subtotal)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500 uppercase tracking-wider text-xs font-sans font-bold">{t("cart.shipping")}</span>
-                  <span className={(shippingFee === 0 && subtotal <= 1000000) ? "text-gray-500 text-xs italic" : "text-green-600 font-bold"}>
-                    {subtotal > 1000000 
-                      ? t("checkout.free") 
-                      : isCalculatingShipping 
-                        ? t("checkout.calculating") 
-                        : shippingFee > 0 
-                          ? formatPrice(shippingFee)
-                          : t("checkout.selectAddressPrompt")
-                    }
-                  </span>
-                </div>
-                {voucherCode && (
-                  <div className="flex justify-between text-green-600">
-                    <span className="uppercase tracking-wider text-xs font-sans font-bold">Voucher: {voucherCode}</span>
-                    <span>-{formatPrice(discountAmount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between pt-4 border-t border-black items-end">
-                  <span className="text-black uppercase tracking-wider text-sm font-sans font-black">{t("cart.total")}</span>
-                  <span className="text-2xl font-bold">{formatPrice(total)}</span>
-                </div>
-              </div>
-            </div>
+              <OrderSummary 
+                cartItems={cartItems}
+                subtotal={subtotal}
+                shippingFee={shippingFee}
+                discountAmount={discountAmount}
+                total={total}
+                voucherCode={voucherCode}
+                isCalculatingShipping={isCalculatingShipping}
+                t={t}
+              />
           </div>
         </div>
       </div>

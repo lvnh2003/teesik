@@ -101,6 +101,7 @@ export interface CartItem {
   image: string
   color?: string
   size?: string
+  attributes?: Record<string, any>
 }
 
 export interface Cart {
